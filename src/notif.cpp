@@ -1,3 +1,5 @@
+#define FMT_HEADER_ONLY
+#include "fmt/core.h"
 #include "api.h"
 #include "notif.h"
 #include "config.h"
@@ -31,7 +33,20 @@ std::vector<std::pair<std::string, pros::Motor*>> intake_motors = {
 std::vector<DisplayItem> notifs;
 
 std::vector<DisplayItem> code_display = {
-    { []() { return std::to_string(getPose().x) + " " + std::to_string(getPose().y) + " " + std::to_string(getPose().y); }, 2000, NotificationType::DISPLAY }
+    DisplayItem(
+        []() -> std::string { 
+            if(imu.is_calibrating()) return "IMU calibrating";
+            return fmt::format("{:.2f}", getPose().x) + " " + fmt::format("{:.2f}", getPose().y) + " " + fmt::format("{:.2f}", getPose().theta); 
+        }, 
+        2000, 
+        NotificationType::DISPLAY
+    ),
+    { []() -> std::string { 
+            return std::to_string(back.get_object_size());
+        }, 
+        2000, 
+        NotificationType::DISPLAY
+    }
 };
 
 std::vector<DisplayItem> temp_display = {

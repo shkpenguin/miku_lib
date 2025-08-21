@@ -22,5 +22,8 @@ extern pros::MotorGroup intake;
 
 extern pros::adi::DigitalOut hood_piston;
 extern pros::adi::DigitalOut lock_piston;
+extern pros::adi::DigitalOut loader_piston;
+
+extern pros::Distance back;
 
 extern pros::Imu imu;

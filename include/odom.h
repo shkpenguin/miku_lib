@@ -12,5 +12,8 @@ struct Particle {
     double weight; 
 };
 
-Pose getPose();
+Pose getPose(bool standard = false);
+Pose getSpeed();
 Pose setPose(Pose new_pose);
+
+void track_odom();

@@ -1,5 +1,7 @@
 #include "main.h"
 #include "notif.h"
+#include "odom.h"
+#include "config.h"
 #include "liblvgl/lvgl.h" // Include the main LVGL header
 #include "gif-pros/gifclass.hpp"
 
@@ -20,6 +22,11 @@ void on_center_button() {
  */
 void initialize() {
 	static Gif gif("/usd/miku.gif", lv_scr_act());
+	imu.reset();
+	while(imu.is_calibrating()) {
+		pros::delay(10); // Wait for IMU calibration
+	}
+	pros::Task odom_task(track_odom);
 }
 
 /**

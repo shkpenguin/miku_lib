@@ -29,11 +29,12 @@ DriveMode driveMode = DriveMode::TANK;
 
 bool hood_up = false;
 bool lock = false;
+bool loading = false;
 
 pros::Task rumbleTask([]() {
     while (true) {
         if(!lock) master.rumble(".");
-        pros::delay(2000); // Check every 100ms
+        pros::delay(1500); // Check every 100ms
     }
 });
 
@@ -69,7 +70,10 @@ void opcontrol() {
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
                 lock = !lock;
                 lock_piston.set_value(lock);
-                
+            }
+            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) {
+                loading = !loading;
+                loader_piston.set_value(loading);
             }
         }
 

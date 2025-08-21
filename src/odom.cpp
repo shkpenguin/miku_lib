@@ -1,11 +1,18 @@
 #include "odom.h"
 #include "config.h"
 
-Pose robot_pose;
-Pose robot_speed;
+#define dt 0.01
 
-Pose getPose() {
+Pose robot_pose = Pose(0, 0, 0);
+Pose robot_speed = Pose(0, 0, 0);
+
+Pose getPose(bool standard) {
+    if(standard) return Pose(robot_pose.x, robot_pose.y, M_PI/2 - robot_pose.theta);
     return robot_pose;
+}
+
+Pose getSpeed() {
+    return robot_speed;
 }
 
 Pose setPose(Pose new_pose) {
@@ -22,7 +29,7 @@ void update() {
     double left_raw = left_motors.get_position();   
     double right_raw = right_motors.get_position();
 
-    double theta_raw = imu.get_rotation() * M_PI / 180.0; 
+    double theta_raw = imu.get_rotation() * M_PI / 180.0;
 
     double left_delta = left_raw - prev_left_raw;
     double right_delta = right_raw - prev_right_raw;
@@ -44,11 +51,21 @@ void update() {
     prev_right_raw = right_raw;
     prev_theta_raw = theta_raw;
 
-    robot_speed.x = local_y * cos(avg_heading);
-    robot_speed.y = local_y * sin(avg_heading);
+    double ax = imu.get_accel().x * 386.09;
+    double ay = imu.get_accel().y * 386.09;
+    
+    robot_speed.x = local_y * sin(avg_heading);
+    robot_speed.y = local_y * cos(avg_heading);
 
     robot_pose.x += robot_speed.x;
     robot_pose.y += robot_speed.y;
     robot_pose.theta = theta_raw;
 
 }
+
+void track_odom() {
+    while(true) {
+        update();
+        pros::delay(10); // Update every 20 ms
+    }
+};

@@ -17,7 +17,10 @@ pros::Motor right_back(17);
 pros::Motor top_intake(11);
 pros::Motor bottom_intake(-20);
 
-pros::Imu imu(11);
+pros::Imu imu(21);
 
 pros::adi::DigitalOut hood_piston('A');
 pros::adi::DigitalOut lock_piston('B');
+pros::adi::DigitalOut loader_piston('C');
+
+pros::Distance back(10);

@@ -200,7 +200,7 @@ void update_particles() {
         bool right_valid = useRight && right_expected >= 0;
         bool back_valid = useBack && back_expected >= 0;
 
-        double weight = 1.0;
+        double weight = 1.0; // NEEDS FIXING
 
         double left_dev = fabs(left.get_reading() - left_expected);
         double right_dev = fabs(right.get_reading() - right_expected);
@@ -258,14 +258,16 @@ void resampleParticles() {
             c += particles[i].weight;
         }
         newParticles[m] = particles[i];  // copy particle
-        // Do NOT reset weight here
     }
 
     // Normalize after resampling
-    double total_weight = 0.0;
-    for(const auto &p : newParticles) total_weight += p.weight;
-    for(auto &p : newParticles) p.weight /= total_weight;
+    // double total_weight = 0.0;
+    // for(const auto &p : newParticles) total_weight += p.weight;
+    // for(auto &p : newParticles) p.weight /= total_weight;
 
+    for (auto &p : newParticles) {
+        p.weight = 1.0 / NUM_PARTICLES;
+    }
     particles = newParticles;
     // log_mcl();
 }

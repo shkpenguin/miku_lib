@@ -2,8 +2,6 @@
 #include "mcl.h"
 #include "config.h"
 
-#define dt 0.01
-
 Pose robot_pose = Pose(0, 0, 0);
 Pose robot_speed = Pose(0, 0, 0);
 

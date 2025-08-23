@@ -22,5 +22,6 @@ pros::Imu imu(21);
 pros::adi::DigitalOut hood_piston('A');
 pros::adi::DigitalOut lock_piston('B');
 pros::adi::DigitalOut loader_piston('C');
+pros::adi::DigitalOut descore_piston('D');
 
-pros::Distance back(10);
+// pros::Distance back(10);

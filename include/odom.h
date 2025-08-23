@@ -1,3 +1,5 @@
+#pragma once
+
 struct Pose {
     double x; 
     double y;
@@ -17,3 +19,4 @@ Pose getSpeed();
 Pose setPose(Pose new_pose);
 
 void track_odom();
+void init_odom(Pose inital_pose);

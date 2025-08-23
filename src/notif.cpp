@@ -5,6 +5,7 @@
 #include "config.h"
 #include "timer.h"
 #include "odom.h"
+#include "mcl.h"
 #include <vector>
 
 struct DisplayItem {
@@ -41,12 +42,16 @@ std::vector<DisplayItem> code_display = {
         2000, 
         NotificationType::DISPLAY
     ),
-    { []() -> std::string { 
-            return std::to_string(back.get_object_size());
+    DisplayItem(
+        []() -> std::string { 
+            if(imu.is_calibrating()) return "IMU calibrating";
+            return fmt::format("{:.2f}", get_expected_reading(getPose(true), back.offset)) + " " + 
+                   fmt::format("{:.2f}", get_expected_reading(getPose(true), left.offset)) + " " + 
+                   fmt::format("{:.2f}", get_expected_reading(getPose(true), right.offset));
         }, 
         2000, 
         NotificationType::DISPLAY
-    }
+    )
 };
 
 std::vector<DisplayItem> temp_display = {

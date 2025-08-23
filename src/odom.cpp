@@ -1,4 +1,5 @@
 #include "odom.h"
+#include "mcl.h"
 #include "config.h"
 
 #define dt 0.01
@@ -50,9 +51,6 @@ void update() {
     prev_left_raw = left_raw;
     prev_right_raw = right_raw;
     prev_theta_raw = theta_raw;
-
-    double ax = imu.get_accel().x * 386.09;
-    double ay = imu.get_accel().y * 386.09;
     
     robot_speed.x = local_y * sin(avg_heading);
     robot_speed.y = local_y * cos(avg_heading);
@@ -63,9 +61,20 @@ void update() {
 
 }
 
+void init_odom(Pose initial_pose) {
+    setPose(initial_pose);
+    initialize_particles();
+}
+
 void track_odom() {
     while(true) {
         update();
-        pros::delay(10); // Update every 20 ms
+        update_particles();
+
+        Pose estimate = get_pose_estimate();
+        setPose(Pose(estimate.x, estimate.y, robot_pose.theta));
+        
+        resampleParticles();
+        pros::delay(20); // Update every 20 ms
     }
 };

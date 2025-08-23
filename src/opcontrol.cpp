@@ -1,6 +1,7 @@
 #include "config.h"
 #include "main.h"
 #include "timer.h"
+#include "mcl.h"
 
 enum class DriveMode {
     TANK = 0,
@@ -30,10 +31,12 @@ DriveMode driveMode = DriveMode::TANK;
 bool hood_up = false;
 bool lock = false;
 bool loading = false;
+bool descore = false;
 
 pros::Task rumbleTask([]() {
     while (true) {
         if(!lock) master.rumble(".");
+        flush_logs();
         pros::delay(1500); // Check every 100ms
     }
 });
@@ -84,6 +87,10 @@ void opcontrol() {
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
                 hood_up = !hood_up;
                 hood_piston.set_value(hood_up);
+            }
+            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) {
+                descore = !descore;
+                descore_piston.set_value(descore);
             }
         }
 

@@ -26,6 +26,7 @@ void initialize() {
 	while(imu.is_calibrating()) {
 		pros::delay(10); // Wait for IMU calibration
 	}
+	init_odom(Pose(24, -48, 0));
 	pros::Task odom_task(track_odom);
 }
 

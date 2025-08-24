@@ -200,28 +200,36 @@ void update_particles() {
         bool right_valid = useRight && right_expected >= 0;
         bool back_valid = useBack && back_expected >= 0;
 
-        double weight = 1.0; // NEEDS FIXING
+        double weight = 1.0;
 
         double left_dev = fabs(left.get_reading() - left_expected);
         double right_dev = fabs(right.get_reading() - right_expected);
         double back_dev = fabs(back.get_reading() - back_expected);
 
-        if ((left_valid && left_dev > MAX_ERROR) || 
-            (right_valid && right_dev > MAX_ERROR) || 
-            (back_valid && back_dev > MAX_ERROR)) {
-            weight = 0.0;
-        } else {
-            if(left_valid) {
-                weight *= std::exp(-(left_dev * left_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
-            } 
+        double weight = 1.0;
+        int valid_count = 0; // Track how many sensors contributed
 
-            if(right_valid) {
-                weight *= std::exp(-(right_dev * right_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
-            }
+        if (left_valid) {
+            double left_dev = fabs(left.get_reading() - left_expected);
+            weight *= std::exp(-(left_dev * left_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
+            valid_count++;
+        }
 
-            if(back_valid) {
-                weight *= std::exp(-(back_dev * back_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
-            } 
+        if (right_valid) {
+            double right_dev = fabs(right.get_reading() - right_expected);
+            weight *= std::exp(-(right_dev * right_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
+            valid_count++;
+        }
+
+        if (back_valid) {
+            double back_dev = fabs(back.get_reading() - back_expected);
+            weight *= std::exp(-(back_dev * back_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
+            valid_count++;
+        }
+
+        // If no sensors provided valid data, give a neutral but nonzero weight
+        if (valid_count == 0) {
+            weight = 1 / NUM_PARTICLES; 
         }
 
         particles[i].weight = weight;

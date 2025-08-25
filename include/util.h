@@ -37,7 +37,7 @@ inline double angle_error(double target, double current) {
     return wrap_angle(target - current, 2.0 * M_PI);
 }
 
-auto move_motors = [&](double l, double r, bool reversed = false) {
+void move_motors(double l, double r, bool reversed = false) {
     if (reversed) {
         left_motors.move_voltage(-l);
         right_motors.move_voltage(-r);
@@ -45,4 +45,14 @@ auto move_motors = [&](double l, double r, bool reversed = false) {
         left_motors.move_voltage(l);
         right_motors.move_voltage(r);
     }
-};
+}
+
+void stop_motors() {
+    left_motors.move_velocity(0);
+    right_motors.move_velocity(0);
+}
+
+void set_drive_brake(pros::motor_brake_mode_e mode) {
+    left_motors.set_brake_mode_all(mode);
+    right_motors.set_brake_mode_all(mode);
+}

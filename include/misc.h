@@ -32,34 +32,57 @@ struct Particle {
 };
 
 struct Gains {
-    float kP;
-    float kI;
-    float kD;
+    double kP;
+    double kI;
+    double kD;
 
-    Gains(float kP, float kI, float kD) : kP(kP), kI(kI), kD(kD) {}
+    Gains(double kP, double kI, double kD) : kP(kP), kI(kI), kD(kD) {}
 };
 
 class PID {
     public:
+        PID(double kP, double kI, double kD, double windupRange = 0, bool signFlipReset = false, bool trapezoidal = true);
+        PID(Gains gains, double windupRange = 0, bool signFlipReset = false, bool trapezoidal = true)
+            : PID(gains.kP, gains.kI, gains.kD, windupRange, signFlipReset, trapezoidal) {}
 
-        PID(float kP, float kI, float kD, float windupRange = 0, bool signFlipReset = false, bool trapezoidal = true);
-
-        float update(float error);
+        double update(double error);
 
         void setGains(Gains gains);
 
         void reset();
     protected:
         // gains
-        float kP;
-        float kI;
-        float kD;
+        double kP;
+        double kI;
+        double kD;
 
         // optimizations
-        const float windupRange;
+        const double windupRange;
         const bool signFlipReset;
         const bool trapezoidal;
 
-        float integral = 0;
-        float prevError = 0;
+        double integral = 0;
+        double prevError = 0;
+};
+
+/**
+ * @param range The acceptable range of error
+ * @param time The time duration to check for the exit condition(ms)
+ */
+struct ExitCondition {
+    double range;
+    int time;
+    int startTime = -1;
+    bool done = false;
+
+    ExitCondition(const double range, const int time);
+
+    bool getExit();
+    bool update(const double input);
+    void reset();
+};
+
+enum Side {
+    LEFT,
+    RIGHT
 };

@@ -34,7 +34,7 @@ class Timer {
          * const Time time = timer.getTimeSet(); // time = 1_sec
          * @endcode
          */
-        int getTimeSet();
+        int getTimeSet() const;
         /**
          * @brief Get the amount of time left on the timer
          *
@@ -108,7 +108,7 @@ class Timer {
          * paused = timer.isPaused(); // paused = false
          * @endcode
          */
-        bool isPaused();
+        bool isPaused() const;
         /**
          * @brief Set the amount of time the timer should count down. Resets the timer
          *

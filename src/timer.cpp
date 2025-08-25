@@ -11,8 +11,7 @@ void Timer::update() {
     m_lastTime = time; // update last time
 }
 
-int Timer::getTimeSet() {
-    this->update();
+int Timer::getTimeSet() const {
     return m_period;
 }
 
@@ -33,9 +32,7 @@ bool Timer::isDone() {
     return delta <= 0;
 }
 
-bool Timer::isPaused() {
-    const int time = pros::millis(); // get time from RTOS
-    if (!m_paused) m_timeWaited += time - m_lastTime; // dont update if paused
+bool Timer::isPaused() const {
     return m_paused;
 }
 
@@ -51,9 +48,8 @@ void Timer::reset() {
 
 void Timer::pause() {
     if (!m_paused) {
-        const int now = pros::millis();  // get current time first
-        m_timeWaited += now - m_lastTime; // accumulate elapsed time
-        m_paused = true;                  // then mark paused
+        this->update();
+        m_paused = true;
     }
 }
 

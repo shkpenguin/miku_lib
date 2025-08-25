@@ -1,5 +1,6 @@
 #pragma once
 #include "api.h"
+#include "misc.h"
 
 #define WHEEL_DIAMETER 2.75
 #define DT_GEAR_RATIO 1.0
@@ -28,3 +29,11 @@ extern pros::adi::DigitalOut descore_piston;
 // extern pros::Distance back;
 
 extern pros::Imu imu;
+
+extern Gains drive_gains;
+extern Gains turn_gains;
+
+extern ExitCondition drive_small_exit;
+extern ExitCondition drive_large_exit;
+extern ExitCondition turn_small_exit;
+extern ExitCondition turn_large_exit;

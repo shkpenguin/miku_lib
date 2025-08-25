@@ -1,6 +1,6 @@
 #include "misc.h"
 
-PID::PID(float kP, float kI, float kD, float windupRange, bool signFlipReset, bool trapezoidal)
+PID::PID(double kP, double kI, double kD, double windupRange, bool signFlipReset, bool trapezoidal)
     : kP(kP),
       kI(kI),
       kD(kD),
@@ -8,10 +8,10 @@ PID::PID(float kP, float kI, float kD, float windupRange, bool signFlipReset, bo
       signFlipReset(signFlipReset),
       trapezoidal(trapezoidal) {}
 
-float PID::update(const float error) {
+double PID::update(const double error) {
 
     // calculate derivative
-    const float derivative = error - prevError;
+    const double derivative = error - prevError;
 
     // calculate integral
     if (trapezoidal) {
@@ -36,10 +36,28 @@ void PID::setGains(Gains gains) {
     kP = gains.kP;
     kI = gains.kI;
     kD = gains.kD;
-    
 }
 
 void PID::reset() {
     integral = 0;
     prevError = 0;
+}
+
+ExitCondition::ExitCondition(const double range, const int time)
+    : range(range),
+      time(time) {}
+
+bool ExitCondition::getExit() { return done; }
+
+bool ExitCondition::update(const double input) {
+    const int curTime = pros::millis();
+    if (std::fabs(input) > range) startTime = -1;
+    else if (startTime == -1) startTime = curTime;
+    else if (curTime >= startTime + time) done = true;
+    return done;
+}
+
+void ExitCondition::reset() {
+    startTime = -1;
+    done = false;
 }

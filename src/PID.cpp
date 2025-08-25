@@ -1,0 +1,45 @@
+#include "misc.h"
+
+PID::PID(float kP, float kI, float kD, float windupRange, bool signFlipReset, bool trapezoidal)
+    : kP(kP),
+      kI(kI),
+      kD(kD),
+      windupRange(windupRange),
+      signFlipReset(signFlipReset),
+      trapezoidal(trapezoidal) {}
+
+float PID::update(const float error) {
+
+    // calculate derivative
+    const float derivative = error - prevError;
+
+    // calculate integral
+    if (trapezoidal) {
+        if (sign(derivative) != sign(error)) {
+            integral += (error + prevError) / 2;
+        } else {
+            integral += error;
+        }
+    } else {
+        integral += error;
+    }
+    if (sign(error) != sign((prevError)) && signFlipReset) integral = 0;
+    if (fabs(error) > windupRange && windupRange != 0) integral = 0;
+    
+    prevError = error;
+
+    // calculate output
+    return error * kP + integral * kI + derivative * kD;
+}
+
+void PID::setGains(Gains gains) {
+    kP = gains.kP;
+    kI = gains.kI;
+    kD = gains.kD;
+    
+}
+
+void PID::reset() {
+    integral = 0;
+    prevError = 0;
+}

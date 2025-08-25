@@ -24,4 +24,4 @@ void flush_logs();
 Pose get_pose_estimate();
 void initialize_particles();
 void update_particles();
-void resampleParticles();
+void resample_particles();

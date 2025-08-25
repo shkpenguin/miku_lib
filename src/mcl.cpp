@@ -6,7 +6,7 @@
 
 #include "api.h"
 #include "odom.h"
-#include "math.h"
+#include "util.h"
 #include "mcl.h"
 #include <random>
 #include <cmath>
@@ -155,10 +155,10 @@ void initialize_particles() {
         particles[i].weight = 1.0 / NUM_PARTICLES;
     }
 
-    // log_mcl();
+    log_mcl();
 }
 
-#define MAX_ERROR 5.0
+#define MAX_ERROR 6.0
 #define MAX_LATERAL_ERROR 6.0
 
 std::normal_distribution<double> lateral_noise(0, LATERAL_STDEV);
@@ -179,6 +179,7 @@ void update_particles() {
     bool useBack = back.update_reading();
 
     double total_weight = 0.0; 
+    int invalid_updates = 0;
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
         particles[i].pose.x = clamp_field(
@@ -206,30 +207,31 @@ void update_particles() {
         double right_dev = fabs(right.get_reading() - right_expected);
         double back_dev = fabs(back.get_reading() - back_expected);
 
-        double weight = 1.0;
+        left_valid = left_valid && left_dev < MAX_ERROR;
+        right_valid = right_valid && right_dev < MAX_ERROR;
+        back_valid = back_valid && back_dev < MAX_ERROR;
+
         int valid_count = 0; // Track how many sensors contributed
 
         if (left_valid) {
-            double left_dev = fabs(left.get_reading() - left_expected);
             weight *= std::exp(-(left_dev * left_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
             valid_count++;
         }
 
         if (right_valid) {
-            double right_dev = fabs(right.get_reading() - right_expected);
             weight *= std::exp(-(right_dev * right_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
             valid_count++;
         }
 
         if (back_valid) {
-            double back_dev = fabs(back.get_reading() - back_expected);
             weight *= std::exp(-(back_dev * back_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
             valid_count++;
         }
 
         // If no sensors provided valid data, give a neutral but nonzero weight
         if (valid_count == 0) {
-            weight = 1 / NUM_PARTICLES; 
+            weight = 1e-6;
+            invalid_updates++;
         }
 
         particles[i].weight = weight;
@@ -241,17 +243,21 @@ void update_particles() {
         for(int i = 0; i < NUM_PARTICLES; ++i) {
             particles[i].weight = weight;
         }
+    } else if(invalid_updates / NUM_PARTICLES > 0.1) {
+        for(int i = 0; i < NUM_PARTICLES; ++i) {
+            particles[i].weight = 1.0 / NUM_PARTICLES;
+        }
     } else {
         for(int i = 0; i < NUM_PARTICLES; ++i) {
             particles[i].weight /= total_weight;
         }
     }
 
-    // log_mcl();
+    log_mcl();
 
 }
 
-void resampleParticles() {
+void resample_particles() {
     std::vector<Particle> newParticles(NUM_PARTICLES);
     std::uniform_real_distribution<double> dist(0.0, 1.0 / NUM_PARTICLES);
 
@@ -277,5 +283,5 @@ void resampleParticles() {
         p.weight = 1.0 / NUM_PARTICLES;
     }
     particles = newParticles;
-    // log_mcl();
+    log_mcl();
 }

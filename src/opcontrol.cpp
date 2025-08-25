@@ -64,9 +64,10 @@ void opcontrol() {
         //r2 intake
         //shift r2 intake
 
-        bool shift = master.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
+        bool shift1 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
+        bool shift2 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
 
-        if(!shift) {
+        if(!shift1 && !shift2) {
             if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
                 intake.move_voltage(12000);
             }
@@ -74,23 +75,26 @@ void opcontrol() {
                 lock = !lock;
                 lock_piston.set_value(lock);
             }
-            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) {
-                loading = !loading;
-                loader_piston.set_value(loading);
-            }
         }
 
-        else if(shift) {
+        else if(shift1) {
             if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
                 intake.move_voltage(-12000);
             }
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+                descore = !descore;
+                descore_piston.set_value(descore);
+            }
+        }
+
+        else if(shift2) {
+            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
                 hood_up = !hood_up;
                 hood_piston.set_value(hood_up);
             }
-            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) {
-                descore = !descore;
-                descore_piston.set_value(descore);
+            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+                loading = !loading;
+                loader_piston.set_value(loading);
             }
         }
 

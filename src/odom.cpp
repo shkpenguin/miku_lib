@@ -23,7 +23,7 @@ double prev_left_raw = 0;
 double prev_right_raw = 0;
 double prev_theta_raw = 0;
 
-void update() {
+void update_odom() {
 
     double left_raw = left_motors.get_position();   
     double right_raw = right_motors.get_position();
@@ -61,18 +61,4 @@ void update() {
 
 void init_odom(Pose initial_pose) {
     setPose(initial_pose);
-    initialize_particles();
 }
-
-void track_odom() {
-    while(true) {
-        update();
-        update_particles();
-
-        Pose estimate = get_pose_estimate();
-        setPose(Pose(estimate.x, estimate.y, robot_pose.theta));
-        
-        resampleParticles();
-        pros::delay(20); // Update every 20 ms
-    }
-};

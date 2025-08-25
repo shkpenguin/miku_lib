@@ -1,17 +1,14 @@
 #include "api.h"
+#include "misc.h"
 
 std::vector<std::pair<double, double>> lookup = {
-    {0, 1.5},
-    {10, 2.0},
-    {20, 2.5},
-    {30, 3.0},
-    {40, 3.5},
-    {50, 4.0},
-    {60, 4.5},
-    {70, 5.0},
-    {80, 5.5},
-    {90, 6.0},
-    {100, 6.5}
+    {-100.0, -12000}, {-91, -11000}, {-82, -10000}, {-73.7, -9000},
+    {-64.4, -8000}, {-55.6, -7000}, {-46.7, -6000}, {-37.3, -5000},
+    {-29.1, -4000}, {-20.5, -3000}, {-11.1, -2000}, {-3.9, -1000},
+    {0, 0},
+    {2.7, 1000}, {10.3, 2000}, {19.6, 3000}, {27.9, 4000},
+    {36.1, 5000}, {45.3, 6000}, {54.4, 7000}, {63.2, 8000},
+    {72.6, 9000}, {81, 10000}, {90, 11000}, {100, 12000}
 };
 
 double voltage_lookup(double velocity) {
@@ -27,6 +24,9 @@ double voltage_lookup(double velocity) {
         }
     }
     // use linear interpolation
+    if (low == lookup.size() - 1) {
+        return lookup[low].second;
+    }
     double x0 = lookup[low].first;
     double y0 = lookup[low].second;
     double x1 = lookup[low + 1].first;

@@ -1,16 +1,17 @@
 #include "mp.h"
+#include "odom.h"
 #include <cmath>
 #include <algorithm>
 
-double get_t_param(const std::vector<std::vector<double>>& P) {
-    double dx = P[2][0] - P[0][0];
-    double dy = P[2][1] - P[0][1];
+double get_t_param(std::vector<Point> P) {
+    double dx = P[2].x - P[0].x;
+    double dy = P[2].y - P[0].y;
     double k3 = dx * dx + dy * dy;
-    double k2 = 3 * (dx * (P[0][0] - P[1][0]) + dy * (P[0][1] - P[1][1]));
-    double k1 = (3 * P[0][0] - 2 * P[1][0] - P[2][0]) * (P[0][0] - P[1][0]) +
-                (3 * P[0][1] - 2 * P[1][1] - P[2][1]) * (P[0][1] - P[1][1]);
-    double k0 = -((P[0][0] - P[1][0]) * (P[0][0] - P[1][0]) +
-                  (P[0][1] - P[1][1]) * (P[0][1] - P[1][1]));
+    double k2 = 3 * (dx * (P[0].x - P[1].x) + dy * (P[0].x - P[1].x));
+    double k1 = (3 * P[0].x - 2 * P[1].x - P[2].x) * (P[0].x - P[1].x) +
+                (3 * P[0].y - 2 * P[1].y - P[2].y) * (P[0].y - P[1].y);
+    double k0 = -((P[0].x - P[1].x) * (P[0].x - P[1].x) +
+                  (P[0].y - P[1].y) * (P[0].y - P[1].y));
 
     double estimate = 0.5;
     double bucket_size = 0.5;
@@ -24,27 +25,27 @@ double get_t_param(const std::vector<std::vector<double>>& P) {
     return estimate;
 }
 
-std::vector<double> get_derivatives_quadratic_bezier(const std::vector<std::vector<double>>& P, double t) {
+std::vector<double> get_derivatives_quadratic_bezier(const std::vector<Point>& P, double t) {
     double u = 1 - t;
     double u2 = u * u;
     double t2 = t * t;
 
-    double x = u2 * P[0][0] + 2 * u * t * P[1][0] + t2 * P[2][0];
-    double y = u2 * P[0][1] + 2 * u * t * P[1][1] + t2 * P[2][1];
+    double x = u2 * P[0].x + 2 * u * t * P[1].x + t2 * P[2].x;
+    double y = u2 * P[0].y + 2 * u * t * P[1].y + t2 * P[2].y;
 
-    double dx = 2 * u * (P[1][0] - P[0][0]) + 2 * t * (P[2][0] - P[1][0]);
-    double dy = 2 * u * (P[1][1] - P[0][1]) + 2 * t * (P[2][1] - P[1][1]);
+    double dx = 2 * u * (P[1].x - P[0].x) + 2 * t * (P[2].x - P[1].x);
+    double dy = 2 * u * (P[1].y - P[0].y) + 2 * t * (P[2].y - P[1].y);
 
-    double ddx = 2 * (P[2][0] - 2 * P[1][0] + P[0][0]);
-    double ddy = 2 * (P[2][1] - 2 * P[1][1] + P[0][1]);
+    double ddx = 2 * (P[2].x - 2 * P[1].x + P[0].x);
+    double ddy = 2 * (P[2].y - 2 * P[1].y + P[0].y);
 
     return {x, y, dx, dy, ddx, ddy};
 }
 
 std::vector<double> get_derivatives(
-    const std::vector<std::vector<double>>& P,
-    const std::vector<std::vector<double>>& MCP,
-    const std::vector<double>& TP,
+    std::vector<Point>& P,
+    std::vector<Point>& MCP,
+    Point& TP,
     double t
 ) {
     const double pi_2 = M_PI / 2;
@@ -55,11 +56,11 @@ std::vector<double> get_derivatives(
     double two_st_ct = 2 * st * ct;
 
     // First and second Bezier segments
-    auto F1 = get_derivatives_quadratic_bezier({P[0], MCP[0], P[2]}, TP[0] + (1 - TP[0]) * t / pi_2);
-    auto F2 = get_derivatives_quadratic_bezier({P[1], MCP[1], P[3]}, TP[1] * t / pi_2);
+    auto F1 = get_derivatives_quadratic_bezier({P[0], MCP[0], P[2]}, TP.x + (1 - TP.x) * t / pi_2);
+    auto F2 = get_derivatives_quadratic_bezier({P[1], MCP[1], P[3]}, TP.y * t / pi_2);
 
-    double scale1 = (1 - TP[0]) / pi_2;
-    double scale2 = TP[1] / pi_2;
+    double scale1 = (1 - TP.x) / pi_2;
+    double scale2 = TP.y / pi_2;
 
     for (int i = 2; i < 6; i++) {
         F1[i] *= (i < 4 ? scale1 : scale1 * scale1);
@@ -77,44 +78,49 @@ std::vector<double> get_derivatives(
     return {x, y, dx, dy, ddx, ddy};
 }
 
-std::vector<Waypoint> calculate_waypoints(std::vector<std::vector<double>> control_points, double spacing) {
-    std::vector<Waypoint> waypoints;
-    int control_point_num = control_points.size();
+void BezierPath::calculate_waypoints() {
+    double spacing = 0;
+
+    std::vector<Waypoint> _waypoints;
+    int paths = control_points.size();
 
     double current_time = 0;
-    double prev_x = control_points[1][0], prev_y = control_points[1][1];
+    double prev_x = control_points[0][0].x, prev_y = control_points[0][0].y;
     double prev_t = 0, prev_dx = 0, prev_dy = 0, prev_ddx = 0, prev_ddy = 0;
     bool first_loop = true;
 
-    for (int i = 0; i <= control_point_num - 4; i++) {
-        int n = std::hypot(control_points[i+2][0] - control_points[i+1][0],
-                           control_points[i+2][1] - control_points[i+1][1]) / spacing;
+    for (int i = 0; i < paths; i++) {
 
-        std::vector<std::vector<double>> P(4);
-        for (int j = 0; j < 4; j++) P[j] = control_points[i+j];
+        std::vector<Point> P = control_points[i];
 
-        std::vector<std::vector<double>> MCP(2, {0, 0});
-        std::vector<double> TP(2, 0);
+        int n = std::hypot(P[2].x - P[1].x, P[2].y - P[1].y) / spacing;
 
-        for (int j = 0; j < 2; j++) {
-            double t_param = get_t_param({P[j], P[j+1], P[j+2]});
-            MCP[j][0] = (P[j+1][0] - (1 - t_param) * (1 - t_param) * P[j][0] - t_param * t_param * P[j+2][0]) /
-                        (2 * t_param * (1 - t_param));
-            MCP[j][1] = (P[j+1][1] - (1 - t_param) * (1 - t_param) * P[j][1] - t_param * t_param * P[j+2][1]) /
-                        (2 * t_param * (1 - t_param));
-            TP[j] = t_param;
-        }
+        std::vector<Point> MCP(2, {0, 0});
+        Point TP;
 
-        const double pi_2 = M_PI / 2;
-        for (double t = 0; t < pi_2; t += pi_2 / n + 0.001) {
+        double t_param = get_t_param({P[0], P[1], P[2]});
+        MCP[0].x = (P[1].x - (1 - t_param) * (1 - t_param) * P[0].x - t_param * t_param * P[2].x) /
+                (2 * t_param * (1 - t_param));
+        MCP[0].y = (P[1].y - (1 - t_param) * (1 - t_param) * P[0].y - t_param * t_param * P[2].y) /
+                (2 * t_param * (1 - t_param));
+        TP.x = t_param;
+    
+        double t_param = get_t_param({P[1], P[2], P[3]});
+        MCP[1].x = (P[2].x - (1 - t_param) * (1 - t_param) * P[1].x - t_param * t_param * P[3].x) /
+                (2 * t_param * (1 - t_param));
+        MCP[1].y = (P[2].y - (1 - t_param) * (1 - t_param) * P[1].y - t_param * t_param * P[3].y) /
+                (2 * t_param * (1 - t_param));
+        TP.y = t_param;
+
+        for (double t = 0; t < M_PI / 2; t += M_PI / 2 / n + 0.001) {
             auto derivatives = get_derivatives(P, MCP, TP, t);
             Waypoint point;
             point.x = derivatives[0];
             point.y = derivatives[1];
             point.theta = std::atan2(derivatives[3], derivatives[2]);
 
-            double linvel = (1 - t / pi_2) * P[1][2] + (t / pi_2) * P[2][2];
-            double in_per_sec = linvel * 0.01 * max_rpm / 60 * gear_ratio * circ;
+            double linvel = (1 - t / (M_PI / 2)) * start_linvel + (t / (M_PI / 2)) * end_linvel;
+            double in_per_sec = linvel * 0.01 * MAX_RPM / 60 * GEAR_RATIO * CIRC;
 
             double curvature = 0, rad_per_sec = 0;
             if (derivatives[2] != 0 || derivatives[3] != 0) {
@@ -123,11 +129,11 @@ std::vector<Waypoint> calculate_waypoints(std::vector<std::vector<double>> contr
                 rad_per_sec = linvel * curvature;
             }
 
-            double angvel = rad_per_sec * trackwidth / (0.01 * max_rpm / 60 * gear_ratio * circ);
+            double angvel = rad_per_sec * TRACK_WIDTH / (0.01 * MAX_RPM / 60 * GEAR_RATIO * CIRC);
 
-            double angvel_multi1 = (P[1].size() >= 4) ? P[1][3] : 1;
-            double angvel_multi2 = (P[2].size() >= 4) ? P[2][3] : 1;
-            angvel *= (1 - t / pi_2) * angvel_multi1 + (t / pi_2) * angvel_multi2;
+            // double angvel_multi1 = (P[1].size() >= 4) ? P[1][3] : 1;
+            // double angvel_multi2 = (P[2].size() >= 4) ? P[2][3] : 1;
+            // angvel *= (1 - t / pi_2) * angvel_multi1 + (t / pi_2) * angvel_multi2;
 
             double r_vel = linvel + angvel / 2;
             double l_vel = linvel - angvel / 2;
@@ -170,9 +176,9 @@ std::vector<Waypoint> calculate_waypoints(std::vector<std::vector<double>> contr
             prev_ddx = point.ddx; prev_ddy = point.ddy;
             prev_t = point.t;
 
-            waypoints.push_back(point);
+            _waypoints.push_back(point);
         }
     }
 
-    return waypoints;
+    waypoints = {_waypoints};
 }

@@ -20,15 +20,7 @@ void on_center_button() {
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
-void initialize() {
-	static Gif gif("/usd/miku.gif", lv_scr_act());
-	imu.reset();
-	while(imu.is_calibrating()) {
-		pros::delay(10); // Wait for IMU calibration
-	}
-	init_odom(Pose(24, -48, 0));
-	pros::Task odom_task(track_odom);
-}
+
 
 /**
  * Runs while the robot is in the disabled state of Field Management System or

@@ -10,6 +10,26 @@ bool motion_running = false;
 bool motion_queued = false;
 double distance_traveled = -1;
 
+void move_motors(double l, double r, bool reversed) {
+    if (reversed) {
+        left_motors.move_voltage(-l);
+        right_motors.move_voltage(-r);
+    } else {
+        left_motors.move_voltage(l);
+        right_motors.move_voltage(r);
+    }
+}
+
+void stop_motors() {
+    left_motors.move_voltage(0);
+    right_motors.move_voltage(0);
+}
+
+void set_drive_brake(pros::motor_brake_mode_e mode) {
+    left_motors.set_brake_mode_all(mode);
+    right_motors.set_brake_mode_all(mode);
+}
+
 void wait_until_done() {
     do {
         pros::delay(10);
@@ -42,15 +62,12 @@ void cancel_all_motions() {
     pros::delay(10);
 }
 
-void turn_heading(double target, bool reverse, double timeout, bool async = false, double cutoff = -1.0) {
-
+void turn_heading(double target_deg, bool reverse, double timeout, bool async, double cutoff_deg) {
     request_motion_start();
-    if(!motion_running) return;
+    if (!motion_running) return;
 
-    if(async) {
-        pros::Task turn_task([=]() {
-            turn_heading(target, reverse, timeout, false, cutoff);
-        });
+    if (async) {
+        pros::Task([=]() { turn_heading(target_deg, reverse, timeout, false, cutoff_deg); });
         end_motion();
         pros::delay(10);
         return;
@@ -58,36 +75,51 @@ void turn_heading(double target, bool reverse, double timeout, bool async = fals
 
     Timer timer(timeout);
     distance_traveled = 0;
-    PID turn_pid(turn_gains);
-    if(reverse) target = wrap_angle(target + 180, 360);
-    else target = wrap_angle(target, 360);
 
-    turn_small_exit.reset();
-    turn_large_exit.reset();
+    // Target is in degrees
+    double target = target_deg;
+    double cutoff = cutoff_deg;
 
-    while(!turn_small_exit.getExit() && !turn_large_exit.getExit() && !timer.isDone()) {
-        double error = target - wrap_angle(getPose().theta * (180 / M_PI), 360);
-        if(cutoff > 0 && fabs(error) < cutoff) break;
+    if (reverse) target = wrap_angle_180(target + 180);
+
+    // PID tuned in degrees
+    PID turn_pid(turn_gains);  
+
+    ExitCondition turnSmallExit(1.0, 100);  // 1 degree
+    ExitCondition turnLargeExit(3.0, 500);  // 3 degrees
+    turnSmallExit.reset();
+    turnLargeExit.reset();
+
+    while (!timer.isDone() && !turnSmallExit.getExit() && !turnLargeExit.getExit() && motion_running) {
+        double current_deg = getPose().theta * (180.0 / M_PI);  // convert to degrees
+        double error = wrap_angle_180(target - current_deg);      // error in degrees
+
+        if (cutoff > 0 && fabs(error) < cutoff) break;
 
         double output = turn_pid.update(error);
-        turn_small_exit.update(error);
-        turn_large_exit.update(error);
+
+        // optional clamp if your PID output is voltage
+        output = clamp(output, -12000, 12000);
 
         move_motors(output, -output);
+
+        turnSmallExit.update(error);
+        turnLargeExit.update(error);
 
         pros::delay(10);
     }
 
+    stop_motors();
+    distance_traveled = -1;
     end_motion();
-
 }
 
-void turn_point(Point target, bool reverse, double timeout, bool async = false, double cutoff = -1.0) {
+void turn_point(Point target, bool reverse, double timeout, bool async, double cutoff) {
     double angle = atan2(target.y - getPose().y, target.x - getPose().x) * (180 / M_PI);
     turn_heading(angle, reverse, timeout, async, cutoff);
 }
 
-void swing_heading(double target, Side locked_side, bool reverse, double timeout, bool async = false, double cutoff = -1.0) {
+void swing_heading(double target, Side locked_side, bool reverse, double timeout, bool async, double cutoff) {
     
     request_motion_start();
     if(!motion_running) return;
@@ -136,17 +168,75 @@ void swing_heading(double target, Side locked_side, bool reverse, double timeout
 
 }
 
-void swing_point(Point target, Side locked_side, bool reverse, double timeout, bool async = false, double cutoff = -1.0) {
+void swing_point(Point target, Side locked_side, bool reverse, double timeout, bool async, double cutoff) {
     double angle = atan2(target.y - getPose().y, target.x - getPose().x) * (180 / M_PI);
     swing_heading(angle, locked_side, reverse, timeout, async, cutoff);
 }
 
-void move_point(Point target, bool reverse, double timeout, bool async = false, double cutoff = -1.0) {
+// void move_point(Point target, bool reverse, double timeout, bool async, double cutoff) {
 
+//     request_motion_start();
+//     if(!motion_running) return;
+
+//     if(async) {
+//         pros::Task move_task([=]() mutable {
+//             move_point(target, reverse, timeout, false, cutoff);
+//         });
+//         end_motion();
+//         pros::delay(10);
+//         return;
+//     }
+
+//     distance_traveled = 0;
+//     Timer timer(timeout);  
+//     PID drive_pid(drive_gains);
+//     PID turn_pid(turn_gains);
+
+//     ExitCondition drive_small_exit(1.0, 200); // 1 inch
+//     ExitCondition drive_large_exit(5.0, 1000); // 5 inches
+
+//     while(!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone()) {
+//         Point current = Point(getPose().x, getPose().y);
+
+//         double dx = target.x - current.x;
+//         double dy = target.y - current.y;
+
+//         // Convert so 0° = +y, CW positive
+//         double desired_deg = atan2(dx, dy) * (180.0 / M_PI); 
+//         double current_deg = getPose().theta * (180.0 / M_PI);
+//         double turn_error = wrap_angle_180(desired_deg - current_deg);
+//         master.print(0, 0, std::to_string(turn_error).c_str());
+
+//         double turn_output = turn_pid.update(turn_error);
+//         double max_output = 6000; // max motor voltage
+//         turn_output = clamp(turn_pid.update(turn_error), -max_output, max_output);
+
+//         double drive_error = dist(current.x, current.y, target.x, target.y);
+//         if(cutoff > 0 && drive_error < cutoff) break;
+
+//         drive_small_exit.update(drive_error);
+//         drive_large_exit.update(drive_error);
+
+//         double drive_scale = std::max(0.0, cos(turn_error * M_PI / 180));
+//         double drive_output = drive_pid.update(drive_error) * drive_scale;
+
+//         move_motors(drive_output - turn_output, drive_output + turn_output);
+
+//         pros::delay(10);
+
+//     }
+
+//     distance_traveled = -1;
+
+//     end_motion();
+
+// }
+
+void move_point(Point target, bool reverse, double timeout, bool async, double cutoff) {
     request_motion_start();
-    if(!motion_running) return;
+    if (!motion_running) return;
 
-    if(async) {
+    if (async) {
         pros::Task move_task([=]() mutable {
             move_point(target, reverse, timeout, false, cutoff);
         });
@@ -156,44 +246,77 @@ void move_point(Point target, bool reverse, double timeout, bool async = false, 
     }
 
     distance_traveled = 0;
-    Timer timer(timeout);  
+    Timer timer(timeout);
+
     PID drive_pid(drive_gains);
     PID turn_pid(turn_gains);
 
-    drive_small_exit.reset();
-    drive_large_exit.reset();
+    ExitCondition drive_small_exit(1.0, 200);  // 1-inch within for 200ms
+    ExitCondition drive_large_exit(5.0, 1000); // 5-inches within for 1s
 
-    while(!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone()) {
-        Point current = Point(getPose().x, getPose().y);
+    double prev_drive_out = 0;
+    double prev_turn_out = 0;
+    const double max_output = 6000;
+    const double slew_limit = 300; // adjust for smoothness
 
-        double turn_error = wrap_angle(atan2(target.y - current.y, target.x - current.x) * (180 / M_PI), 360) - wrap_angle(getPose().theta * (180 / M_PI), 360);
-        double turn_output = turn_pid.update(turn_error);
+    while (!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone()) {
+        Point current(getPose().x, getPose().y);
 
+        // Calculate angle error in compass frame (0 = +Y)
+        double dx = target.x - current.x;
+        double dy = target.y - current.y;
+        double desired_deg = atan2(dx, dy) * (180.0 / M_PI);
+        double current_deg = getPose().theta * (180.0 / M_PI);
+        double turn_error = wrap_angle_180(desired_deg - current_deg);
+
+        // Distance error
         double drive_error = dist(current.x, current.y, target.x, target.y);
-        if(cutoff > 0 && drive_error < cutoff) break;
 
-        double drive_scale = std::max(0.0, cos(turn_error * M_PI / 180));
-        double drive_output = drive_pid.update(drive_error) * drive_scale;
+        // Exit if close enough
+        if (cutoff > 0 && drive_error < cutoff) break;
 
-        move_motors(drive_output + turn_output, drive_output - turn_output);
+        drive_small_exit.update(drive_error);
+        drive_large_exit.update(drive_error);
+
+        // PID outputs
+        double raw_drive_out = drive_pid.update(drive_error);
+        double raw_turn_out = turn_pid.update(turn_error);
+
+        // Clamp turn output
+        double turn_out = std::clamp(raw_turn_out, -max_output, max_output);
+
+        // Scale drive by heading alignment (positive only)
+        double alignment = cos(turn_error * M_PI / 180.0);
+        alignment = std::max(0.0, alignment);
+
+        double drive_out = raw_drive_out * alignment;
+
+        prev_drive_out = drive_out;
+        prev_turn_out = turn_out;
+
+        // Reverse if specified
+        if (reverse) drive_out *= -1;
+
+        // Final motor outputs
+        move_motors(drive_out - turn_out, drive_out + turn_out);
+
+        pros::delay(10);
     }
 
     distance_traveled = -1;
-
     end_motion();
-
 }
 
-void ramsete(std::vector<Waypoint> waypoints, double b, double zeta, double time_multi,
-             double cutoff, double kP, double kD, bool reversed, double t_limit,
-             bool async = false) {
+void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reversed, double b, double zeta, double time_multi,
+             double cutoff,
+             bool async) {
 
     request_motion_start();
     if (!motion_running) return;
 
     if (async) {
         pros::Task ramsete_task([=]() mutable {
-            ramsete(waypoints, b, zeta, time_multi, cutoff, kP, kD, reversed, t_limit, false);
+            ramsete(waypoints, timeout, reversed, b, zeta, time_multi, cutoff, false);
         });
         end_motion();
         pros::delay(10);
@@ -202,8 +325,7 @@ void ramsete(std::vector<Waypoint> waypoints, double b, double zeta, double time
 
     const double dt = 10;
 
-    if (t_limit == 0) t_limit = 69420;
-    double t_start = pros::millis();
+    Timer timer(timeout);
 
     int waypoint_num = waypoints.size();
     double end_time = waypoints.back().t / time_multi;
@@ -222,11 +344,12 @@ void ramsete(std::vector<Waypoint> waypoints, double b, double zeta, double time
     while (time_passed < end_time - time_ahead &&
            (dist(end_x, end_y, getPose().x, getPose().y) > cutoff ||
             time_passed < end_time - time_ahead - 1000) &&
-           pros::c::millis() - t_start < t_limit) {
+           !timer.isDone()) {
 
         double robot_x = getPose().x;
         double robot_y = getPose().y;
         double robot_h = getPose(true).theta + (reversed ? M_PI : 0);
+        robot_h = wrap_angle(robot_h * 180 / M_PI, 360);
 
         // Update closest waypoint
         double cutoff_dist = dist(robot_x, robot_y, waypoints[closest_waypoint].x, waypoints[closest_waypoint].y);
@@ -239,7 +362,7 @@ void ramsete(std::vector<Waypoint> waypoints, double b, double zeta, double time
         }
 
         // Update current waypoint by time
-        time_passed = pros::c::millis() - t_start;
+        time_passed = timer.getTimePassed();
         while (current_waypoint < waypoint_num - 1 &&
                time_passed + time_ahead > waypoints[current_waypoint].t / time_multi) {
             current_waypoint++;
@@ -284,23 +407,9 @@ void ramsete(std::vector<Waypoint> waypoints, double b, double zeta, double time
         pros::Task::delay_until(&now, dt);
     }
 
-    // Final projection loop
-    auto get_error = [&]() {
-        double e = project(end_x, end_y, getPose().x, getPose().y, getPose(true).theta);
-        return reversed ? -e : e;
-    };
+    move_point(Point(end_x, end_y), reversed, 1000, false, cutoff);
 
-    double error = get_error();
-    double prev_error = error;
-
-    while (error > 1 && pros::c::millis() - t_start < t_limit) {
-        error = get_error();
-        double delta_error = error - prev_error;
-        double volts = clamp(kP * error + kD * delta_error / dt, 1.5, 12.0);
-        move_motors(volts, volts);
-        prev_error = error;
-        pros::Task::delay_until(&now, dt);
-    }
+    distance_traveled = -1;
 
     end_motion();
 }

@@ -3,7 +3,7 @@
 #include <cmath>
 #include <algorithm>
 
-double get_t_param(std::vector<Point> P) {
+double get_t_param(std::vector<ControlPoint> P) {
     double dx = P[2].x - P[0].x;
     double dy = P[2].y - P[0].y;
     double k3 = dx * dx + dy * dy;
@@ -25,7 +25,7 @@ double get_t_param(std::vector<Point> P) {
     return estimate;
 }
 
-std::vector<double> get_derivatives_quadratic_bezier(const std::vector<Point>& P, double t) {
+std::vector<double> get_derivatives_quadratic_bezier(const std::vector<ControlPoint>& P, double t) {
     double u = 1 - t;
     double u2 = u * u;
     double t2 = t * t;
@@ -43,9 +43,9 @@ std::vector<double> get_derivatives_quadratic_bezier(const std::vector<Point>& P
 }
 
 std::vector<double> get_derivatives(
-    std::vector<Point>& P,
-    std::vector<Point>& MCP,
-    Point& TP,
+    std::vector<ControlPoint>& P,
+    std::vector<ControlPoint>& MCP,
+    ControlPoint& TP,
     double t
 ) {
     const double pi_2 = M_PI / 2;
@@ -79,24 +79,28 @@ std::vector<double> get_derivatives(
 }
 
 void BezierPath::calculate_waypoints() {
-    double spacing = 0;
+    double spacing = 0.1;
 
     std::vector<Waypoint> _waypoints;
-    int paths = control_points.size();
+    int points = control_points.size();
 
     double current_time = 0;
-    double prev_x = control_points[0][0].x, prev_y = control_points[0][0].y;
+    double prev_x = control_points[0].x, prev_y = control_points[0].y;
     double prev_t = 0, prev_dx = 0, prev_dy = 0, prev_ddx = 0, prev_ddy = 0;
     bool first_loop = true;
 
-    for (int i = 0; i < paths; i++) {
+    for (int i = 0; i <= points - 4; i++) {
 
-        std::vector<Point> P = control_points[i];
+        std::vector<ControlPoint> P;
+
+        for(int j = 0; j < 4; ++j) {
+            P.push_back(control_points[i + j]);
+        }
 
         int n = std::hypot(P[2].x - P[1].x, P[2].y - P[1].y) / spacing;
 
-        std::vector<Point> MCP(2, {0, 0});
-        Point TP;
+        std::vector<ControlPoint> MCP(2, {0, 0});
+        ControlPoint TP;
 
         double t_param = get_t_param({P[0], P[1], P[2]});
         MCP[0].x = (P[1].x - (1 - t_param) * (1 - t_param) * P[0].x - t_param * t_param * P[2].x) /
@@ -105,7 +109,7 @@ void BezierPath::calculate_waypoints() {
                 (2 * t_param * (1 - t_param));
         TP.x = t_param;
     
-        double t_param = get_t_param({P[1], P[2], P[3]});
+        t_param = get_t_param({P[1], P[2], P[3]});
         MCP[1].x = (P[2].x - (1 - t_param) * (1 - t_param) * P[1].x - t_param * t_param * P[3].x) /
                 (2 * t_param * (1 - t_param));
         MCP[1].y = (P[2].y - (1 - t_param) * (1 - t_param) * P[1].y - t_param * t_param * P[3].y) /
@@ -119,7 +123,7 @@ void BezierPath::calculate_waypoints() {
             point.y = derivatives[1];
             point.theta = std::atan2(derivatives[3], derivatives[2]);
 
-            double linvel = (1 - t / (M_PI / 2)) * start_linvel + (t / (M_PI / 2)) * end_linvel;
+            double linvel = (1 - t / (M_PI / 2)) * P[1].velocity + (t / (M_PI / 2)) * P[2].velocity;
             double in_per_sec = linvel * 0.01 * MAX_RPM / 60 * GEAR_RATIO * CIRC;
 
             double curvature = 0, rad_per_sec = 0;
@@ -130,10 +134,6 @@ void BezierPath::calculate_waypoints() {
             }
 
             double angvel = rad_per_sec * TRACK_WIDTH / (0.01 * MAX_RPM / 60 * GEAR_RATIO * CIRC);
-
-            // double angvel_multi1 = (P[1].size() >= 4) ? P[1][3] : 1;
-            // double angvel_multi2 = (P[2].size() >= 4) ? P[2][3] : 1;
-            // angvel *= (1 - t / pi_2) * angvel_multi1 + (t / pi_2) * angvel_multi2;
 
             double r_vel = linvel + angvel / 2;
             double l_vel = linvel - angvel / 2;

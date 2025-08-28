@@ -2,6 +2,8 @@
 #include "mcl.h"
 #include "config.h"
 
+#define FUCKED_ODOM_CONSTANT 1.2
+
 Pose robot_pose = Pose(0, 0, 0);
 Pose robot_speed = Pose(0, 0, 0);
 
@@ -44,7 +46,7 @@ void update_odom() {
     double local_y = 0;
 
     if(std::fabs(theta_delta) < 1e-6) local_y = mid_delta_in; 
-    else local_y = 2 * sin(theta_delta / 2.0) * (mid_delta_in / theta_delta);
+    else local_y = 2 * sin(theta_delta / 2.0) * (mid_delta_in / theta_delta) * FUCKED_ODOM_CONSTANT;
 
     prev_left_raw = left_raw;
     prev_right_raw = right_raw;

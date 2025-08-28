@@ -2,7 +2,7 @@
 #define INIT_STDEV 2.0
 #define SENSOR_STDEV 0.75
 
-#define LATERAL_STDEV 0.2
+// #define LATERAL_STDEV 0.2
 
 #include "api.h"
 #include "odom.h"
@@ -15,7 +15,7 @@
 #include <fstream>
 #include <climits>
 
-MCLDistance back(10, Pose(2.5, -6, M_PI)); // in standard angle!!
+MCLDistance back(10, Pose(2.5, -6, M_PI));
 MCLDistance left(2, Pose(-4.625, 1.375, -M_PI/2));
 MCLDistance right(9, Pose(4.625, 1.375, M_PI/2));
 
@@ -37,15 +37,14 @@ double MCLDistance::get_reading() {
 }
 
 double get_expected_reading(Pose particle_pose, Pose offset) {
-    double robot_theta = getPose(true).theta;
+    double robot_theta = getPose().theta;
 
-    // Transform sensor offset relative to robot heading
-    double sensor_x = particle_pose.x - offset.x * cos(robot_theta) + offset.y * sin(robot_theta);
-    double sensor_y = particle_pose.y - offset.x * sin(robot_theta) - offset.y * cos(robot_theta);
+    double sensor_x = particle_pose.x + offset.x * cos(robot_theta) - offset.y * sin(robot_theta);
+    double sensor_y = particle_pose.y + offset.x * sin(robot_theta) + offset.y * cos(robot_theta);
 
     // Beam direction: standard math convention, 0 = +x
-    double dx = sin(robot_theta + offset.theta - M_PI/2);
-    double dy = cos(robot_theta + offset.theta - M_PI/2);
+    double dx = sin(robot_theta + offset.theta);
+    double dy = cos(robot_theta + offset.theta);
 
     double tMin = 1e6;
 
@@ -80,7 +79,19 @@ double get_expected_reading(Pose particle_pose, Pose offset) {
     double x_intersect = fabs(sensor_x + tMin * dx);
     double y_intersect = fabs(sensor_y + tMin * dy);
 
-    if(x_intersect - 48.0 < 6.0 && y_intersect - 72.0 < 1.0) return -1;
+    if (y_intersect > 71.0 && y_intersect < 73.0) { // top wall
+        if ((x_intersect >= -54.0 && x_intersect <= -42.0) ||
+            (x_intersect >= 42.0 && x_intersect <= 54.0)) {
+            return -1; // in deadzone
+        }
+    }
+
+    if (y_intersect > -73.0 && y_intersect < -71.0) { // bottom wall
+        if ((x_intersect >= -54.0 && x_intersect <= -42.0) ||
+            (x_intersect >= 42.0 && x_intersect <= 54.0)) {
+            return -1; // in deadzone
+        }
+    }
 
     return tMin;
 }
@@ -155,13 +166,13 @@ void initialize_particles() {
         particles[i].weight = 1.0 / NUM_PARTICLES;
     }
 
-    log_mcl();
+    // log_mcl();
 }
 
 #define MAX_ERROR 6.0
 #define MAX_LATERAL_ERROR 6.0
 
-std::normal_distribution<double> lateral_noise(0, LATERAL_STDEV);
+// std::normal_distribution<double> lateral_noise(0, LATERAL_STDEV);
 static std::normal_distribution<double> odom_noise;
 
 void update_particles() {
@@ -185,13 +196,11 @@ void update_particles() {
         particles[i].pose.x = clamp_field(
             particles[i].pose.x + 
             robot_speed.x + 
-            odom_noise(rng) - 
-            sin_theta * lateral_noise(rng));
+            odom_noise(rng));
         particles[i].pose.y = clamp_field(
             particles[i].pose.y + 
             robot_speed.y + 
-            odom_noise(rng) + 
-            cos_theta * lateral_noise(rng));
+            odom_noise(rng));
 
         double left_expected = get_expected_reading(particles[i].pose, left.offset);
         double right_expected = get_expected_reading(particles[i].pose, right.offset);
@@ -253,7 +262,7 @@ void update_particles() {
         }
     }
 
-    log_mcl();
+    // log_mcl();
 
 }
 
@@ -283,5 +292,5 @@ void resample_particles() {
         p.weight = 1.0 / NUM_PARTICLES;
     }
     particles = newParticles;
-    log_mcl();
+    // log_mcl();
 }

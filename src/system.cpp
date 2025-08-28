@@ -5,13 +5,14 @@
 #include "api.h"
 #include "mcl.h"
 #include "misc.h"
+#include "notif.h"
 
 bool match;
 
 void system();
 
 void initialize() {
-	static Gif gif("/usd/miku.gif", lv_scr_act());
+	// static Gif gif("/usd/miku.gif", lv_scr_act());
 	imu.reset();
 	while(imu.is_calibrating()) {
 		pros::delay(10); // Wait for IMU calibration
@@ -19,35 +20,44 @@ void initialize() {
 
     match = pros::competition::is_competition_switch();
 
-    system();
-}
-
-void system() {
-    
-    // disabled
-
-    // auton selector
-
-    init_odom(Pose(0, 0, 0));
+    init_odom(Pose(24, -48, 0));
     initialize_particles();
 
-    // wait for autonomous
-
-    while(!pros::competition::is_autonomous()) {
-        pros::delay(50);
-    }
+    pros::Task display_task(display);
 
     pros::Task autonomous_task([]() {
         while (true) {
             update_odom();
             update_particles();
 
-            setPose(get_pose_estimate());
+            Pose belief = get_pose_estimate();
+            belief.theta = getPose().theta;
+            setPose(belief);
 
             resample_particles();
 
             pros::delay(10);
         }
     });
-
 }
+
+// void system() {
+    
+//     // disabled
+
+//     // auton selector
+
+//     init_odom(Pose(24, -48, 0));
+//     initialize_particles();
+
+//     // wait for autonomous
+
+//     if(match) {
+//         while(!pros::competition::is_autonomous()) {
+//             pros::delay(50);
+//         }
+//     }
+
+    
+
+// }

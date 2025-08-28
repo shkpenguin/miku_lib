@@ -33,13 +33,13 @@ bool lock = false;
 bool loading = false;
 bool descore = false;
 
-pros::Task rumbleTask([]() {
-    while (true) {
-        if(!lock) master.rumble(".");
-        flush_logs();
-        pros::delay(1500); // Check every 100ms
-    }
-});
+// pros::Task rumbleTask([]() {
+//     while (true) {
+//         if(!lock) master.rumble(".");
+//         flush_logs();
+//         pros::delay(1500); // Check every 100ms
+//     }
+// });
 
 void opcontrol() {
 
@@ -48,6 +48,10 @@ void opcontrol() {
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
             driveMode = (driveMode == DriveMode::TANK) ? DriveMode::ARCADE : DriveMode::TANK;
             master.rumble("."); // Short vibration to indicate mode change
+        }
+
+        if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+            autonomous();
         }
 
         if(driveMode == DriveMode::TANK) {

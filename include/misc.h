@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include "config.h"
 #include "util.h"
 #include "mp.h"
 

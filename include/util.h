@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include "config.h"
 
 inline double clamp(double value, double min, double max) {
     if(value < min) return min;
@@ -29,30 +28,16 @@ inline double wrap_angle(double angle, double range = 2.0 * M_PI) {
     return angle - range / 2.0;
 }
 
+inline double wrap_angle_180(double angle) {
+    angle = std::fmod(angle + 180.0, 360.0);
+    if (angle < 0) angle += 360.0;
+    return angle - 180.0;
+}
+
 inline double dist(double x1, double y1, double x2, double y2) {
     return std::hypot(x2 - x1, y2 - y1);
 }
 
 inline double angle_error(double target, double current) {
     return wrap_angle(target - current, 2.0 * M_PI);
-}
-
-void move_motors(double l, double r, bool reversed = false) {
-    if (reversed) {
-        left_motors.move_voltage(-l);
-        right_motors.move_voltage(-r);
-    } else {
-        left_motors.move_voltage(l);
-        right_motors.move_voltage(r);
-    }
-}
-
-void stop_motors() {
-    left_motors.move_velocity(0);
-    right_motors.move_velocity(0);
-}
-
-void set_drive_brake(pros::motor_brake_mode_e mode) {
-    left_motors.set_brake_mode_all(mode);
-    right_motors.set_brake_mode_all(mode);
 }

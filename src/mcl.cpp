@@ -1,6 +1,6 @@
 #define NUM_PARTICLES 500
 #define INIT_STDEV 2.0
-#define SENSOR_STDEV 0.75
+#define SENSOR_STDEV 1.0
 
 // #define LATERAL_STDEV 0.2
 
@@ -8,6 +8,7 @@
 #include "odom.h"
 #include "util.h"
 #include "mcl.h"
+#include "config.h"
 #include <random>
 #include <cmath>
 #include <vector>
@@ -99,10 +100,12 @@ double get_expected_reading(Pose particle_pose, Pose offset) {
 std::vector<Particle> particles(NUM_PARTICLES);
 std::mt19937_64 rng(std::random_device{}());
 
-std::ofstream file("log.txt");
+std::ofstream file;
 std::ostringstream log_buffer;
 
 void log_mcl() {
+
+    // file << "meow";
 
     if (!file.is_open()) {
         // Handle error
@@ -131,6 +134,7 @@ void log_mcl() {
 
 void flush_logs() {
     file << log_buffer.str();
+    file.flush();
     log_buffer.str("");
     log_buffer.clear();
 }
@@ -157,6 +161,13 @@ Pose get_pose_estimate() {
 }
 
 void initialize_particles() {
+
+    file.open("log.txt");
+
+    if(!file.is_open()) {
+        master.set_text(0, 0, "Failed to open log file");
+        return;
+    }
 
     Pose robot_pose = getPose();
     for(int i = 0; i < NUM_PARTICLES; ++i) {

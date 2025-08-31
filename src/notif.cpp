@@ -6,6 +6,7 @@
 #include "timer.h"
 #include "odom.h"
 #include "mcl.h"
+#include "misc.h"
 #include <vector>
 
 struct DisplayItem {
@@ -162,15 +163,21 @@ void display() {
     int default_index = 0;
     int display_index = 0;
     Timer item_timer(0);
+    Timer rumble_timer(1000);
 
     DisplayItem current;
 
     while(true) {
 
         pros::delay(100);
+        if(!get_lock() && rumble_timer.isDone()) {
+            master.rumble("-");
+            rumble_timer.reset();
+            continue;
+        }
 
         if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
-            master.rumble(".");
+            master.rumble("-");
             display_index = (display_index + 1) % displays.size();
             default_index = 0;
             master.set_text(0, 0, "            ");

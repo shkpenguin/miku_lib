@@ -20,14 +20,13 @@ void end_motion();
 void cancel_motion();
 void cancel_all_motions();
 
-void turn_heading(double target, bool reverse, double timeout, bool async = false, double cutoff = -1.0);
-void turn_point(Point target, bool reverse, double timeout, bool async = false, double cutoff = -1.0);
+void turn_heading(double target, double timeout, bool reverse, bool async = false, double cutoff = -1.0);
+void turn_point(Point target, double timeout, bool reverse, bool async = false, double cutoff = -1.0);
 
-void swing_heading(double target, Side locked_side, bool reverse, double timeout, bool async = false, double cutoff = -1.0);
-void swing_point(Point target, Side locked_side, bool reverse, double timeout, bool async = false, double cutoff = -1.0);
+void swing_heading(double target, Side locked_side, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
+void swing_point(Point target, Side locked_side, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
 
-void move_point(Point target, bool reverse, double timeout, bool async = false, double cutoff = -1.0);
+void move_point(Point target, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
 
-void ramsete(std::vector<Waypoint> waypoints, double b, double zeta, double time_multi,
-             double cutoff, double kP, double kD, bool reversed, double t_limit,
-             bool async = false);
+void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reverse = false, bool async = false, double cutoff = 6,
+    double b = 0.01, double zeta = 0.7, double time_multi = 1.2);

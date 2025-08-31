@@ -12,7 +12,7 @@ bool match;
 void system();
 
 void initialize() {
-	// static Gif gif("/usd/miku.gif", lv_scr_act());
+	static Gif gif("/usd/miku.gif", lv_scr_act());
 	imu.reset();
 	while(imu.is_calibrating()) {
 		pros::delay(10); // Wait for IMU calibration
@@ -20,12 +20,10 @@ void initialize() {
 
     match = pros::competition::is_competition_switch();
 
-    init_odom(Pose(24, -48, 0));
-    initialize_particles();
-
-    pros::Task display_task(display);
-
     pros::Task autonomous_task([]() {
+        setPose({24, -48, 0});
+        initialize_particles();
+
         while (true) {
             update_odom();
             update_particles();
@@ -39,11 +37,19 @@ void initialize() {
             pros::delay(10);
         }
     });
+
+    pros::Task flush_task([]() {
+        while(true) {
+            flush_logs();
+            pros::delay(1000);
+            // master.rumble(".");
+        }
+    });
 }
 
 // void system() {
-    
-//     // disabled
+
+    // disabled
 
 //     // auton selector
 

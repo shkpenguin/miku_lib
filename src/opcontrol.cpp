@@ -2,6 +2,8 @@
 #include "main.h"
 #include "timer.h"
 #include "mcl.h"
+#include "misc.h"
+#include "notif.h"
 
 enum class DriveMode {
     TANK = 0,
@@ -33,15 +35,15 @@ bool lock = false;
 bool loading = false;
 bool descore = false;
 
-// pros::Task rumbleTask([]() {
-//     while (true) {
-//         if(!lock) master.rumble(".");
-//         flush_logs();
-//         pros::delay(1500); // Check every 100ms
-//     }
-// });
+bool get_lock() {
+    return lock;
+}
 
 void opcontrol() {
+
+    pros::Task display_task(display);
+
+    int count = 0;
 
     while (true) {
 
@@ -92,7 +94,9 @@ void opcontrol() {
         }
 
         else if(shift2) {
-            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
+            if(!loading && (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2) || 
+                master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) &&
+                master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2))) {
                 hood_up = !hood_up;
                 hood_piston.set_value(hood_up);
             }

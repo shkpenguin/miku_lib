@@ -85,3 +85,5 @@ enum Side {
     LEFT,
     RIGHT
 };
+
+bool get_lock();

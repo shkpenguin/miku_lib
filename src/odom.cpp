@@ -60,7 +60,3 @@ void update_odom() {
     robot_pose.theta = theta_raw;
 
 }
-
-void init_odom(Pose initial_pose) {
-    setPose(initial_pose);
-}

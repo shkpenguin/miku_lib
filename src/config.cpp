@@ -24,8 +24,8 @@ pros::adi::DigitalOut lock_piston('B');
 pros::adi::DigitalOut loader_piston('C');
 pros::adi::DigitalOut descore_piston('D');
 
-Gains drive_gains(100.0, 0.0, 0.0);
-Gains turn_gains(83.0, 0.0, 330.0);
+Gains drive_gains(200.0, 0.0, 0.0);
+Gains turn_gains(100.0, 0.0, 400.0);
 
 ExitCondition drive_small_exit(1.0, 200);
 ExitCondition drive_large_exit(5.0, 1000);

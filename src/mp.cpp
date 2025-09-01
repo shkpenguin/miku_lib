@@ -1,5 +1,4 @@
 #include "mp.h"
-#include "odom.h"
 #include <cmath>
 #include <algorithm>
 
@@ -7,7 +6,7 @@ double get_t_param(std::vector<ControlPoint> P) {
     double dx = P[2].x - P[0].x;
     double dy = P[2].y - P[0].y;
     double k3 = dx * dx + dy * dy;
-    double k2 = 3 * (dx * (P[0].x - P[1].x) + dy * (P[0].x - P[1].x));
+    double k2 = 3 * (dx * (P[0].x - P[1].x) + dy * (P[0].y - P[1].y));
     double k1 = (3 * P[0].x - 2 * P[1].x - P[2].x) * (P[0].x - P[1].x) +
                 (3 * P[0].y - 2 * P[1].y - P[2].y) * (P[0].y - P[1].y);
     double k0 = -((P[0].x - P[1].x) * (P[0].x - P[1].x) +
@@ -149,7 +148,8 @@ void BezierPath::calculate_waypoints() {
             point.linvel = in_per_sec;
             point.angvel = rad_per_sec;
 
-            current_time += std::hypot(prev_x - point.x, prev_y - point.y) / in_per_sec * 1000;
+            if(in_per_sec > 0) current_time += std::hypot(prev_x - point.x, prev_y - point.y) / in_per_sec * 1000;
+            else current_time = 0;
             point.t = current_time;
 
             point.dx = point.linvel * std::cos(point.theta);

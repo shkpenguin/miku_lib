@@ -161,7 +161,7 @@ void display() {
 void display() {
 
     int default_index = 0;
-    int display_index = 0;
+    int display_index = 1;
     Timer item_timer(0);
     Timer rumble_timer(1000);
 

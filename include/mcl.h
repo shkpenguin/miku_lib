@@ -22,6 +22,6 @@ double get_expected_reading(Pose particle_pose, Pose offset);
 void log_mcl();
 void flush_logs();
 Pose get_pose_estimate();
-void initialize_particles();
+void initialize_mcl();
 void update_particles();
 void resample_particles();

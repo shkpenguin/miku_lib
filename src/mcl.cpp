@@ -141,6 +141,7 @@ void flush_logs() {
 
 std::normal_distribution<double> init(0, INIT_STDEV);
 
+// DOES NOT FIX THETA
 Pose get_pose_estimate() {
     double x = 0.0;
     double y = 0.0;
@@ -160,16 +161,17 @@ Pose get_pose_estimate() {
     return Pose(x, y, 0.0);
 }
 
-void initialize_particles() {
+void initialize_mcl() {
 
-    file.open("log.txt");
+    // file.open("log.txt");
 
-    if(!file.is_open()) {
-        master.set_text(0, 0, "Failed to open log file");
-        return;
-    }
+    // if(!file.is_open()) {
+    //     master.set_text(0, 0, "Failed to open log file");
+    //     return;
+    // }
 
     Pose robot_pose = getPose();
+
     for(int i = 0; i < NUM_PARTICLES; ++i) {
         double rand_x = init(rng);
         double rand_y = init(rng);

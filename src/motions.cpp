@@ -36,6 +36,12 @@ void wait_until_done() {
     } while(distance_traveled != -1);
 }
 
+void wait_until_within(Point target, double threshold) {
+    do {
+        pros::delay(10);
+    } while (std::hypot(getPose().x - target.x, getPose().y - target.y) > threshold);
+}
+
 void request_motion_start() {
     if(motion_running) motion_queued = true;
     else {
@@ -67,7 +73,7 @@ void turn_heading(double target, double timeout, bool reverse, bool async, doubl
     if (!motion_running) return;
 
     if (async) {
-        pros::Task([=]() { turn_heading(target, timeout, reverse, false, cutoff); });
+        pros::Task([&]() { turn_heading(target, timeout, reverse, false, cutoff); });
         end_motion();
         pros::delay(10);
         return;
@@ -121,7 +127,7 @@ void swing_heading(double target, Side locked_side, double timeout, bool reverse
     if(!motion_running) return;
 
     if(async) {
-        pros::Task swing_task([=]() mutable {
+        pros::Task swing_task([&]() mutable {
             swing_heading(target, locked_side, timeout, reverse, false, cutoff);
         });
         end_motion();
@@ -174,7 +180,7 @@ void move_point(Point target, double timeout, bool reverse, bool async, double c
     if (!motion_running) return;
 
     if (async) {
-        pros::Task move_task([=]() {
+        pros::Task move_task([&]() {
             move_point(target, timeout, reverse, false, cutoff);
         });
         end_motion();
@@ -255,7 +261,7 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reverse, bool
     if (!motion_running) return;
 
     if (async) {
-        pros::Task ramsete_task([=]() {
+        pros::Task ramsete_task([&]() {
             ramsete(waypoints, timeout, reverse, false, cutoff, b, zeta, time_multi);
         });
         end_motion();
@@ -361,9 +367,9 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reverse, bool
         pros::Task::delay_until(&now, dt);
     }
 
-    distance_traveled = -1;
-
     end_motion();
+
+    distance_traveled = 0;
 
     move_point(Point(end_x, end_y), 1000, reverse, async, cutoff);
 

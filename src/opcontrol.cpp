@@ -4,6 +4,7 @@
 #include "mcl.h"
 #include "misc.h"
 #include "notif.h"
+#include "motions.h"
 
 enum class DriveMode {
     TANK = 0,
@@ -41,8 +42,6 @@ bool get_lock() {
 
 void opcontrol() {
 
-    pros::Task display_task(display);
-
     int count = 0;
 
     while (true) {
@@ -53,7 +52,11 @@ void opcontrol() {
         }
 
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
-            autonomous();
+            // display_task.suspend();
+            // tune_lut();
+            // break;
+
+            turn_heading(30, 10000);
         }
 
         if(driveMode == DriveMode::TANK) {

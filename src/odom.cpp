@@ -16,14 +16,13 @@ Pose getSpeed() {
     return robot_speed;
 }
 
-Pose setPose(Pose new_pose) {
+void setPose(Pose new_pose) {
     robot_pose = new_pose;
-    return robot_pose;
 }
 
 double prev_left_raw = 0;
 double prev_right_raw = 0;
-double prev_theta_raw = 0;
+double prev_theta_raw = robot_pose.theta * 180.0 / M_PI;
 
 void update_odom() {
 
@@ -36,6 +35,8 @@ void update_odom() {
     double right_delta = right_raw - prev_right_raw;
 
     double theta_delta = theta_raw - prev_theta_raw;
+
+    double heading = robot_pose.theta + theta_delta;
     double avg_heading = robot_pose.theta + theta_delta / 2;
 
     double left_delta_in = left_delta * WHEEL_DIAMETER * M_PI / 360.0;
@@ -57,6 +58,6 @@ void update_odom() {
 
     robot_pose.x += robot_speed.x;
     robot_pose.y += robot_speed.y;
-    robot_pose.theta = theta_raw;
+    robot_pose.theta = heading;
 
 }

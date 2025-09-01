@@ -87,3 +87,5 @@ enum Side {
 };
 
 bool get_lock();
+
+void tune_lut();

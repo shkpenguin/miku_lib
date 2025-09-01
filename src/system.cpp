@@ -7,9 +7,9 @@
 #include "misc.h"
 #include "notif.h"
 
-bool match;
+// bool match;
 
-void system();
+// void system();
 
 void initialize() {
 	static Gif gif("/usd/miku.gif", lv_scr_act());
@@ -18,33 +18,21 @@ void initialize() {
 		pros::delay(10); // Wait for IMU calibration
 	}
 
-    match = pros::competition::is_competition_switch();
+    pros::Task display_task(display);
 
-    pros::Task autonomous_task([]() {
-        setPose({24, -48, 0});
-        initialize_particles();
+    // match = pros::competition::is_competition_switch();
 
-        while (true) {
-            update_odom();
-            update_particles();
+    // while(!pros::competition::is_autonomous() || !pros::competition::is_field_control) {
+    //     pros::delay(50);
+    // }
 
-            Pose belief = get_pose_estimate();
-            belief.theta = getPose().theta;
-            setPose(belief);
-
-            resample_particles();
-
-            pros::delay(10);
-        }
-    });
-
-    pros::Task flush_task([]() {
-        while(true) {
-            flush_logs();
-            pros::delay(1000);
-            // master.rumble(".");
-        }
-    });
+    // pros::Task flush_task([]() {
+    //     while(true) {
+    //         flush_logs();
+    //         pros::delay(1000);
+    //         // master.rumble(".");
+    //     }
+    // });
 }
 
 // void system() {

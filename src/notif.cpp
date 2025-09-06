@@ -42,17 +42,17 @@ std::vector<DisplayItem> code_display = {
         }, 
         2000, 
         NotificationType::DISPLAY
-    ),
-    DisplayItem(
-        []() -> std::string { 
-            if(imu.is_calibrating()) return "IMU calibrating";
-            return fmt::format("{:.2f}", get_expected_reading(getPose(), back.offset)) + " " + 
-                   fmt::format("{:.2f}", get_expected_reading(getPose(), left.offset)) + " " + 
-                   fmt::format("{:.2f}", get_expected_reading(getPose(), right.offset));
-        }, 
-        2000, 
-        NotificationType::DISPLAY
     )
+    // DisplayItem(
+    //     []() -> std::string { 
+    //         if(imu.is_calibrating()) return "IMU calibrating";
+    //         return fmt::format("{:.2f}", get_expected_reading(getPose(), back.offset)) + " " + 
+    //                fmt::format("{:.2f}", get_expected_reading(getPose(), left.offset)) + " " + 
+    //                fmt::format("{:.2f}", get_expected_reading(getPose(), right.offset));
+    //     }, 
+    //     2000, 
+    //     NotificationType::DISPLAY
+    // )
 };
 
 std::vector<DisplayItem> temp_display = {

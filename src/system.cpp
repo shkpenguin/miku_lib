@@ -18,6 +18,10 @@ void initialize() {
 		pros::delay(10); // Wait for IMU calibration
 	}
 
+    left_motors.tare_position_all();
+    right_motors.tare_position_all();
+    intake.tare_position_all();
+
     pros::Task display_task(display);
 
     // match = pros::competition::is_competition_switch();
@@ -26,13 +30,6 @@ void initialize() {
     //     pros::delay(50);
     // }
 
-    // pros::Task flush_task([]() {
-    //     while(true) {
-    //         flush_logs();
-    //         pros::delay(1000);
-    //         // master.rumble(".");
-    //     }
-    // });
 }
 
 // void system() {

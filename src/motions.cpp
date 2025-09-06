@@ -69,6 +69,7 @@ void cancel_all_motions() {
 }
 
 void turn_heading(double target, double timeout, bool reverse, bool async, double cutoff) {
+
     request_motion_start();
     if (!motion_running) return;
 
@@ -85,7 +86,7 @@ void turn_heading(double target, double timeout, bool reverse, bool async, doubl
     if (reverse) target = wrap_angle_180(target + 180);
 
     // PID tuned in degrees
-    PID turn_pid(turn_gains);  
+    PID turn_pid(turn_gains, 2.0, true);  
 
     ExitCondition turnSmallExit(1.0, 100);  // 1 degree
     ExitCondition turnLargeExit(3.0, 500);  // 3 degrees
@@ -100,9 +101,6 @@ void turn_heading(double target, double timeout, bool reverse, bool async, doubl
 
         double output = turn_pid.update(error);
 
-        // optional clamp if your PID output is voltage
-        output = clamp(output, -12000, 12000);
-
         move_motors(output, -output);
 
         turnSmallExit.update(error);
@@ -112,8 +110,10 @@ void turn_heading(double target, double timeout, bool reverse, bool async, doubl
     }
 
     stop_motors();
+
     distance_traveled = -1;
     end_motion();
+
 }
 
 void turn_point(Point target, double timeout, bool reverse, bool async, double cutoff) {
@@ -192,7 +192,7 @@ void move_point(Point target, double timeout, bool reverse, bool async, double c
     Timer timer(timeout);
 
     PID drive_pid(drive_gains);
-    PID turn_pid(turn_gains);
+    PID turn_pid(angular_gains, 2.0, true);
 
     ExitCondition drive_small_exit(1.0, 200);  // 1-inch within for 200ms
     ExitCondition drive_large_exit(3.0, 500); // 5-inches within for 1s

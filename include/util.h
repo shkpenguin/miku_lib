@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#define HALF_FIELD 70.8
+
 inline double clamp(double value, double min, double max) {
     if(value < min) return min;
     if(value > max) return max;
@@ -9,7 +11,7 @@ inline double clamp(double value, double min, double max) {
 }
 
 inline double clamp_field(double value) {
-    return clamp(value, -72.0, 72.0);
+    return clamp(value, -HALF_FIELD, HALF_FIELD);
 }
 
 inline double sign(double value) {

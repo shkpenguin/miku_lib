@@ -1,5 +1,5 @@
 #define NUM_PARTICLES 500
-#define INIT_STDEV 2.0
+#define INIT_STDEV 1.0
 #define SENSOR_STDEV 1.0
 
 // #define LATERAL_STDEV 0.2
@@ -17,8 +17,8 @@
 #include <climits>
 
 MCLDistance back(10, Pose(2.5, -6, M_PI));
-MCLDistance left(2, Pose(-4.625, 1.375, -M_PI/2));
-MCLDistance right(9, Pose(4.625, 1.375, M_PI/2));
+MCLDistance left(2, Pose(-4.625, 1.375, M_PI/2));
+MCLDistance right(9, Pose(4.625, 1.375, -M_PI/2));
 
 bool MCLDistance::update_reading() {
 
@@ -38,63 +38,66 @@ double MCLDistance::get_reading() {
 }
 
 double get_expected_reading(Pose particle_pose, Pose offset) {
-    double robot_theta = getPose().theta;
+    double robot_theta = getPose(true).theta;
 
-    double sensor_x = particle_pose.x + offset.x * cos(robot_theta) - offset.y * sin(robot_theta);
-    double sensor_y = particle_pose.y + offset.x * sin(robot_theta) + offset.y * cos(robot_theta);
+    double cos_theta = cos(robot_theta);
+    double sin_theta = sin(robot_theta);
 
-    // Beam direction: standard math convention, 0 = +x
-    double dx = sin(robot_theta + offset.theta);
-    double dy = cos(robot_theta + offset.theta);
+    double sensor_x = particle_pose.x + offset.x * sin_theta + offset.y * cos_theta;
+    double sensor_y = particle_pose.y - offset.x * cos_theta + offset.y * sin_theta;
 
-    double tMin = 1e6;
+    double dx = cos(robot_theta + offset.theta);
+    double dy = sin(robot_theta + offset.theta);
 
-    // Check X boundaries (-72 to 72)
-    if (std::abs(dx) > 1e-6) {
-        double t1 = (-72.0 - sensor_x) / dx;
+    double tMin = std::numeric_limits<double>::infinity();
+
+    // Check vertical walls
+    if (fabs(dx) > 1e-6) {
+        double t1 = (-HALF_FIELD - sensor_x) / dx;
         if (t1 > 0) {
             double y1 = sensor_y + t1 * dy;
-            if (y1 >= -72.0 && y1 <= 72.0) tMin = std::min(tMin, t1);
+            if (y1 >= -HALF_FIELD && y1 <= HALF_FIELD)
+                tMin = std::min(tMin, t1);
         }
-        double t2 = (72.0 - sensor_x) / dx;
+        double t2 = (HALF_FIELD - sensor_x) / dx;
         if (t2 > 0) {
             double y2 = sensor_y + t2 * dy;
-            if (y2 >= -72.0 && y2 <= 72.0) tMin = std::min(tMin, t2);
+            if (y2 >= -HALF_FIELD && y2 <= HALF_FIELD)
+                tMin = std::min(tMin, t2);
         }
     }
 
-    // Check Y boundaries (-72 to 72)
-    if (std::abs(dy) > 1e-6) {
-        double t3 = (-72.0 - sensor_y) / dy;
+    // Check horizontal walls
+    if (fabs(dy) > 1e-6) {
+        double t3 = (-HALF_FIELD - sensor_y) / dy;
         if (t3 > 0) {
             double x3 = sensor_x + t3 * dx;
-            if (x3 >= -72.0 && x3 <= 72.0) tMin = std::min(tMin, t3);
+            if (x3 >= -HALF_FIELD && x3 <= HALF_FIELD)
+                tMin = std::min(tMin, t3);
         }
-        double t4 = (72.0 - sensor_y) / dy;
+        double t4 = (HALF_FIELD - sensor_y) / dy;
         if (t4 > 0) {
             double x4 = sensor_x + t4 * dx;
-            if (x4 >= -72.0 && x4 <= 72.0) tMin = std::min(tMin, t4);
+            if (x4 >= -HALF_FIELD && x4 <= HALF_FIELD)
+                tMin = std::min(tMin, t4);
         }
     }
 
-    double x_intersect = fabs(sensor_x + tMin * dx);
-    double y_intersect = fabs(sensor_y + tMin * dy);
+    if (!std::isfinite(tMin)) return -2; // no valid hit
 
-    if (y_intersect > 71.0 && y_intersect < 73.0) { // top wall
+    double x_intersect = sensor_x + tMin * dx;
+    double y_intersect = sensor_y + tMin * dy;
+
+    // Deadzone check (example for top/bottom walls)
+    if (fabs(y_intersect - HALF_FIELD) < 1.0 || fabs(y_intersect + HALF_FIELD) < 1.0) {
         if ((x_intersect >= -54.0 && x_intersect <= -42.0) ||
-            (x_intersect >= 42.0 && x_intersect <= 54.0)) {
-            return -1; // in deadzone
+            (x_intersect >=  42.0 && x_intersect <=  54.0)) {
+            return -1;
         }
     }
 
-    if (y_intersect > -73.0 && y_intersect < -71.0) { // bottom wall
-        if ((x_intersect >= -54.0 && x_intersect <= -42.0) ||
-            (x_intersect >= 42.0 && x_intersect <= 54.0)) {
-            return -1; // in deadzone
-        }
-    }
+    return tMin; // distance along ray
 
-    return tMin;
 }
 
 std::vector<Particle> particles(NUM_PARTICLES);
@@ -107,10 +110,10 @@ void log_mcl() {
 
     // file << "meow";
 
-    if (!file.is_open()) {
-        // Handle error
-        return;
-    }
+    // if (!file.is_open()) {
+    //     // Handle error
+    //     return;
+    // }
 
     Pose robot_pose = getPose();
 
@@ -163,7 +166,7 @@ Pose get_pose_estimate() {
 
 void initialize_mcl() {
 
-    // file.open("log.txt");
+    file.open("log.txt");
 
     // if(!file.is_open()) {
     //     master.set_text(0, 0, "Failed to open log file");
@@ -182,7 +185,7 @@ void initialize_mcl() {
     // log_mcl();
 }
 
-#define MAX_ERROR 6.0
+#define MAX_ERROR 3.0
 #define MAX_LATERAL_ERROR 6.0
 
 // std::normal_distribution<double> lateral_noise(0, LATERAL_STDEV);
@@ -202,8 +205,7 @@ void update_particles() {
     bool useRight = right.update_reading();
     bool useBack = back.update_reading();
 
-    double total_weight = 0.0; 
-    int invalid_updates = 0;
+    double total_weight = 0.0;
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
         particles[i].pose.x = clamp_field(
@@ -219,9 +221,9 @@ void update_particles() {
         double right_expected = get_expected_reading(particles[i].pose, right.offset);
         double back_expected = get_expected_reading(particles[i].pose, back.offset);
 
-        bool left_valid = useLeft && left_expected >= 0;
-        bool right_valid = useRight && right_expected >= 0;
-        bool back_valid = useBack && back_expected >= 0;
+        bool left_valid = useLeft && left_expected != -2;
+        bool right_valid = useRight && right_expected != -2;
+        bool back_valid = useBack && back_expected != -2;
 
         double weight = 1.0;
 
@@ -229,31 +231,33 @@ void update_particles() {
         double right_dev = fabs(right.get_reading() - right_expected);
         double back_dev = fabs(back.get_reading() - back_expected);
 
-        left_valid = left_valid && left_dev < MAX_ERROR;
-        right_valid = right_valid && right_dev < MAX_ERROR;
-        back_valid = back_valid && back_dev < MAX_ERROR;
-
-        int valid_count = 0; // Track how many sensors contributed
+        // left_valid = left_valid && left_dev < MAX_ERROR;
+        // right_valid = right_valid && right_dev < MAX_ERROR;
+        // back_valid = back_valid && back_dev < MAX_ERROR;
 
         if (left_valid) {
-            weight *= std::exp(-(left_dev * left_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
-            valid_count++;
+            if(left_expected == -1) weight *= 1.0;
+            else if(fabs(left_dev) > MAX_ERROR) weight *= 0.0;
+            else weight *= std::exp(-(left_dev * left_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
+        } else {
+            // deadzone → neutral, don't punish
+            weight *= 1.0;
         }
 
         if (right_valid) {
-            weight *= std::exp(-(right_dev * right_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
-            valid_count++;
+            if(right_expected == -1) weight *= 1.0;
+            else if(fabs(right_dev) > MAX_ERROR) weight *= 0.0;
+            else weight *= std::exp(-(right_dev * right_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
+        } else {
+            weight *= 1.0;
         }
 
         if (back_valid) {
-            weight *= std::exp(-(back_dev * back_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
-            valid_count++;
-        }
-
-        // If no sensors provided valid data, give a neutral but nonzero weight
-        if (valid_count == 0) {
-            weight = 1e-6;
-            invalid_updates++;
+            if(back_expected == -1) weight *= 1.0;
+            else if(fabs(back_dev) > MAX_ERROR) weight *= 0.0;
+            else weight *= std::exp(-(back_dev * back_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
+        } else {
+            weight *= 1.0;
         }
 
         particles[i].weight = weight;
@@ -264,10 +268,6 @@ void update_particles() {
         double weight = 1.0 / NUM_PARTICLES;
         for(int i = 0; i < NUM_PARTICLES; ++i) {
             particles[i].weight = weight;
-        }
-    } else if(invalid_updates / NUM_PARTICLES > 0.1) {
-        for(int i = 0; i < NUM_PARTICLES; ++i) {
-            particles[i].weight = 1.0 / NUM_PARTICLES;
         }
     } else {
         for(int i = 0; i < NUM_PARTICLES; ++i) {
@@ -295,11 +295,6 @@ void resample_particles() {
         }
         newParticles[m] = particles[i];  // copy particle
     }
-
-    // Normalize after resampling
-    // double total_weight = 0.0;
-    // for(const auto &p : newParticles) total_weight += p.weight;
-    // for(auto &p : newParticles) p.weight /= total_weight;
 
     for (auto &p : newParticles) {
         p.weight = 1.0 / NUM_PARTICLES;

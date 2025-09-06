@@ -31,7 +31,7 @@ void arcade(int throttle, int turn) {
 
 DriveMode driveMode = DriveMode::TANK;
 
-bool hood_up = false;
+bool hood_up = true;
 bool lock = false;
 bool loading = false;
 bool descore = false;
@@ -76,9 +76,13 @@ void opcontrol() {
         bool shift1 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
         bool shift2 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
 
+        bool intaking = false;
+        bool loader_changed = false;
+
         if(!shift1 && !shift2) {
             if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
                 intake.move_voltage(12000);
+                intaking = true;
             }
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
                 lock = !lock;
@@ -96,16 +100,17 @@ void opcontrol() {
             }
         }
 
-        else if(shift2) {
-            if(!loading && (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2) || 
-                master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) &&
-                master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2))) {
+        if(shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+            loading = !loading;
+            loader_piston.set_value(loading);
+            loader_changed = true;
+        }
+
+        if(!loading && !loader_changed) {
+            if((shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) ||
+               (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2))) {
                 hood_up = !hood_up;
                 hood_piston.set_value(hood_up);
-            }
-            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
-                loading = !loading;
-                loader_piston.set_value(loading);
             }
         }
 

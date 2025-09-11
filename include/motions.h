@@ -28,6 +28,7 @@ void swing_heading(double target, Side locked_side, double timeout, bool reverse
 void swing_point(Point target, Side locked_side, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
 
 void move_point(Point target, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
+void move_time(double volts, double timeout);
 
-void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reverse = false, bool async = false, double cutoff = 6,
+void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reverse = false, bool async = false, double cutoff = 6.0, double end_timeout = 1000,
     double b = 0.003, double zeta = 0.7, double time_multi = 1.2);

@@ -38,7 +38,7 @@ std::vector<DisplayItem> code_display = {
     DisplayItem(
         []() -> std::string { 
             if(imu.is_calibrating()) return "IMU calibrating";
-            return fmt::format("{:.2f}", getPose().x) + " " + fmt::format("{:.2f}", getPose().y) + " " + fmt::format("{:.2f}", getPose().theta); 
+            return fmt::format("{:.2f}", getPose().x) + " " + fmt::format("{:.2f}", getPose().y) + " " + fmt::format("{:.2f}", (getPose().theta * (180.0 / M_PI))); 
         }, 
         2000, 
         NotificationType::DISPLAY

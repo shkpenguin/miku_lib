@@ -31,7 +31,7 @@ void arcade(int throttle, int turn) {
 
 DriveMode driveMode = DriveMode::TANK;
 
-bool hood_up = true;
+bool hood_up = false;
 bool lock = false;
 bool loading = false;
 bool descore = false;
@@ -41,6 +41,8 @@ bool get_lock() {
 }
 
 void opcontrol() {
+
+    set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
 
     int count = 0;
 
@@ -100,18 +102,20 @@ void opcontrol() {
             }
         }
 
-        if(shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+        if(shift2 && hood_up && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
             loading = !loading;
             loader_piston.set_value(loading);
             loader_changed = true;
         }
 
-        if(!loading && !loader_changed) {
-            if((shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) ||
-               (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2))) {
-                hood_up = !hood_up;
-                hood_piston.set_value(hood_up);
-            }
+        bool hood_toggle_pressed =
+        (shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) ||
+        (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2) && master.get_digital(pros::E_CONTROLLER_DIGITAL_R2));
+
+        if((!loading || !hood_up) && 
+           (hood_toggle_pressed)) {
+            hood_up = !hood_up;
+            hood_piston.set_value(hood_up);
         }
 
         if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {

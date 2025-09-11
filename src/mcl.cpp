@@ -1,6 +1,6 @@
 #define NUM_PARTICLES 500
 #define INIT_STDEV 1.0
-#define SENSOR_STDEV 1.0
+#define SENSOR_STDEV 0.75
 
 // #define LATERAL_STDEV 0.2
 
@@ -16,25 +16,35 @@
 #include <fstream>
 #include <climits>
 
-MCLDistance back(10, Pose(2.5, -6, M_PI));
-MCLDistance left(2, Pose(-4.625, 1.375, M_PI/2));
-MCLDistance right(9, Pose(4.625, 1.375, -M_PI/2));
+MCLDistance back(10, Pose(3.0, -6.25, M_PI));
+MCLDistance left(2, Pose(-5.75, 1.375, M_PI/2));
+MCLDistance right(9, Pose(5.75, 1.375, -M_PI/2));
+MCLDistance front(8, Pose(3.25, 8.25, 0.0));
 
-bool MCLDistance::update_reading() {
+std::vector<MCLDistance> sensors = {front, back, left, right};
+
+void MCLDistance::update_reading() {
+
+    if(!enabled) valid = false;
 
     bool visible = distance_sensor.get_object_size() > 50 || distance_sensor.get_distance() < 100;
 
-    bool valid = distance_sensor.get_distance() < 1800;
+    bool within_range = distance_sensor.get_distance() < 2000;
 
-    if(visible && valid) {
+    if(visible && within_range) {
         data = distance_sensor.get_distance() / 25.4;
+        valid = true;
+    } else {
+        data = -1;
+        valid = false;
     }
 
-    return visible && valid;
 }
 
-double MCLDistance::get_reading() {
-    return data;
+inline void set_all_sensors(bool enabled) {
+    for(auto sensor : sensors) {
+        sensor.set_value(enabled);
+    }
 }
 
 double get_expected_reading(Pose particle_pose, Pose offset) {
@@ -83,7 +93,7 @@ double get_expected_reading(Pose particle_pose, Pose offset) {
         }
     }
 
-    if (!std::isfinite(tMin)) return -2; // no valid hit
+    if (!std::isfinite(tMin)) return -2 ; // no valid hit
 
     double x_intersect = sensor_x + tMin * dx;
     double y_intersect = sensor_y + tMin * dy;
@@ -107,13 +117,6 @@ std::ofstream file;
 std::ostringstream log_buffer;
 
 void log_mcl() {
-
-    // file << "meow";
-
-    // if (!file.is_open()) {
-    //     // Handle error
-    //     return;
-    // }
 
     Pose robot_pose = getPose();
 
@@ -185,8 +188,8 @@ void initialize_mcl() {
     // log_mcl();
 }
 
-#define MAX_ERROR 3.0
-#define MAX_LATERAL_ERROR 6.0
+#define MAX_ERROR 6.0
+// #define MAX_LATERAL_ERROR 6.0
 
 // std::normal_distribution<double> lateral_noise(0, LATERAL_STDEV);
 static std::normal_distribution<double> odom_noise;
@@ -201,9 +204,9 @@ void update_particles() {
     double sin_theta = sin(robot_theta);
     double cos_theta = cos(robot_theta);
 
-    bool useLeft = left.update_reading();
-    bool useRight = right.update_reading();
-    bool useBack = back.update_reading();
+    for(auto &sensor : sensors) {
+        sensor.update_reading();
+    }
 
     double total_weight = 0.0;
 
@@ -217,47 +220,23 @@ void update_particles() {
             robot_speed.y + 
             odom_noise(rng));
 
-        double left_expected = get_expected_reading(particles[i].pose, left.offset);
-        double right_expected = get_expected_reading(particles[i].pose, right.offset);
-        double back_expected = get_expected_reading(particles[i].pose, back.offset);
-
-        bool left_valid = useLeft && left_expected != -2;
-        bool right_valid = useRight && right_expected != -2;
-        bool back_valid = useBack && back_expected != -2;
-
         double weight = 1.0;
 
-        double left_dev = fabs(left.get_reading() - left_expected);
-        double right_dev = fabs(right.get_reading() - right_expected);
-        double back_dev = fabs(back.get_reading() - back_expected);
-
-        // left_valid = left_valid && left_dev < MAX_ERROR;
-        // right_valid = right_valid && right_dev < MAX_ERROR;
-        // back_valid = back_valid && back_dev < MAX_ERROR;
-
-        if (left_valid) {
-            if(left_expected == -1) weight *= 1.0;
-            else if(fabs(left_dev) > MAX_ERROR) weight *= 0.0;
-            else weight *= std::exp(-(left_dev * left_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
-        } else {
-            // deadzone → neutral, don't punish
-            weight *= 1.0;
-        }
-
-        if (right_valid) {
-            if(right_expected == -1) weight *= 1.0;
-            else if(fabs(right_dev) > MAX_ERROR) weight *= 0.0;
-            else weight *= std::exp(-(right_dev * right_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
-        } else {
-            weight *= 1.0;
-        }
-
-        if (back_valid) {
-            if(back_expected == -1) weight *= 1.0;
-            else if(fabs(back_dev) > MAX_ERROR) weight *= 0.0;
-            else weight *= std::exp(-(back_dev * back_dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
-        } else {
-            weight *= 1.0;
+        for(auto &sensor : sensors) {
+            if(!sensor.get_enabled() || !sensor.get_valid()) continue;
+            double expected = get_expected_reading(particles[i].pose, sensor.offset);
+            if(expected == -1) continue;
+            if(expected == -2) {
+                weight *= 0.0;
+                break;
+            }
+            double reading = sensor.get_reading();
+            double dev = reading - expected;
+            if(fabs(dev) > MAX_ERROR) {
+                weight *= 0.0;
+                break;
+            }
+            else weight *= std::exp(-(dev * dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
         }
 
         particles[i].weight = weight;
@@ -274,8 +253,6 @@ void update_particles() {
             particles[i].weight /= total_weight;
         }
     }
-
-    // log_mcl();
 
 }
 

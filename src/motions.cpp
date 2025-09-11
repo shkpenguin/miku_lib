@@ -123,7 +123,7 @@ void turn_point(Point target, double timeout, bool reverse, bool async, double c
     if (!motion_running) return;
 
     if (async) {
-        pros::Task([&]() { turn_heading(target, timeout, reverse, false, cutoff); });
+        pros::Task([&]() { turn_point(target, timeout, reverse, false, cutoff); });
         end_motion();
         pros::delay(10);
         return;

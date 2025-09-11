@@ -30,11 +30,11 @@ void initialize() {
     //     pros::delay(50);
     // }
 
-    Pose start = Pose(6.5, -48, M_PI / 2); // right sawp
+    // Pose start = Pose(6.5, -48, M_PI / 2); // right sawp
 
     // // Pose start = Pose(24, -48, M_PI); // test
-    setPose(start);
-    initialize_mcl();
+    // setPose(start);
+    // initialize_mcl();
 
     // pros::Task flush_task([]() {
     //     while(true) {
@@ -44,24 +44,24 @@ void initialize() {
     //     }
     // });
 
-    pros::Task autonomous_task([]() {
-        while (true) {
-            update_odom();
-            update_particles();
+    // pros::Task autonomous_task([]() {
+    //     while (true) {
+    //         update_odom();
+    //         update_particles();
 
-            // log_mcl();
+    //         // log_mcl();
 
-            Pose belief = get_pose_estimate();
-            belief.theta = getPose().theta;
-            setPose(belief);
+    //         Pose belief = get_pose_estimate();
+    //         belief.theta = getPose().theta;
+    //         setPose(belief);
 
-            // log_mcl();
+    //         // log_mcl();
 
-            resample_particles();
+    //         resample_particles();
 
-            pros::delay(10);
-        }
-    });
+    //         pros::delay(10);
+    //     }
+    // });
 
 }
 

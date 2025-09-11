@@ -63,7 +63,7 @@ std::vector<ControlPoint> right_sawp_cp_1 = {
     {6.5, -48, 0},
     {6.5, -48, 100},
     {24, -48, 80},
-    {36, -48, 20},
+    {38, -48, 15},
     {48, -48, 0},
     {48, -48, 0}
 };
@@ -100,12 +100,7 @@ std::vector<ControlPoint> right_sawp_cp_5 = {
     {-24, -20, 0}
 };
 
-std::vector<ControlPoint> right_sawp_cp_6 = {
-    {-24, -20, 0},
-    {-24, -20, 40},
-    {-10, -12, 10},
-    {-10, -12, 0}
-};
+std::vector<ControlPoint> right_sawp_cp_6 = {};
 
 BezierPath test_path(test_cp);
 std::vector<Waypoint> test_waypoints;
@@ -122,7 +117,6 @@ BezierPath right_sawp_2(right_sawp_cp_2);
 BezierPath right_sawp_3(right_sawp_cp_3);
 BezierPath right_sawp_4(right_sawp_cp_4);
 BezierPath right_sawp_5(right_sawp_cp_5);
-BezierPath right_sawp_6(right_sawp_cp_6);
 
 void setup() {
     turn_heading(30, 10000);
@@ -151,13 +145,11 @@ void right_sawp() {
     right_sawp_3.calculate_waypoints();
     right_sawp_4.calculate_waypoints();
     right_sawp_5.calculate_waypoints();
-    right_sawp_6.calculate_waypoints();
     std::vector<Waypoint> right_sawp_1_waypoints = right_sawp_1.get_waypoints();
     std::vector<Waypoint> right_sawp_2_waypoints = right_sawp_2.get_waypoints();
     std::vector<Waypoint> right_sawp_3_waypoints = right_sawp_3.get_waypoints();
     std::vector<Waypoint> right_sawp_4_waypoints = right_sawp_4.get_waypoints();
     std::vector<Waypoint> right_sawp_5_waypoints = right_sawp_5.get_waypoints();
-    std::vector<Waypoint> right_sawp_6_waypoints = right_sawp_6.get_waypoints();
 
     intake.move_voltage(12000);
 
@@ -176,10 +168,10 @@ void right_sawp() {
 
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
     ramsete(right_sawp_3_waypoints, 600, false, true);
-    wait_until_within({48, -36}, 3.0);
+    wait_until_within({48, -32}, 5.0);
     lock_piston.set_value(true);
     wait_until_done();
-    pros::delay(800);
+    pros::delay(900);
     lock_piston.set_value(false);
     set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
 
@@ -194,8 +186,8 @@ void right_sawp() {
 
     turn_heading(-90, 1000);
     ramsete(right_sawp_5_waypoints, 2000);
-    turn_point({-15, -15}, 1000);
-    ramsete(right_sawp_6_waypoints, 1000);
+    turn_point({-0, -0}, 1000);
+    move_point({-12, -14}, 1000);
     hood_piston.set_value(false);
     lock_piston.set_value(true);
     move_time(2000, 1000);

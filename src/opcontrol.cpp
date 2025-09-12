@@ -5,6 +5,7 @@
 #include "misc.h"
 #include "notif.h"
 #include "motions.h"
+#include "autons.h"
 
 enum class DriveMode {
     TANK = 0,
@@ -42,6 +43,7 @@ bool get_lock() {
 
 void opcontrol() {
 
+    autonomous_task.remove();
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
 
     int count = 0;

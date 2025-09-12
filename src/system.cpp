@@ -6,13 +6,17 @@
 #include "mcl.h"
 #include "misc.h"
 #include "notif.h"
+#include "autons.h"
 
 // bool match;
 
 // void system();
 
 void initialize() {
-	static Gif gif("/usd/miku.gif", lv_scr_act());
+
+    // hood_piston.set_value(true);
+
+	// static Gif gif("/usd/miku.gif", lv_scr_act());
 	imu.reset();
 	while(imu.is_calibrating()) {
 		pros::delay(10); // Wait for IMU calibration
@@ -22,7 +26,10 @@ void initialize() {
     right_motors.tare_position_all();
     intake.tare_position_all();
 
-    pros::Task display_task(display);
+    pros::Task brain_display([]() {
+        display_selector();
+    });
+    pros::Task controller_display(display);
 
     // match = pros::competition::is_competition_switch();
 

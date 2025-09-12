@@ -171,7 +171,7 @@ void display() {
 
         pros::delay(100);
         if(!get_lock() && rumble_timer.isDone()) {
-            master.rumble("-");
+            master.rumble("--");
             rumble_timer.reset();
             continue;
         }

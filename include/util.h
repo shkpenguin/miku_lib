@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#define HALF_FIELD 70.8
+#define HALF_FIELD 71.5
 
 inline double clamp(double value, double min, double max) {
     if(value < min) return min;

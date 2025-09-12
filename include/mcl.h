@@ -11,7 +11,7 @@ public:
     pros::Distance distance_sensor;
     Pose offset;
     MCLDistance(int32_t port, Pose offset) : distance_sensor(port), offset(offset) {}
-    void set_value(bool enable) { enabled = enable; }
+    void set_enabled(bool enable) { enabled = enable; }
     void update_reading();
     bool get_enabled() { return enabled; }
     bool get_valid() { return valid; }

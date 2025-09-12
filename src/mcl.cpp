@@ -17,11 +17,11 @@
 #include <climits>
 
 MCLDistance back(10, Pose(3.0, -6.25, M_PI));
-MCLDistance left(2, Pose(-5.75, 1.375, M_PI/2));
-MCLDistance right(9, Pose(5.75, 1.375, -M_PI/2));
+MCLDistance left(2, Pose(-5.0, 1.375, M_PI/2));
+MCLDistance right(9, Pose(5.0, 1.375, -M_PI/2));
 MCLDistance front(8, Pose(3.25, 8.25, 0.0));
 
-std::vector<MCLDistance> sensors = {front, back, left, right};
+std::vector<MCLDistance*> sensors = {&front, &back, &left, &right};
 
 void MCLDistance::update_reading() {
 
@@ -41,9 +41,11 @@ void MCLDistance::update_reading() {
 
 }
 
+// MCLDistance::set_value(bool enable) { enabled = enable; }
+
 inline void set_all_sensors(bool enabled) {
     for(auto sensor : sensors) {
-        sensor.set_value(enabled);
+        sensor->set_enabled(enabled);
     }
 }
 
@@ -205,7 +207,7 @@ void update_particles() {
     double cos_theta = cos(robot_theta);
 
     for(auto &sensor : sensors) {
-        sensor.update_reading();
+        sensor->update_reading();
     }
 
     double total_weight = 0.0;
@@ -223,14 +225,14 @@ void update_particles() {
         double weight = 1.0;
 
         for(auto &sensor : sensors) {
-            if(!sensor.get_enabled() || !sensor.get_valid()) continue;
-            double expected = get_expected_reading(particles[i].pose, sensor.offset);
+            if(!sensor->get_enabled() || !sensor->get_valid()) continue;
+            double expected = get_expected_reading(particles[i].pose, sensor->offset);
             if(expected == -1) continue;
             if(expected == -2) {
                 weight *= 0.0;
                 break;
             }
-            double reading = sensor.get_reading();
+            double reading = sensor->get_reading();
             double dev = reading - expected;
             if(fabs(dev) > MAX_ERROR) {
                 weight *= 0.0;

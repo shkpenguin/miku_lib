@@ -138,8 +138,8 @@ void turn_point(Point target, double timeout, bool reverse, bool async, double c
     // PID tuned in degrees
     PID turn_pid(turn_gains, 3.0, true);  
 
-    ExitCondition turnSmallExit(1.0, 100);  // 1 degree
-    ExitCondition turnLargeExit(3.0, 500);  // 3 degrees
+    ExitCondition turnSmallExit(1.0, 400);  // 1 degree
+    ExitCondition turnLargeExit(3.0, 800);  // 3 degrees
     turnSmallExit.reset();
     turnLargeExit.reset();
 
@@ -240,8 +240,8 @@ void move_point(Point target, double timeout, bool reverse, bool async, double c
     PID drive_pid(drive_gains);
     PID turn_pid(turn_gains, 2.0, true);
 
-    ExitCondition drive_small_exit(1.0, 200);  // 1-inch within for 200ms
-    ExitCondition drive_large_exit(3.0, 500); // 5-inches within for 1s
+    ExitCondition drive_small_exit(1.0, 400);  // 1-inch within for 200ms
+    ExitCondition drive_large_exit(3.0, 800); // 5-inches within for 1s
 
     double prev_drive_out = 0;
     double prev_turn_out = 0;

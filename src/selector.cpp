@@ -5,13 +5,12 @@
 #include "timer.h"
 #include "gif-pros/gifclass.hpp"
 
-pros::Distance left(2);
-pros::Distance right(9);
-pros::Distance back(10);
-
 int selected_index = 0;
-
 Auton selected_auton;
+
+pros::Distance left_sensor(2);
+pros::Distance right_sensor(9);
+pros::Distance back_sensor(10);
 
 std::vector<lv_obj_t*> auton_list;
 
@@ -35,15 +34,45 @@ bool new_both = false;
 bool both_detected = false;
 bool waiting_for_both_release = false;
 
+void make_selection(std::vector<lv_obj_t*>& list) {
+
+    for(int i = 0; i < list.size(); i++) {
+        lv_obj_t* btn = list[i];
+        if (i == selected_index) {
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0xFF0000), LV_PART_MAIN); // red highlight
+        } else {
+            lv_obj_set_style_bg_color(btn, lv_color_hex(i == auton_list.size() - 1 ? 0xAAAAAA : 0x550000), LV_PART_MAIN); // Normal or grey for back option
+        }
+    }
+
+    selected_auton = autons[selected_index];
+    selected_auton.pre_auton();
+    for(auto& path : selected_auton.paths) {
+        path->calculate_waypoints();
+    }
+
+}
+
+void highlight_selected(std::vector<lv_obj_t*>& list) {
+    for (int i = 0; i < list.size(); i++) {
+        lv_obj_t* btn = list[i];
+        if (i == selected_index) {
+            lv_obj_set_style_bg_color(btn, lv_color_hex(0x666666), LV_PART_MAIN); // gray highlight
+        } else {
+            lv_obj_set_style_bg_color(btn, lv_color_hex(i == list.size() - 1 ? 0xAAAAAA : 0x550000), LV_PART_MAIN); // Normal or grey for back option
+        }
+    }
+}
+
 void update_sensors() {
     new_left = false;
     new_right = false;
     new_back = false;
     new_both = false;
 
-    bool get_left = (left.get_distance() < 10);
-    bool get_right = (right.get_distance() < 10);
-    bool get_back = (back.get_distance() < 10);
+    bool get_left = (left_sensor.get_distance() < 10);
+    bool get_right = (right_sensor.get_distance() < 10);
+    bool get_back = (back_sensor.get_distance() < 10);
 
     // --- both-hands gesture ---
     if (get_left && get_right && !both_detected) {
@@ -85,13 +114,12 @@ static void auton_btn_event_cb(lv_event_t* e) {
     for (int i = 0; i < auton_list.size(); i++) {
         if (auton_list[i] == btn) {
             selected_index = i;
-            selected_auton = autons[i];
             break;
         }
     }
 
     // Update button highlights
-    highlight_selected(auton_list);
+    make_selection(auton_list);
 }
 
 void create_auton_list() {
@@ -113,52 +141,9 @@ void create_auton_list() {
     highlight_selected(auton_list);
 }
 
-void clear_auton_list() {
-    for (lv_obj_t* obj : auton_list) {
-        lv_obj_del(obj);
-    }
-    auton_list.clear();
-
-    lv_obj_add_flag(list_container, LV_OBJ_FLAG_HIDDEN);
-}
-
-void highlight_selected(std::vector<lv_obj_t*>& list) {
-    for (int i = 0; i < list.size(); i++) {
-        lv_obj_t* btn = list[i];
-        if (i == selected_index) {
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x666666), LV_PART_MAIN); // gray highlight
-        } else {
-            lv_obj_set_style_bg_color(btn, lv_color_hex(i == list.size() - 1 ? 0xAAAAAA : 0x550000), LV_PART_MAIN); // Normal or grey for back option
-        }
-    }
-}
-
-void highlight_final_selected(std::vector<lv_obj_t*>& list) {
-
-    for (int i = 0; i < list.size(); i++) {
-        lv_obj_t* btn = list[i];
-        if (i == selected_index) {
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0xFF0000), LV_PART_MAIN); // red highlight
-        } else {
-            lv_obj_set_style_bg_color(btn, lv_color_hex(i == auton_list.size() - 1 ? 0xAAAAAA : 0x550000), LV_PART_MAIN); // Normal or grey for back option
-        }
-    }
-
-}
-
 void display_selector() {
 
     int current_display = 0;
-
-    box = lv_obj_create(lv_scr_act());
-    lv_obj_set_size(box, 480, 50);
-    lv_obj_set_pos(box, 0, 0);
-    lv_obj_set_style_bg_color(box, lv_color_hex(0x000000), LV_PART_MAIN);
-
-    label = lv_label_create(box);
-    lv_label_set_text(label, "Select Color:");
-    lv_obj_center(label);
-    lv_obj_set_style_text_font(label, &lv_font_montserrat_36, LV_PART_MAIN);
 
     list_container = lv_list_create(lv_scr_act());
     lv_obj_set_size(list_container, 480, 240 - 50);
@@ -175,8 +160,7 @@ void display_selector() {
         }
 
         if(new_both) { // confirm selection
-            selected_auton = autons[selected_index];
-            highlight_final_selected(auton_list);
+            make_selection(auton_list);
         }
         if (new_left) {
             selected_index--;
@@ -188,6 +172,6 @@ void display_selector() {
             highlight_selected(auton_list);
         }
 
-        pros::delay(50);
+        pros::delay(100);
     }
 }

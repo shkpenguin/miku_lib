@@ -34,6 +34,7 @@ class Timer {
          * const Time time = timer.getTimeSet(); // time = 1_sec
          * @endcode
          */
+        Timer() = default;
         int getTimeSet() const;
         /**
          * @brief Get the amount of time left on the timer

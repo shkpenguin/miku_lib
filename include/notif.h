@@ -1,4 +1,5 @@
 #pragma once
+#include "timer.h"
 
 enum class NotificationType {
     FUCKED,
@@ -7,8 +8,10 @@ enum class NotificationType {
     DISPLAY
 };
 
+extern Timer rumble_timer;
+
 struct DisplayItem;
 
 void add_warning(const std::string& warning, NotificationType type);
 
-void display();
+void display_controller();

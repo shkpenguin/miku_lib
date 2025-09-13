@@ -9,6 +9,9 @@
 #include "misc.h"
 #include <vector>
 
+Timer item_timer;
+Timer rumble_timer;
+
 struct DisplayItem {
     std::function<std::string()> message_func;
     int timeout_ms; // how long to display
@@ -158,12 +161,15 @@ void display() {
 
 */
 
-void display() {
+void display_controller() {
+
+    item_timer.set(0);
+    rumble_timer.set(1000);
 
     int default_index = 0;
     int display_index = 1;
-    Timer item_timer(0);
-    Timer rumble_timer(1000);
+
+    rumble_timer.pause();
 
     DisplayItem current;
 
@@ -173,6 +179,11 @@ void display() {
         if(!get_lock() && rumble_timer.isDone()) {
             master.rumble("--");
             rumble_timer.reset();
+            continue;
+        }
+
+        if(imu.is_calibrating()) {
+            master.set_text(0, 0, "IMU Calibrating");
             continue;
         }
 

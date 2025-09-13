@@ -1,6 +1,10 @@
 #pragma once
 
 #include <vector>
+#include <string>
+#include <functional>
+#include <numeric>
+#include <memory>
 #include "util.h"
 #include "mp.h"
 
@@ -90,16 +94,18 @@ bool get_lock();
 
 void tune_lut();
 
-struct Auton {
+class Auton {
 
+    public:
     std::string name;
     std::function<void()> pre_auton;
     std::function<void()> auton;
     
     Pose start_pose;
-    std::vector<BezierPath*> paths;
+    std::vector<std::shared_ptr<BezierPath>> paths;
 
-    Auton(std::string name, std::function<void()> pre_auton, std::function<void()> auton, Pose start_pose, std::vector<BezierPath*> paths)
+    Auton(std::string name, std::function<void()> pre_auton, std::function<void()> auton, Pose start_pose, std::vector<std::shared_ptr<BezierPath>> paths)
         : name(name), pre_auton(pre_auton), auton(auton), start_pose(start_pose), paths(paths) {}
+    Auton() = default;
 
 };

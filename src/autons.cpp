@@ -2,10 +2,13 @@
 #include "motions.h"
 #include "main.h"
 #include "mcl.h"
+#include "misc.h"
 #include "autons.h"
+#include "notif.h"
+#include "util.h"
 #include <vector>
 
-pros::Task autonomous_task;
+pros::Task* autonomous_task = nullptr;
 
 std::vector<ControlPoint> test_cp = {
     {24, -48, 0},
@@ -80,7 +83,7 @@ std::vector<ControlPoint> right_sawp_cp_1 = {
 };
 
 std::vector<ControlPoint> right_sawp_cp_2 = {
-    {48, -48, 30},
+    {48, -48, 40},
     {48, -48, 30},
     {48, -64, 30},
     {48, -64, 0}
@@ -88,7 +91,7 @@ std::vector<ControlPoint> right_sawp_cp_2 = {
 
 std::vector<ControlPoint> right_sawp_cp_3 = {
     {48, -60, 0},
-    {48, -60, 75},
+    {48, -60, 90},
     {48, -34, 0},
     {48, -34, 0}
 };
@@ -105,16 +108,16 @@ std::vector<ControlPoint> right_sawp_cp_4 = {
 std::vector<ControlPoint> right_sawp_cp_5 = {
     {20, -24, 0},
     {20, -24, 100},
-    {0, -20, 40},
-    {-12, -20, 15},
-    {-24, -20, 0},
-    {-24, -20, 0}
+    {0, -21, 40},
+    {-12, -21, 15},
+    {-24, -21, 0},
+    {-24, -21, 0}
 };
 
 std::vector<ControlPoint> right_sawp_cp_6 = {
-    {-24, -20, 0},
-    {-24, -20, 50},
-    {-18, -18, 30},
+    {-24, -21, 0},
+    {-24, -21, 50},
+    {-18, -18, 20},
     {-14, -14, 0},
     {-14, -14, 0}
 };
@@ -130,31 +133,12 @@ BezierPath right_elims_4(right_elims_cp_4);
 BezierPath right_elims_5(right_elims_cp_5);
 BezierPath right_elims_6(right_elims_cp_6);
 
-std::vector<BezierPath*> right_elims_paths = {
-    &right_elims_1,
-    &right_elims_2,
-    &right_elims_3,
-    &right_elims_3_1,
-    &right_elims_4,
-    &right_elims_5,
-    &right_elims_6
-};
-
 BezierPath right_sawp_1(right_sawp_cp_1);
 BezierPath right_sawp_2(right_sawp_cp_2);
 BezierPath right_sawp_3(right_sawp_cp_3);
 BezierPath right_sawp_4(right_sawp_cp_4);
 BezierPath right_sawp_5(right_sawp_cp_5);
 BezierPath right_sawp_6(right_sawp_cp_6);
-
-std::vector<BezierPath*> right_sawp_paths = {
-    &right_sawp_1,
-    &right_sawp_2,
-    &right_sawp_3,
-    &right_sawp_4,
-    &right_sawp_5,
-    &right_sawp_6
-};
 
 void setup() {
     turn_heading(30, 10000);
@@ -183,12 +167,12 @@ void pre_right_sawp() {
 
 void right_sawp() {
 
-    // right_sawp_1.calculate_waypoints();
-    // right_sawp_2.calculate_waypoints();
-    // right_sawp_3.calculate_waypoints();
-    // right_sawp_4.calculate_waypoints();
-    // right_sawp_5.calculate_waypoints();
-    // right_sawp_6.calculate_waypoints();
+    right_sawp_1.calculate_waypoints();
+    right_sawp_2.calculate_waypoints();
+    right_sawp_3.calculate_waypoints();
+    right_sawp_4.calculate_waypoints();
+    right_sawp_5.calculate_waypoints();
+    right_sawp_6.calculate_waypoints();
     std::vector<Waypoint> right_sawp_1_waypoints = right_sawp_1.get_waypoints();
     std::vector<Waypoint> right_sawp_2_waypoints = right_sawp_2.get_waypoints();
     std::vector<Waypoint> right_sawp_3_waypoints = right_sawp_3.get_waypoints();
@@ -203,21 +187,22 @@ void right_sawp() {
     hood_piston.set_value(true);
     wait_until_done();
     pros::delay(300);
-    loader_piston.set_value(true);
+    set_loading(true);
     turn_heading(180, 1200);
     ramsete(right_sawp_2_waypoints, 600, false, false, 3.0, 500);
-    pros::delay(500);
-    move_time(-4000, 200);
-    loader_piston.set_value(false);
+    pros::delay(200);
+    move_time(-4000, 400);
+    move_time(0, 200);
     turn_heading(0, 1000);
+    set_loading(false);
 
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
     ramsete(right_sawp_3_waypoints, 600, false, true);
     wait_until_within({48, -34}, 5.0);
-    lock_piston.set_value(true);
+    set_lock(true);
     wait_until_done();
-    pros::delay(1200);
-    lock_piston.set_value(false);
+    pros::delay(1300);
+    set_lock(false);
     set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
 
     move_time(-6000, 300);
@@ -230,12 +215,13 @@ void right_sawp() {
 
     turn_heading(-90, 1000);
     ramsete(right_sawp_5_waypoints, 2000);
-    turn_heading(55, 1000);
-    intake.move_velocity(6000);
+    turn_heading(50, 1000);
+    intake.move_velocity(4000);
     ramsete(right_sawp_6_waypoints, 2000);
-    hood_piston.set_value(false);
-    lock_piston.set_value(true);
-    move_time(2000, 1000);
+    move_time(2000, 300);
+    set_hood(false);
+    set_lock(true);
+    move_time(2000, 800);
 
 }
 
@@ -247,13 +233,13 @@ void pre_right_elims() {
 
 void right_elims() {
 
-    // right_elims_1.calculate_waypoints();
-    // right_elims_2.calculate_waypoints();
-    // right_elims_3.calculate_waypoints();
-    // right_elims_3_1.calculate_waypoints();
-    // right_elims_4.calculate_waypoints();
-    // right_elims_5.calculate_waypoints();
-    // right_elims_6.calculate_waypoints();
+    right_elims_1.calculate_waypoints();
+    right_elims_2.calculate_waypoints();
+    right_elims_3.calculate_waypoints();
+    right_elims_3_1.calculate_waypoints();
+    right_elims_4.calculate_waypoints();
+    right_elims_5.calculate_waypoints();
+    right_elims_6.calculate_waypoints();
     std::vector<Waypoint> right_elims_1_waypoints = right_elims_1.get_waypoints();
     std::vector<Waypoint> right_elims_2_waypoints = right_elims_2.get_waypoints();
     std::vector<Waypoint> right_elims_3_waypoints = right_elims_3.get_waypoints();
@@ -272,7 +258,7 @@ void right_elims() {
     intake.move_voltage(12000);
     ramsete(right_elims_2_waypoints, 1500, false, true);
     pros::delay(200);
-    hood_piston.set_value(true);
+    set_hood(true);
     wait_until_done();
     turn_heading(135, 700);
     ramsete(right_elims_3_waypoints, 2000);
@@ -281,26 +267,26 @@ void right_elims() {
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
     ramsete(right_elims_4_waypoints, 1200, false, true);
     wait_until_within({48, -34}, 5.0);
-    lock_piston.set_value(true);
+    set_lock(true);
     wait_until_done();
     pros::delay(1300);
-    lock_piston.set_value(false);
+    set_lock(false);
     set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
 
     move_time(-4000, 200);
-    loader_piston.set_value(true);
+    set_loading(true);
     turn_heading(180, 1000);
     ramsete(right_elims_5_waypoints, 600, false, false, 3.0, 200);
     pros::delay(600);
     move_time(-4000, 400);
-    move_time(0, 400);
-    loader_piston.set_value(false);
+    move_time(0, 200);
     turn_heading(0, 1000);
+    set_loading(false);
 
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
     ramsete(right_elims_6_waypoints, 600, false, true);
     wait_until_within({48, -34}, 5.0);
-    lock_piston.set_value(true);
+    set_lock(true);
     wait_until_done();
 
     // move_time(-6000, 300);
@@ -317,40 +303,81 @@ void right_elims() {
 
 }
 
-std::vector<Auton> autons = {
-    Auton("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, M_PI/2), right_sawp_paths),
-    Auton("Right Elims", pre_right_elims, right_elims, Pose(18, -51, M_PI/2), right_elims_paths)
-};
+std::vector<std::shared_ptr<BezierPath>> right_sawp_paths;
+std::vector<std::shared_ptr<BezierPath>> right_elims_paths;
+std::vector<Auton> autons;
+
+void init_autons() {
+
+    // Create Bezier paths dynamically
+    right_sawp_paths.clear();
+    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_1));
+    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_2));
+    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_3));
+    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_4));
+    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_5));
+    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_6));
+
+    right_elims_paths.clear();
+    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_1));
+    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_2));
+    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_3));
+    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_3_1));
+    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_4));
+    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_5));
+    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_6));
+
+    // Create Autons dynamically
+    autons.clear();
+    autons.emplace_back("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, M_PI/2), right_sawp_paths);
+    autons.emplace_back("Right Elims", pre_right_elims, right_elims, Pose(18, -51, M_PI/6), right_elims_paths);
+}
+
+void initialize() {
+
+    selected_index = 0;
+
+    pros::Task controller_display(display_controller);
+
+	imu.reset();
+	while(imu.is_calibrating()) {
+		pros::delay(10); // Wait for IMU calibration
+	}
+
+    left_motors.tare_position_all();
+    right_motors.tare_position_all();
+    intake.tare_position_all();
+
+    init_autons();
+
+    Auton& selected_auton = autons[selected_index];
+    selected_auton.pre_auton();
+    // for(auto& path : selected_auton.paths) {
+    //     path->calculate_waypoints();
+    // }
+
+    // pros::Task brain_display(display_selector);
+
+}
 
 void autonomous() {
 
-    Pose start = Pose(18, -51, M_PI / 6); // right elims
-    // Pose start = Pose(6.5, -48, M_PI / 2); // right sawp
+    if (autons.empty()) return;
 
-    // Pose start = Pose(24, -48, M_PI); // test
+    Auton& selected_auton = autons[selected_index];
+
+    Pose start = selected_auton.start_pose;
     setPose(start);
     initialize_mcl();
-
-    // pros::Task flush_task([]() {
-    //     while(true) {
-    //         flush_logs();
-    //         pros::delay(1000);
-    //         // master.rumble(".");
-    //     }
-    // });
 
     autonomous_task = new pros::Task([]() {
         while (true) {
             update_odom();
             update_particles();
 
-            // log_mcl();
-
             Pose belief = get_pose_estimate();
             belief.theta = getPose().theta;
             setPose(belief);
-
-            // log_mcl();
 
             resample_particles();
 
@@ -358,6 +385,5 @@ void autonomous() {
         }
     });
 
-    right_elims();
-    right_sawp();
+    selected_auton.auton();  // only run if non-null
 }

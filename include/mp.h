@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "misc.h"
+#include <cmath>
 
 #define MAX_RPM 600
 #define GEAR_RATIO 1.0

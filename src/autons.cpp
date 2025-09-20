@@ -6,6 +6,7 @@
 #include "autons.h"
 #include "notif.h"
 #include "util.h"
+#include "gif-pros/gifclass.hpp"
 #include <vector>
 
 pros::Task* autonomous_task = nullptr;
@@ -20,29 +21,30 @@ std::vector<ControlPoint> test_cp = {
 
 std::vector<ControlPoint> right_elims_cp_1 = {
     {18, -51, 0},
-    {18, -51, 90},
-    {26, -45, 75},
-    {31, -35, 35},
+    {18, -51, 100},
+    {27, -45, 100},
+    {32, -35, 35},
     {36, -24, 25},
     {41, -15, 15},
-    {47, -7, 0},
-    {47, -7, 0}
+    {44, -8, 0},
+    {44, -8, 0}
 };
 
 std::vector<ControlPoint> right_elims_cp_2 = {
     {43, -15, 0},
     {43, -15, 100},
     {32, -16, 50},
-    {23, -24, 0},
-    {23, -24, 0}
+    {22, -25, 0},
+    {22, -25, 0}
 };
 
 std::vector<ControlPoint> right_elims_cp_3 = {
-    {18, -26, 0},
-    {18, -26, 100},
-    {32, -32, 40},
-    {48, -42, 30},
-    {48, -42, 30}
+    {22, -25, 0},
+    {22, -25, 100},
+    {28, -38, 40},
+    {42, -46, 30},
+    {48, -48, 0},
+    {48, -48, 0}
 };
 
 std::vector<ControlPoint> right_elims_cp_3_1 = {
@@ -60,8 +62,8 @@ std::vector<ControlPoint> right_elims_cp_4 = {
 };
 
 std::vector<ControlPoint> right_elims_cp_5 = {
-    {48, -40, 40},
-    {48, -40, 40},
+    {48, -42, 30},
+    {48, -42, 30},
     {48, -64, 30},
     {48, -64, 0}
 };
@@ -84,7 +86,7 @@ std::vector<ControlPoint> right_sawp_cp_1 = {
 
 std::vector<ControlPoint> right_sawp_cp_2 = {
     {48, -48, 40},
-    {48, -48, 30},
+    {48, -48, 40},
     {48, -64, 30},
     {48, -64, 0}
 };
@@ -108,7 +110,7 @@ std::vector<ControlPoint> right_sawp_cp_4 = {
 std::vector<ControlPoint> right_sawp_cp_5 = {
     {20, -24, 0},
     {20, -24, 100},
-    {0, -21, 40},
+    {0, -21, 50},
     {-12, -21, 15},
     {-24, -21, 0},
     {-24, -21, 0}
@@ -161,7 +163,7 @@ void test() {
 void pre_right_sawp() {
 
     set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
-    hood_piston.set_value(true);
+    set_hood(true);
 
 }
 
@@ -182,15 +184,13 @@ void right_sawp() {
 
     intake.move_voltage(12000);
 
-    ramsete(right_sawp_1_waypoints, 3000, false, true, 3.0);
-    pros::delay(500);
-    hood_piston.set_value(true);
+    ramsete(right_sawp_1_waypoints, 3000, false, true, 2.0);
     wait_until_done();
     pros::delay(300);
     set_loading(true);
     turn_heading(180, 1200);
     ramsete(right_sawp_2_waypoints, 600, false, false, 3.0, 500);
-    pros::delay(200);
+    pros::delay(400);
     move_time(-4000, 400);
     move_time(0, 200);
     turn_heading(0, 1000);
@@ -198,24 +198,24 @@ void right_sawp() {
 
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
     ramsete(right_sawp_3_waypoints, 600, false, true);
-    wait_until_within({48, -34}, 5.0);
+    wait_until_within({48, -34}, 6.0);
     set_lock(true);
     wait_until_done();
-    pros::delay(1300);
+    pros::delay(1200);
     set_lock(false);
     set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
 
     move_time(-6000, 300);
-    turn_heading(-40, 1000);
+    turn_heading(-40, 700);
     ramsete(right_sawp_4_waypoints, 2200);
     intake.move_voltage(-8000);
     pros::delay(1500);
     intake.move_voltage(12000);
     move_time(-6000, 200);
 
-    turn_heading(-90, 1000);
+    turn_heading(-90, 700);
     ramsete(right_sawp_5_waypoints, 2000);
-    turn_heading(50, 1000);
+    turn_heading(50, 700);
     intake.move_velocity(4000);
     ramsete(right_sawp_6_waypoints, 2000);
     move_time(2000, 300);
@@ -249,20 +249,18 @@ void right_elims() {
     std::vector<Waypoint> right_elims_6_waypoints = right_elims_6.get_waypoints();
     intake.move_voltage(12000);
 
-    ramsete(right_elims_1_waypoints, 3000, false, true, 3.0);
-    // wait_until_within({48, -6}, 2.0);
-    // intake.move_voltage(0);
+    ramsete(right_elims_1_waypoints, 3000, false, true, 2.0);
+    // // wait_until_within({48, -6}, 2.0); // elims block
+    // // intake.move_voltage(0);
     wait_until_done();
     move_time(-6000, 100);
     turn_heading(-120, 1000);
     intake.move_voltage(12000);
-    ramsete(right_elims_2_waypoints, 1500, false, true);
-    pros::delay(200);
     set_hood(true);
+    ramsete(right_elims_2_waypoints, 1500);
     wait_until_done();
-    turn_heading(135, 700);
-    ramsete(right_elims_3_waypoints, 2000);
-    ramsete(right_elims_3_1_waypoints, 1000, false, false, 3.0);
+    turn_heading(150, 700);
+    ramsete(right_elims_3_waypoints, 2000, false, false, 3.0);
     turn_heading(0, 1000);
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
     ramsete(right_elims_4_waypoints, 1200, false, true);
@@ -273,13 +271,14 @@ void right_elims() {
     set_lock(false);
     set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
 
-    move_time(-4000, 200);
+    move_time(-4000, 400);
+    move_time(0, 300);
     set_loading(true);
     turn_heading(180, 1000);
     ramsete(right_elims_5_waypoints, 600, false, false, 3.0, 200);
     pros::delay(600);
     move_time(-4000, 400);
-    move_time(0, 200);
+    move_time(0, 300);
     turn_heading(0, 1000);
     set_loading(false);
 
@@ -288,18 +287,6 @@ void right_elims() {
     wait_until_within({48, -34}, 5.0);
     set_lock(true);
     wait_until_done();
-
-    // move_time(-6000, 300);
-    // loader_piston.set_value(false);
-    // turn_point({48, -24}, 1000);
-    // ramsete(right_elims_6_waypoints, 2000);
-    // lock_piston.set_value(true);
-
-    // move_point({48, -48}, 1000, true);
-    // turn_heading(0, 1000);
-    // loader_piston.set_value(false);
-    // ramsete(right_elims_5_waypoints, 2000);
-    // lock_piston.set_value(true);
 
 }
 
@@ -330,14 +317,16 @@ void init_autons() {
     // Create Autons dynamically
     autons.clear();
     autons.emplace_back("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, M_PI/2), right_sawp_paths);
-    autons.emplace_back("Right Elims", pre_right_elims, right_elims, Pose(18, -51, M_PI/6), right_elims_paths);
+    autons.emplace_back("Right Elims", pre_right_elims, right_elims, Pose(18, -53, M_PI/6), right_elims_paths);
 }
 
 void initialize() {
 
-    selected_index = 0;
+    selected_index = 1;
 
     pros::Task controller_display(display_controller);
+
+    static Gif gif("/usd/miku.gif", lv_scr_act());
 
 	imu.reset();
 	while(imu.is_calibrating()) {

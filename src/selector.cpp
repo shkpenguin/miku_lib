@@ -5,6 +5,12 @@
 #include "timer.h"
 #include "gif-pros/gifclass.hpp"
 
+std::vector<Auton> test_autons = {
+    Auton("Test 1", nullptr, nullptr, Pose(0,0,0), {}),
+    Auton("Test 2", nullptr, nullptr, Pose(0,0,0), {}),
+    Auton("Test 3", nullptr, nullptr, Pose(0,0,0), {}),
+};
+
 int selected_index = 0;
 Auton selected_auton;
 
@@ -45,7 +51,7 @@ void make_selection(std::vector<lv_obj_t*>& list) {
         }
     }
 
-    selected_auton = autons[selected_index];
+    selected_auton = test_autons[selected_index];
     selected_auton.pre_auton();
     for(auto& path : selected_auton.paths) {
         path->calculate_waypoints();
@@ -123,8 +129,8 @@ static void auton_btn_event_cb(lv_event_t* e) {
 }
 
 void create_auton_list() {
-    for(int i = 0; i < autons.size(); i++) {
-        Auton auton = autons[i];
+    for(int i = 0; i < test_autons.size(); i++) {
+        Auton auton = test_autons[i];
         lv_obj_t* btn = lv_btn_create(list_container); // Attach to list_container
         lv_obj_set_size(btn, 480, 40);
         lv_obj_set_style_bg_color(btn, lv_color_hex(0x550000), LV_PART_MAIN);
@@ -151,7 +157,7 @@ void display_selector() {
     lv_obj_set_flex_flow(list_container, LV_FLEX_FLOW_COLUMN);
 
     while (true) {
-        selected_auton = autons[selected_index];
+        selected_auton = test_autons[selected_index];
 
         update_sensors();
         if(new_back && !imu.is_calibrating()) {

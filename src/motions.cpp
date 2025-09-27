@@ -133,9 +133,7 @@ void turn_point(Point target, double timeout, bool reverse, bool async, double c
     distance_traveled = 0;
 
     double target_deg;
-
     
-    // PID tuned in degrees
     PID turn_pid(turn_gains, 3.0, true);  
 
     ExitCondition turnSmallExit(1.0, 400);  // 1 degree
@@ -173,7 +171,7 @@ void swing_heading(double target, Side locked_side, double timeout, bool reverse
     if(!motion_running) return;
 
     if(async) {
-        pros::Task swing_task([&]() mutable {
+        pros::Task swing_task([&]() {
             swing_heading(target, locked_side, timeout, reverse, false, cutoff);
         });
         end_motion();
@@ -181,11 +179,8 @@ void swing_heading(double target, Side locked_side, double timeout, bool reverse
         return;
     }
 
-    if(locked_side == LEFT) left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
-    else right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
-
     distance_traveled = 0;
-    Timer timer(timeout);  
+    Timer timer(timeout);
     PID turn_pid(turn_gains);
     if(reverse) target = wrap_angle(target + 180, 360);
 
@@ -211,14 +206,58 @@ void swing_heading(double target, Side locked_side, double timeout, bool reverse
 
     distance_traveled = -1;
 
-    set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
     end_motion();
 
 }
 
 void swing_point(Point target, Side locked_side, double timeout, bool reverse, bool async, double cutoff) {
-    double angle = atan2(target.y - getPose().y, target.x - getPose().x) * (180 / M_PI);
-    swing_heading(angle, locked_side, timeout, reverse, async, cutoff);
+
+    request_motion_start();
+    if(!motion_running) return;
+
+    if(async) {
+        pros::Task swing_task([&]() {
+            swing_point(target, locked_side, timeout, reverse, false, cutoff);
+        });
+        end_motion();
+        pros::delay(10);
+        return;
+    }
+
+    Timer timer(timeout);
+    distance_traveled = 0;
+
+    double target_deg;
+    
+    // PID tuned in degrees
+    PID turn_pid(turn_gains, 3.0, true);  
+
+    ExitCondition turnSmallExit(1.0, 400);  // 1 degree
+    ExitCondition turnLargeExit(3.0, 800);  // 3 degrees
+    turnSmallExit.reset();
+    turnLargeExit.reset();
+
+    while (!timer.isDone() && !turnSmallExit.getExit() && !turnLargeExit.getExit() && motion_running) {
+        double current_deg = getPose().theta * (180.0 / M_PI);  // convert to degrees
+        double target_deg = atan2(target.x - getPose().x, target.y - getPose().y) * (180 / M_PI);
+        double error = wrap_angle_180(target_deg - current_deg);      // error in degrees
+
+        if (cutoff > 0 && fabs(error) < cutoff) break;
+
+        double output = turn_pid.update(error);
+
+        move_motors(output, -output);
+
+        turnSmallExit.update(error);
+        turnLargeExit.update(error);
+
+        pros::delay(10);
+    }
+
+    distance_traveled = -1;
+
+    end_motion();
+
 }
 
 void move_point(Point target, double timeout, bool reverse, bool async, double cutoff) {
@@ -294,6 +333,81 @@ void move_point(Point target, double timeout, bool reverse, bool async, double c
     end_motion();
 }
 
+void move_pose(Pose target, double timeout, bool reverse, bool async, bool max_vel, double cutoff, double k1, double k2, double k3) {
+
+    request_motion_start();
+    if (!motion_running) return;
+
+    if (async) {
+        pros::Task move_task([&]() {
+            move_pose(target, timeout, reverse, false, max_vel, cutoff, k1, k2, k3);
+        });
+        end_motion();
+        pros::delay(10);
+        return;
+    }
+
+    distance_traveled = 0;
+
+    double theta = std::fmod(90 - theta, 360);
+    theta *= M_PI / 180;
+    Timer timer(timeout);
+
+    while (dist(target.x, target.y, getPose().x, getPose().y) > cutoff && !timer.isDone()) {
+        double rh = std::fmod(getPose(true).theta, 2 * M_PI);
+        if (reverse) {
+            rh = std::fmod(rh + M_PI, 2 * M_PI);
+        }
+
+        double rho = dist(target.x, target.y, getPose().x, getPose().y);
+        double gamma = std::remainder(std::atan2(target.y - getPose().y, target.x - getPose().x) - rh, 2 * M_PI);
+        double delta = std::remainder(std::atan2(target.y - getPose().y, target.x - getPose().x) - theta, 2 * M_PI);
+
+        double v = k1 * rho * std::cos(gamma);
+        double w;
+        if (std::abs(gamma) <= 0.01) {
+            w = k2 * gamma + k1 * std::cos(gamma) * (gamma + k3 * delta);
+        } else {
+            w = k2 * gamma + k1 * std::sin(gamma) * std::cos(gamma) / gamma * (gamma + k3 * delta);
+        }
+
+        if (std::abs(v) > max_vel) {
+            v *= max_vel / std::abs(v);
+            w *= max_vel / std::abs(v);
+        }
+
+        double r_vel = v + TRACK_WIDTH * w / 2;
+        double l_vel = v - TRACK_WIDTH * w / 2;
+
+        double max_vel = std::max({std::abs(r_vel), std::abs(l_vel)});
+        if (max_vel > 100) {
+            r_vel *= 100 / max_vel;
+            l_vel *= 100 / max_vel;
+        }
+
+        if (reverse) {
+            double r_volts = voltage_lookup(-r_vel);
+            double l_volts = voltage_lookup(-l_vel);
+            move_motors(-r_volts, -l_volts);
+        } else {
+            double r_volts = voltage_lookup(r_vel);
+            double l_volts = voltage_lookup(l_vel);
+            move_motors(r_volts, l_volts);
+        }
+        
+        pros::delay(10);
+    }
+
+    move_point(Point(target.x, target.y), 1000, reverse, false, cutoff);
+
+    left_motors.move_voltage(0);
+    right_motors.move_voltage(0);
+
+    distance_traveled = -1;
+    end_motion();
+
+}
+
 void move_time(double volts, double timeout) {
     request_motion_start();
     if (!motion_running) return;
@@ -343,7 +457,6 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reverse, bool
     double time_passed = 0;
     double time_ahead = 0;
 
-    std::uint32_t now = pros::millis();
     distance_traveled = 0; // Track "progress" like other motions
 
     ExitCondition drive_small_exit(1.0, 200);  // 1-inch within for 200ms
@@ -409,10 +522,10 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reverse, bool
         double l_vel = percent_v - percent_w / 2;
 
         // Limit motor outputs
-        double max_val = std::max(std::abs(r_vel), std::abs(l_vel));
-        if (max_val > 100) {
-            r_vel *= 100 / max_val;
-            l_vel *= 100 / max_val;
+        double max_vel = std::max(std::abs(r_vel), std::abs(l_vel));
+        if (max_vel > 100) {
+            r_vel *= 100 / max_vel;
+            l_vel *= 100 / max_vel;
         }
 
         double r_volts, l_volts;
@@ -429,7 +542,7 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reverse, bool
 
         distance_traveled += std::abs(error_x) + std::abs(error_y); // crude progress metric
 
-        pros::Task::delay_until(&now, dt);
+        pros::delay(10);
     }
 
     end_motion();

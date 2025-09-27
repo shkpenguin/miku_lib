@@ -5,6 +5,7 @@
 
 #define WHEEL_DIAMETER 2.75
 #define DT_GEAR_RATIO 1.0
+#define TRACK_WIDTH 12.5
 
 extern pros::Controller master;
 

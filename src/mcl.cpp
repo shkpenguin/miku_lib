@@ -1,8 +1,4 @@
-#define NUM_PARTICLES 500
-#define INIT_STDEV 1.0
-#define SENSOR_STDEV 0.75
-
-// #define LATERAL_STDEV 0.2
+#define NUM_PARTICLES 1000
 
 #include "api.h"
 #include "odom.h"
@@ -40,8 +36,6 @@ void MCLDistance::update_reading() {
     }
 
 }
-
-// MCLDistance::set_value(bool enable) { enabled = enable; }
 
 inline void set_all_sensors(bool enabled) {
     for(auto sensor : sensors) {
@@ -118,6 +112,14 @@ std::mt19937_64 rng(std::random_device{}());
 std::ofstream file;
 std::ostringstream log_buffer;
 
+struct LogFrame {
+    int num_particles;
+    Pose x, y, theta;
+    double left, right, back;
+    bool left_valid, right_valid, back_valid;
+    double left_size, right_size, back_size;
+};
+
 void log_mcl() {
 
     Pose robot_pose = getPose();
@@ -147,7 +149,29 @@ void flush_logs() {
     log_buffer.clear();
 }
 
-std::normal_distribution<double> init(0, INIT_STDEV);
+void log_mcl_binary(std::ofstream& file) {
+
+    Pose robot_pose = getPose();
+
+    LogFrame frame;
+    frame.num_particles = NUM_PARTICLES;
+    frame.x = robot_pose.x;
+    frame.y = robot_pose.y;
+    frame.theta = robot_pose.theta;
+    frame.left = left.distance_sensor.get_distance() / 25.4;
+    frame.right = right.distance_sensor.get_distance() / 25.4;
+    frame.back = back.distance_sensor.get_distance() / 25.4;
+    frame.left_valid = left.get_valid();
+    frame.right_valid = right.get_valid();
+    frame.back_valid = back.get_valid();
+    frame.left_size = left.distance_sensor.get_object_size();
+    frame.right_size = right.distance_sensor.get_object_size();
+    frame.back_size = back.distance_sensor.get_object_size();
+    file.write(reinterpret_cast<const char*>(&frame), sizeof(LogFrame));
+    file.write(reinterpret_cast<const char*>(particles.data()),
+           particles.size() * sizeof(Particle));
+
+}
 
 // DOES NOT FIX THETA
 Pose get_pose_estimate() {
@@ -173,33 +197,23 @@ void initialize_mcl() {
 
     file.open("log.txt");
 
-    // if(!file.is_open()) {
-    //     master.set_text(0, 0, "Failed to open log file");
-    //     return;
-    // }
-
     Pose robot_pose = getPose();
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
-        double rand_x = init(rng);
-        double rand_y = init(rng);
-        particles[i].pose = Pose(clamp_field(robot_pose.x + rand_x), clamp_field(robot_pose.y + rand_y), robot_pose.theta);
+        particles[i].pose = robot_pose;
         particles[i].weight = 1.0 / NUM_PARTICLES;
     }
 
-    // log_mcl();
 }
 
 #define MAX_ERROR 6.0
-// #define MAX_LATERAL_ERROR 6.0
-
-// std::normal_distribution<double> lateral_noise(0, LATERAL_STDEV);
 static std::normal_distribution<double> odom_noise;
 
 void update_particles() {
 
     double velocity = sqrt(getSpeed().x * getSpeed().x + getSpeed().y * getSpeed().y);
-    odom_noise = std::normal_distribution<double>(0, velocity / 4);
+    double odom_stdev = std::max(velocity / 4, 0.05);
+    odom_noise = std::normal_distribution<double>(0, odom_stdev);
 
     Pose robot_speed = getSpeed();
     double robot_theta = getPose(true).theta;
@@ -233,12 +247,15 @@ void update_particles() {
                 break;
             }
             double reading = sensor->get_reading();
+            double sensor_stdev;
+            if(reading < 8) sensor_stdev = 0.2;
+            else sensor_stdev = reading * 0.05;
             double dev = reading - expected;
             if(fabs(dev) > MAX_ERROR) {
                 weight *= 0.0;
                 break;
             }
-            else weight *= std::exp(-(dev * dev) / (2 * SENSOR_STDEV * SENSOR_STDEV));
+            else weight *= std::exp(-(dev * dev) / (2 * sensor_stdev * sensor_stdev));
         }
 
         particles[i].weight = weight;
@@ -258,9 +275,12 @@ void update_particles() {
 
 }
 
+static std::uniform_real_distribution<double> dist;
+
 void resample_particles() {
+
     std::vector<Particle> newParticles(NUM_PARTICLES);
-    std::uniform_real_distribution<double> dist(0.0, 1.0 / NUM_PARTICLES);
+    dist = std::uniform_real_distribution<double>(0.0, 1.0 / NUM_PARTICLES);
 
     double r = dist(rng);
     double c = particles[0].weight;
@@ -279,5 +299,5 @@ void resample_particles() {
         p.weight = 1.0 / NUM_PARTICLES;
     }
     particles = newParticles;
-    // log_mcl();
+
 }

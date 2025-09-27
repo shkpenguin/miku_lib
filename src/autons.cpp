@@ -345,7 +345,7 @@ void initialize() {
     //     path->calculate_waypoints();
     // }
 
-    // pros::Task brain_display(display_selector);
+    pros::Task brain_display(display_selector);
 
 }
 

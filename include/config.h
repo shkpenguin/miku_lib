@@ -3,9 +3,9 @@
 #include "api.h"
 #include "misc.h"
 
-#define WHEEL_DIAMETER 2.75
-#define DT_GEAR_RATIO 1.0
-#define TRACK_WIDTH 12.5
+#define WHEEL_DIAMETER 3.25
+#define DT_GEAR_RATIO 0.75
+#define TRACK_WIDTH 12.0
 
 extern pros::Controller master;
 
@@ -31,6 +31,9 @@ extern pros::adi::DigitalOut descore_piston;
 // extern pros::Distance back;
 
 extern pros::Imu imu;
+
+struct Gains; // chopped
+struct ExitCondition; // chopped
 
 extern Gains drive_gains;
 extern Gains turn_gains;

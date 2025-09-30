@@ -2,11 +2,11 @@
 
 #include <vector>
 #include <cmath>
+#include "config.h"
 
 #define MAX_RPM 600
 #define GEAR_RATIO 1.0
-#define CIRC (2.75 * M_PI)
-#define TRACK_WIDTH 12.0
+#define CIRC (WHEEL_DIAMETER * M_PI)
 
 struct Waypoint {
     double x;

@@ -12,10 +12,10 @@
 #include <fstream>
 #include <climits>
 
-MCLDistance back(10, Pose(3.0, -6.25, M_PI));
-MCLDistance left(2, Pose(-5.0, 1.375, M_PI/2));
-MCLDistance right(9, Pose(5.0, 1.375, -M_PI/2));
-MCLDistance front(8, Pose(3.25, 8.25, 0.0));
+MCLDistance back(10, 3.0, -6.25, Orientation::BACK);
+MCLDistance left(2, -5.0, 1.375, Orientation::LEFT);
+MCLDistance right(9, 5.0, 1.375, Orientation::RIGHT);
+MCLDistance front(8, 3.25, 8.25, Orientation::FRONT);
 
 std::vector<MCLDistance*> sensors = {&front, &back, &left, &right};
 
@@ -23,7 +23,7 @@ void MCLDistance::update_reading() {
 
     if(!enabled) valid = false;
 
-    bool visible = distance_sensor.get_object_size() > 50 || distance_sensor.get_distance() < 100;
+    bool visible = distance_sensor.get_object_size() > 20 || distance_sensor.get_distance() < 100;
 
     bool within_range = distance_sensor.get_distance() < 2000;
 
@@ -43,17 +43,27 @@ inline void set_all_sensors(bool enabled) {
     }
 }
 
-double get_expected_reading(Pose particle_pose, Pose offset) {
-    double robot_theta = getPose(true).theta;
+double get_expected_reading(Point particle_position, double offset_x, double offset_y, double cos_theta, double sin_theta, Orientation orientation) {
 
-    double cos_theta = cos(robot_theta);
-    double sin_theta = sin(robot_theta);
+    double sensor_x = particle_position.x + offset_x * sin_theta + offset_y * cos_theta;
+    double sensor_y = particle_position.y - offset_x * cos_theta + offset_y * sin_theta;
 
-    double sensor_x = particle_pose.x + offset.x * sin_theta + offset.y * cos_theta;
-    double sensor_y = particle_pose.y - offset.x * cos_theta + offset.y * sin_theta;
+    double dx, dy;
 
-    double dx = cos(robot_theta + offset.theta);
-    double dy = sin(robot_theta + offset.theta);
+    switch (orientation) {
+        case Orientation::FRONT:
+            dx = cos_theta;
+            dy = sin_theta;
+        case Orientation::BACK:
+            dx = -cos_theta;
+            dy = -sin_theta;
+        case Orientation::LEFT:
+            dx = -sin_theta;
+            dy = cos_theta;
+        case Orientation::RIGHT:
+            dx = sin_theta;
+            dy = -cos_theta;
+    }
 
     double tMin = std::numeric_limits<double>::infinity();
 
@@ -133,8 +143,8 @@ void log_mcl() {
                << back.distance_sensor.get_object_size() << ",";
 
     for(size_t i = 0; i < particles.size(); ++i) {
-        log_buffer << particles[i].pose.x << "," 
-                << particles[i].pose.y << "," 
+        log_buffer << particles[i].position.x << "," 
+                << particles[i].position.y << "," 
                 << particles[i].weight;
         if(i != particles.size()-1) log_buffer << ","; // no trailing comma
     }
@@ -148,6 +158,8 @@ void flush_logs() {
     log_buffer.str("");
     log_buffer.clear();
 }
+
+#pragma pack(push, 1)
 
 void log_mcl_binary(std::ofstream& file) {
 
@@ -180,8 +192,8 @@ Pose get_pose_estimate() {
     double total_weight = 0.0;
 
     for(const auto& particle : particles) {
-        x += particle.pose.x * particle.weight;
-        y += particle.pose.y * particle.weight;
+        x += particle.position.x * particle.weight;
+        y += particle.position.y * particle.weight;
         total_weight += particle.weight;
     }
 
@@ -200,7 +212,7 @@ void initialize_mcl() {
     Pose robot_pose = getPose();
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
-        particles[i].pose = robot_pose;
+        particles[i].position = Point(robot_pose.x, robot_pose.y);
         particles[i].weight = 1.0 / NUM_PARTICLES;
     }
 
@@ -225,14 +237,15 @@ void update_particles() {
     }
 
     double total_weight = 0.0;
+    int invalid_readings = 0;
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
-        particles[i].pose.x = clamp_field(
-            particles[i].pose.x + 
+        particles[i].position.x = clamp_field(
+            particles[i].position.x + 
             robot_speed.x + 
             odom_noise(rng));
-        particles[i].pose.y = clamp_field(
-            particles[i].pose.y + 
+        particles[i].position.y = clamp_field(
+            particles[i].position.y + 
             robot_speed.y + 
             odom_noise(rng));
 
@@ -240,9 +253,12 @@ void update_particles() {
 
         for(auto &sensor : sensors) {
             if(!sensor->get_enabled() || !sensor->get_valid()) continue;
-            double expected = get_expected_reading(particles[i].pose, sensor->offset);
-            if(expected == -1) continue;
-            if(expected == -2) {
+            double expected = get_expected_reading(particles[i].position, sensor->offset_x, sensor->offset_y, cos_theta, sin_theta, sensor->orientation);
+            if(expected == -1) { // deadzone
+                invalid_readings++;
+                continue;
+            }
+            if(expected == -2) { // outside field
                 weight *= 0.0;
                 break;
             }
@@ -262,7 +278,8 @@ void update_particles() {
         total_weight += weight;
     }
 
-    if(total_weight == 0.0) {
+
+    if(invalid_readings > NUM_PARTICLES * 0.01 || total_weight == 0.0) {
         double weight = 1.0 / NUM_PARTICLES;
         for(int i = 0; i < NUM_PARTICLES; ++i) {
             particles[i].weight = weight;
@@ -275,14 +292,14 @@ void update_particles() {
 
 }
 
-static std::uniform_real_distribution<double> dist;
+static std::uniform_real_distribution<double> sampling_dist;
 
 void resample_particles() {
 
     std::vector<Particle> newParticles(NUM_PARTICLES);
-    dist = std::uniform_real_distribution<double>(0.0, 1.0 / NUM_PARTICLES);
+    sampling_dist = std::uniform_real_distribution<double>(0.0, 1.0 / NUM_PARTICLES);
 
-    double r = dist(rng);
+    double r = sampling_dist(rng);
     double c = particles[0].weight;
     int i = 0;
 

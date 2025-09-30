@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odom.h"
+#include "misc.h"
 #include "api.h"
 
 class MCLDistance {
@@ -9,13 +10,20 @@ class MCLDistance {
     bool enabled = true;
 public:
     pros::Distance distance_sensor;
-    Pose offset;
-    MCLDistance(int32_t port, Pose offset) : distance_sensor(port), offset(offset) {}
+    double offset_x, offset_y;
+    Orientation orientation;
+    MCLDistance(int32_t port, double offset_x, double offset_y, Orientation orientation) : 
+        distance_sensor(port), offset_x(offset_x), offset_y(offset_y), orientation(orientation) {}
     void set_enabled(bool enable) { enabled = enable; }
     void update_reading();
     bool get_enabled() { return enabled; }
     bool get_valid() { return valid; }
     double get_reading() { return data; }
+};
+
+struct Particle {
+    Point position; 
+    double weight; 
 };
 
 extern MCLDistance back;

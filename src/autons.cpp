@@ -10,6 +10,7 @@
 #include <vector>
 
 pros::Task* autonomous_task = nullptr;
+pros::Task* controller_display = nullptr;
 
 std::vector<ControlPoint> test_cp = {
     {24, -48, 0},
@@ -147,17 +148,8 @@ void setup() {
 }
 
 void test() {
-
-    // pros::delay(500);
-    // initialize_mcl({24, -48, 0});
-    // test_path.calculate_waypoints();
-    // test_waypoints = test_path.get_waypoints();
-    // ramsete(test_waypoints, 20000);
-    
-    // // turn_heading(90, 10000);
-    // move_point({0, -24}, 10000);
-    move_point({24, -24}, 10000, true);
-
+    move_pose(Pose(0, 48, 0), 3000);
+    master.rumble("...");
 }
 
 void pre_right_sawp() {
@@ -182,46 +174,46 @@ void right_sawp() {
     std::vector<Waypoint> right_sawp_5_waypoints = right_sawp_5.get_waypoints();
     std::vector<Waypoint> right_sawp_6_waypoints = right_sawp_6.get_waypoints();
 
-    intake.move_voltage(12000);
+    // intake.move_voltage(12000);
 
-    ramsete(right_sawp_1_waypoints, 3000, false, true, 2.0);
-    wait_until_done();
-    pros::delay(300);
-    set_loading(true);
-    turn_heading(180, 1200);
-    ramsete(right_sawp_2_waypoints, 600, false, false, 3.0, 500);
-    pros::delay(400);
-    move_time(-4000, 400);
-    move_time(0, 200);
-    turn_heading(0, 1000);
-    set_loading(false);
+    // ramsete(right_sawp_1_waypoints, 3000, false, true, 2.0);
+    // wait_until_done();
+    // pros::delay(300);
+    // set_loading(true);
+    // turn_heading(180, 1200);
+    // ramsete(right_sawp_2_waypoints, 600, false, false, 3.0, 500);
+    // pros::delay(400);
+    // move_time(-4000, 400);
+    // move_time(0, 200);
+    // turn_heading(0, 1000);
+    // set_loading(false);
 
-    set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
-    ramsete(right_sawp_3_waypoints, 600, false, true);
-    wait_until_within({48, -34}, 6.0);
-    set_lock(true);
-    wait_until_done();
-    pros::delay(1200);
-    set_lock(false);
-    set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
+    // set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
+    // ramsete(right_sawp_3_waypoints, 600, false, true);
+    // wait_until_within({48, -34}, 6.0);
+    // set_lock(true);
+    // wait_until_done();
+    // pros::delay(1200);
+    // set_lock(false);
+    // set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
 
-    move_time(-6000, 300);
-    turn_heading(-40, 700);
-    ramsete(right_sawp_4_waypoints, 2200);
-    intake.move_voltage(-8000);
-    pros::delay(1500);
-    intake.move_voltage(12000);
-    move_time(-6000, 200);
+    // move_time(-6000, 300);
+    // turn_heading(-40, 700);
+    // ramsete(right_sawp_4_waypoints, 2200);
+    // intake.move_voltage(-8000);
+    // pros::delay(1500);
+    // intake.move_voltage(12000);
+    // move_time(-6000, 200);
 
-    turn_heading(-90, 700);
-    ramsete(right_sawp_5_waypoints, 2000);
-    turn_heading(50, 700);
-    intake.move_velocity(4000);
-    ramsete(right_sawp_6_waypoints, 2000);
-    move_time(2000, 300);
-    set_hood(false);
-    set_lock(true);
-    move_time(2000, 800);
+    // turn_heading(-90, 700);
+    // ramsete(right_sawp_5_waypoints, 2000);
+    // turn_heading(50, 700);
+    // intake.move_velocity(4000);
+    // ramsete(right_sawp_6_waypoints, 2000);
+    // move_time(2000, 300);
+    // set_hood(false);
+    // set_lock(true);
+    // move_time(2000, 800);
 
 }
 
@@ -249,44 +241,44 @@ void right_elims() {
     std::vector<Waypoint> right_elims_6_waypoints = right_elims_6.get_waypoints();
     intake.move_voltage(12000);
 
-    ramsete(right_elims_1_waypoints, 3000, false, true, 2.0);
-    // // wait_until_within({48, -6}, 2.0); // elims block
-    // // intake.move_voltage(0);
-    wait_until_done();
-    move_time(-6000, 100);
-    turn_heading(-120, 1000);
-    intake.move_voltage(12000);
-    set_hood(true);
-    ramsete(right_elims_2_waypoints, 1500);
-    wait_until_done();
-    turn_heading(150, 700);
-    ramsete(right_elims_3_waypoints, 2000, false, false, 3.0);
-    turn_heading(0, 1000);
-    set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
-    ramsete(right_elims_4_waypoints, 1200, false, true);
-    wait_until_within({48, -34}, 5.0);
-    set_lock(true);
-    wait_until_done();
-    pros::delay(1300);
-    set_lock(false);
-    set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
+    // ramsete(right_elims_1_waypoints, 3000, false, true, 2.0);
+    // // // wait_until_within({48, -6}, 2.0); // elims block
+    // // // intake.move_voltage(0);
+    // wait_until_done();
+    // move_time(-6000, 100);
+    // turn_heading(-120, 1000);
+    // intake.move_voltage(12000);
+    // set_hood(true);
+    // ramsete(right_elims_2_waypoints, 1500);
+    // wait_until_done();
+    // turn_heading(150, 700);
+    // ramsete(right_elims_3_waypoints, 2000, false, false, 3.0);
+    // turn_heading(0, 1000);
+    // set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
+    // ramsete(right_elims_4_waypoints, 1200, false, true);
+    // wait_until_within({48, -34}, 5.0);
+    // set_lock(true);
+    // wait_until_done();
+    // pros::delay(1300);
+    // set_lock(false);
+    // set_drive_brake(pros::E_MOTOR_BRAKE_HOLD);
 
-    move_time(-4000, 400);
-    move_time(0, 300);
-    set_loading(true);
-    turn_heading(180, 1000);
-    ramsete(right_elims_5_waypoints, 600, false, false, 3.0, 200);
-    pros::delay(600);
-    move_time(-4000, 400);
-    move_time(0, 300);
-    turn_heading(0, 1000);
-    set_loading(false);
+    // move_time(-4000, 400);
+    // move_time(0, 300);
+    // set_loading(true);
+    // turn_heading(180, 1000);
+    // ramsete(right_elims_5_waypoints, 600, false, false, 3.0, 200);
+    // pros::delay(600);
+    // move_time(-4000, 400);
+    // move_time(0, 300);
+    // turn_heading(0, 1000);
+    // set_loading(false);
 
-    set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
-    ramsete(right_elims_6_waypoints, 600, false, true);
-    wait_until_within({48, -34}, 5.0);
-    set_lock(true);
-    wait_until_done();
+    // set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
+    // ramsete(right_elims_6_waypoints, 600, false, true);
+    // wait_until_within({48, -34}, 5.0);
+    // set_lock(true);
+    // wait_until_done();
 
 }
 
@@ -320,11 +312,12 @@ void init_autons() {
     autons.emplace_back("Right Elims", pre_right_elims, right_elims, Pose(18, -53, M_PI/6), right_elims_paths);
 }
 
+/*
 void initialize() {
 
     selected_index = 1;
 
-    pros::Task controller_display(display_controller);
+    controller_display = new pros::Task(display_controller);
 
     static Gif gif("/usd/miku.gif", lv_scr_act());
 
@@ -345,7 +338,7 @@ void initialize() {
     //     path->calculate_waypoints();
     // }
 
-    pros::Task brain_display(display_selector);
+    // pros::Task brain_display(display_selector);
 
 }
 
@@ -375,4 +368,33 @@ void autonomous() {
     });
 
     selected_auton.auton();  // only run if non-null
+}
+*/
+
+void initialize() {
+    controller_display = new pros::Task(display_controller);
+
+    static Gif gif("/usd/miku.gif", lv_scr_act());
+
+    imu.reset();
+	while(imu.is_calibrating()) {
+		pros::delay(10); // Wait for IMU calibration
+	}
+
+    left_motors.tare_position_all();
+    right_motors.tare_position_all();
+    intake.tare_position_all();
+}
+
+void autonomous() {
+    setPose(Pose(0, 0, 0));
+
+    autonomous_task = new pros::Task([]() {
+        while (true) {
+            update_odom();
+            pros::delay(10);
+        }
+    });
+
+    test();
 }

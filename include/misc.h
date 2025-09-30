@@ -29,11 +29,6 @@ struct Pose {
         : x(position.x), y(position.y), theta(theta) {}
 };
 
-struct Particle {
-    Pose pose; 
-    double weight; 
-};
-
 struct Gains {
     double kP;
     double kI;
@@ -85,27 +80,6 @@ struct ExitCondition {
     void reset();
 };
 
-enum Side {
-    LEFT,
-    RIGHT
-};
-
 bool get_lock();
 
 void tune_lut();
-
-class Auton {
-
-    public:
-    std::string name;
-    std::function<void()> pre_auton;
-    std::function<void()> auton;
-    
-    Pose start_pose;
-    std::vector<std::shared_ptr<BezierPath>> paths;
-
-    Auton(std::string name, std::function<void()> pre_auton, std::function<void()> auton, Pose start_pose, std::vector<std::shared_ptr<BezierPath>> paths)
-        : name(name), pre_auton(pre_auton), auton(auton), start_pose(start_pose), paths(paths) {}
-    Auton() = default;
-
-};

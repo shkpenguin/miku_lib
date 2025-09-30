@@ -7,7 +7,7 @@
 #include "config.h"
 #include "timer.h"
 
-void move_motors(double l, double r, bool reversed = false);
+void move_motors(double l, double r);
 
 void stop_motors();
 
@@ -21,15 +21,58 @@ void end_motion();
 void cancel_motion();
 void cancel_all_motions();
 
-void turn_heading(double target, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
-void turn_point(Point target, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
+struct TurnParams {
+    bool reverse = false;
+    bool async = false;
+    double cutoff = -1.0;
+    double max_speed = 12000;
+    double min_speed = 0;
+};
 
-void swing_heading(double target, Side locked_side, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
-void swing_point(Point target, Side locked_side, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
+struct SwingParams {
+    bool reverse = false;
+    bool async = false;
+    double cutoff = -1.0;
+    double max_speed = 12000;
+    double min_speed = 0;
+};
 
-void move_point(Point target, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
-void move_pose(Pose target, double timeout, bool reverse = false, bool async = false, double cutoff = -1.0);
+struct MovePointParams {
+    bool reverse = false;
+    bool async = false;
+    double cutoff = -1.0;
+    double max_speed = 12000;
+    double min_speed = 0;
+};
+
+struct MovePoseParams {
+    bool reverse = false;
+    bool async = false;
+    double cutoff = -1.0;
+    double max_vel = 100;
+    double min_vel = 0;
+    double angular_weight = 1.0; 
+};
+
+struct RamseteParams {
+    bool reverse = false;
+    bool async = false;
+    double cutoff = -1.0;
+    double max_vel = 100;
+    double min_vel = 0;
+    double angular_weight = 0.003;
+    double end_cutoff = 2.0;
+    double end_timeout = 1000;
+};
+
+void turn_heading(double target, double timeout, TurnParams params = TurnParams(false, false, -1.0, 12000, 0));
+void turn_point(Point target, double timeout, TurnParams params = TurnParams(false, false, -1.0, 12000, 0));
+
+void swing_heading(double target, Side locked_side, double timeout, SwingParams params = SwingParams(false, false, -1.0, 12000, 0));
+void swing_point(Point target, Side locked_side, double timeout, SwingParams params = SwingParams(false, false, -1.0, 12000, 0));
+
+void move_point(Point target, double timeout, MovePointParams params = MovePointParams(false, false, -1.0, 12000, 0));
+void move_pose(Pose target, double timeout, MovePoseParams params = MovePoseParams(false, false, -1.0, 100, 0, 1));
 void move_time(double volts, double timeout);
 
-void ramsete(std::vector<Waypoint> waypoints, double timeout, bool reverse = false, bool async = false, double cutoff = 6.0, double end_timeout = 1000,
-    double b = 0.003, double zeta = 0.7, double time_multi = 1.2);
+void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams params = RamseteParams(false, false, -1.0, 100, 0, 0.003, -1.0, 500));

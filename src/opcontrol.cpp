@@ -90,11 +90,9 @@ void opcontrol() {
         }
 
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
-            // display_task.suspend();
-            // tune_lut();
-            // break;
-
-            turn_heading(30, 10000);
+            controller_display->suspend();
+            tune_lut();
+            break;
         }
 
         if(driveMode == DriveMode::TANK) {

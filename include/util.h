@@ -44,6 +44,18 @@ inline double angle_error(double target, double current) {
     return wrap_angle(target - current, 2.0 * M_PI);
 }
 
+enum class Orientation {
+    LEFT,
+    RIGHT,
+    FRONT,
+    BACK
+};
+
+enum class Side {
+    LEFT,
+    RIGHT
+};
+
 void set_lock(bool state);
 void set_loading(bool state);
 void set_hood(bool state);

@@ -4,7 +4,7 @@
 #include "misc.h"
 
 #define WHEEL_DIAMETER 3.25
-#define DT_GEAR_RATIO 0.75
+#define GEAR_RATIO 0.75
 #define TRACK_WIDTH 12.0
 
 extern pros::Controller master;

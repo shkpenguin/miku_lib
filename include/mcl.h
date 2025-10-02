@@ -21,15 +21,20 @@ public:
     double get_reading() { return data; }
 };
 
-struct Particle {
-    Point position; 
-    double weight; 
-};
-
 extern MCLDistance back;
 extern MCLDistance left;
 extern MCLDistance right;
 extern MCLDistance front;
+
+extern std::vector<MCLDistance*> sensors;
+
+struct Particle {
+    Point position; 
+    double weight; 
+    std::vector<double> sensor_readings;
+
+    Particle() : position(0,0), weight(1.0) { sensor_readings.resize(sensors.size(), 0.0); }
+};
 
 void set_all_sensors(bool enabled);
 

@@ -231,12 +231,10 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
     // PID tuned in degrees
     PID turn_pid(turn_gains, 3.0, true);  
 
-    ExitCondition turnSmallExit(1.0, 400);  // 1 degree
-    ExitCondition turnLargeExit(3.0, 800);  // 3 degrees
-    turnSmallExit.reset();
-    turnLargeExit.reset();
+    turn_small_exit.reset();
+    turn_large_exit.reset();
 
-    while (!timer.isDone() && !turnSmallExit.getExit() && !turnLargeExit.getExit() && motion_running) {
+    while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
         double current_deg = getPose().theta * (180.0 / M_PI);  // convert to degrees
         double target_deg = atan2(target.x - getPose().x, target.y - getPose().y) * (180 / M_PI);
         double error = wrap_angle_180(target_deg - current_deg);      // error in degrees
@@ -247,8 +245,8 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
 
         move_motors(output, -output);
 
-        turnSmallExit.update(error);
-        turnLargeExit.update(error);
+        turn_small_exit.update(error);
+        turn_large_exit.update(error);
 
         pros::delay(10);
     }
@@ -260,6 +258,7 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
 }
 
 void move_point(Point target, double timeout, MovePointParams params) {
+
     request_motion_start();
     if (!motion_running) return;
 
@@ -279,8 +278,8 @@ void move_point(Point target, double timeout, MovePointParams params) {
     PID drive_pid(drive_gains);
     PID turn_pid(turn_gains, 2.0, true);
 
-    ExitCondition drive_small_exit(1.0, 400);  // 1-inch within for 200ms
-    ExitCondition drive_large_exit(3.0, 800); // 5-inches within for 1s
+    drive_small_exit.reset();
+    drive_large_exit.reset();
 
     double prev_drive_out = 0;
     double prev_turn_out = 0;
@@ -300,7 +299,7 @@ void move_point(Point target, double timeout, MovePointParams params) {
         // Distance error
         double drive_error = dist(current.x, current.y, target.x, target.y);
         if (fabs(drive_error) < 6.0) {
-            turn_error *= (drive_error / 6.0); // scale turn error when close
+            turn_error *= (drive_error / 6.0) * (drive_error / 6.0);
         }
 
         double angle_to_target = atan2(dy, dx);
@@ -334,6 +333,7 @@ void move_point(Point target, double timeout, MovePointParams params) {
 
     distance_traveled = -1;
     end_motion();
+
 }
 
 void move_pose(Pose target, double timeout, MovePoseParams params) {
@@ -353,21 +353,25 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
 
     distance_traveled = 0;
 
-    double theta = std::fmod(90 - theta, 360);
+    double theta = std::fmod(90 - target.theta, 360);
     theta *= M_PI / 180;
     Timer timer(timeout);
 
-    double k1 = 4;
-    double k2 = 8;
+    drive_small_exit.reset();
+    drive_large_exit.reset();
+
+    double k1 = 4.0;
+    double k2 = 4.0;
     double k3 = params.angular_weight;
 
-    while (dist(target.x, target.y, getPose().x, getPose().y) > params.cutoff && !timer.isDone()) {
-        double rh = std::fmod(getPose(true).theta, 2 * M_PI);
-        if (params.reverse) {
-            rh = std::fmod(rh + M_PI, 2 * M_PI);
-        }
+    while (!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone()) {
 
         double rho = dist(target.x, target.y, getPose().x, getPose().y);
+        if (rho < params.cutoff || rho < params.end_cutoff) break;
+
+        double rh = std::fmod(getPose(true).theta, 2 * M_PI);
+        if (params.reverse) rh = std::fmod(rh + M_PI, 2 * M_PI);
+        
         double gamma = std::remainder(std::atan2(target.y - getPose().y, target.x - getPose().x) - rh, 2 * M_PI);
         double delta = std::remainder(std::atan2(target.y - getPose().y, target.x - getPose().x) - theta, 2 * M_PI);
 
@@ -396,23 +400,27 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
         if (params.reverse) {
             double r_volts = voltage_lookup(-r_vel);
             double l_volts = voltage_lookup(-l_vel);
-            move_motors(-r_volts, -l_volts);
+            move_motors(-l_volts, -r_volts);
         } else {
             double r_volts = voltage_lookup(r_vel);
             double l_volts = voltage_lookup(l_vel);
-            move_motors(r_volts, l_volts);
+            move_motors(l_volts, r_volts);
         }
         
         pros::delay(10);
     }
 
-    move_point(Point(target.x, target.y), 1000, MovePointParams(params.reverse, false, params.cutoff, params.max_vel * 120, params.min_vel * 120));
+    if(params.cutoff > 0 && dist(target.x, target.y, getPose().x, getPose().y) < params.cutoff) {
+        distance_traveled = -1;
+        end_motion();
+        return;
+    }
 
-    left_motors.move_voltage(0);
-    right_motors.move_voltage(0);
-
-    distance_traveled = -1;
     end_motion();
+
+    distance_traveled = 0;
+
+    move_point(Point(target.x, target.y), timer.getTimeLeft(), MovePointParams(params.reverse, params.async, -1, params.max_vel * 120, params.min_vel * 120));
 
 }
 
@@ -471,20 +479,18 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
 
     distance_traveled = 0; // Track "progress" like other motions
 
-    ExitCondition drive_small_exit(1.0, 200);  // 1-inch within for 200ms
-    ExitCondition drive_large_exit(3.0, 500); // 5-inches within for 1s
+    drive_large_exit.reset();
+    drive_small_exit.reset();
 
-    while (time_passed < end_time - time_ahead ||
-            (time_passed < end_time - time_ahead - 1000 && !timer.isDone())) {
+    while (!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone() &&
+          time_passed < end_time - time_ahead ||
+          (time_passed < end_time - time_ahead - 1000 && !timer.isDone())) {
 
         double robot_x = getPose().x;
         double robot_y = getPose().y;
 
-        if(params.cutoff > 0) {
-            if (dist(robot_x, robot_y, end_x, end_y) < params.cutoff) {
-                break;
-            }
-        }
+        double distance_to_end = dist(end_x, end_y, getPose().x, getPose().y);
+        if (distance_to_end < params.cutoff || distance_to_end < params.end_cutoff) break;
 
         double robot_h = getPose(true).theta;
         if (params.reverse) robot_h = fmod(robot_h + M_PI, 2 * M_PI);
@@ -557,10 +563,16 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
         pros::delay(10);
     }
 
+    if(params.cutoff > 0 && dist(end_x, end_y, getPose().x, getPose().y) < params.cutoff) {
+        distance_traveled = -1;
+        end_motion();
+        return;
+    }
+
     end_motion();
 
     distance_traveled = 0;
 
-    move_point(Point(end_x, end_y), params.end_timeout, MovePointParams(params.reverse, false, params.cutoff, params.max_vel, params.min_vel));
+    move_point(Point(end_x, end_y), timer.getTimeLeft(), MovePointParams(params.reverse, params.async, -1, params.max_vel * 120, params.min_vel * 120));
 
 }

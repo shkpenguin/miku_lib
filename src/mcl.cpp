@@ -12,12 +12,12 @@
 #include <fstream>
 #include <climits>
 
-MCLDistance back(10, 3.0, -6.25, Orientation::BACK);
-MCLDistance left(2, -5.0, 1.375, Orientation::LEFT);
-MCLDistance right(9, 5.0, 1.375, Orientation::RIGHT);
-MCLDistance front(8, 3.25, 8.25, Orientation::FRONT);
+MCLDistance back(9, 3.5, -4.75, Orientation::BACK);
+MCLDistance left(4, -5.2, 0, Orientation::LEFT);
+MCLDistance right(8, 5.2, 0, Orientation::RIGHT);
+// MCLDistance front(8, 3.25, 8.25, Orientation::FRONT);
 
-std::vector<MCLDistance*> sensors = {&front, &back, &left, &right};
+std::vector<MCLDistance*> sensors = {&back, &left, &right};
 
 void MCLDistance::update_reading() {
 
@@ -54,15 +54,19 @@ double get_expected_reading(Point particle_position, double offset_x, double off
         case Orientation::FRONT:
             dx = cos_theta;
             dy = sin_theta;
+            break;
         case Orientation::BACK:
             dx = -cos_theta;
             dy = -sin_theta;
+            break;
         case Orientation::LEFT:
             dx = -sin_theta;
             dy = cos_theta;
+            break;
         case Orientation::RIGHT:
             dx = sin_theta;
             dy = -cos_theta;
+            break;
     }
 
     double tMin = std::numeric_limits<double>::infinity();
@@ -99,7 +103,7 @@ double get_expected_reading(Point particle_position, double offset_x, double off
         }
     }
 
-    if (!std::isfinite(tMin)) return -2 ; // no valid hit
+    if (!std::isfinite(tMin)) return -1; // no valid hit
 
     double x_intersect = sensor_x + tMin * dx;
     double y_intersect = sensor_y + tMin * dy;
@@ -121,14 +125,6 @@ std::mt19937_64 rng(std::random_device{}());
 
 std::ofstream file;
 std::ostringstream log_buffer;
-
-struct LogFrame {
-    int num_particles;
-    Pose x, y, theta;
-    double left, right, back;
-    bool left_valid, right_valid, back_valid;
-    double left_size, right_size, back_size;
-};
 
 void log_mcl() {
 
@@ -159,33 +155,6 @@ void flush_logs() {
     log_buffer.clear();
 }
 
-#pragma pack(push, 1)
-
-void log_mcl_binary(std::ofstream& file) {
-
-    Pose robot_pose = getPose();
-
-    LogFrame frame;
-    frame.num_particles = NUM_PARTICLES;
-    frame.x = robot_pose.x;
-    frame.y = robot_pose.y;
-    frame.theta = robot_pose.theta;
-    frame.left = left.distance_sensor.get_distance() / 25.4;
-    frame.right = right.distance_sensor.get_distance() / 25.4;
-    frame.back = back.distance_sensor.get_distance() / 25.4;
-    frame.left_valid = left.get_valid();
-    frame.right_valid = right.get_valid();
-    frame.back_valid = back.get_valid();
-    frame.left_size = left.distance_sensor.get_object_size();
-    frame.right_size = right.distance_sensor.get_object_size();
-    frame.back_size = back.distance_sensor.get_object_size();
-    file.write(reinterpret_cast<const char*>(&frame), sizeof(LogFrame));
-    file.write(reinterpret_cast<const char*>(particles.data()),
-           particles.size() * sizeof(Particle));
-
-}
-
-// DOES NOT FIX THETA
 Pose get_pose_estimate() {
     double x = 0.0;
     double y = 0.0;
@@ -232,12 +201,26 @@ void update_particles() {
     double sin_theta = sin(robot_theta);
     double cos_theta = cos(robot_theta);
 
+    std::vector<bool> valid_sensors(sensors.size(), true);
+
+    for(size_t i = 0; i < particles.size(); ++i) {
+        for(size_t j = 0; j < sensors.size(); ++j) {
+            particles[i].sensor_readings[j] = get_expected_reading(
+                particles[i].position, 
+                sensors[j]->offset_x, 
+                sensors[j]->offset_y, 
+                cos_theta, 
+                sin_theta, 
+                sensors[j]->orientation);
+            if(particles[i].sensor_readings[j] == -1) valid_sensors[j] = false;
+        }
+    }
+
     for(auto &sensor : sensors) {
         sensor->update_reading();
     }
 
     double total_weight = 0.0;
-    int invalid_readings = 0;
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
         particles[i].position.x = clamp_field(
@@ -251,18 +234,10 @@ void update_particles() {
 
         double weight = 1.0;
 
-        for(auto &sensor : sensors) {
-            if(!sensor->get_enabled() || !sensor->get_valid()) continue;
-            double expected = get_expected_reading(particles[i].position, sensor->offset_x, sensor->offset_y, cos_theta, sin_theta, sensor->orientation);
-            if(expected == -1) { // deadzone
-                invalid_readings++;
-                continue;
-            }
-            if(expected == -2) { // outside field
-                weight *= 0.0;
-                break;
-            }
-            double reading = sensor->get_reading();
+        for(int j = 0; j < sensors.size(); ++j) {
+            if(!valid_sensors[j] || !sensors[j]->get_enabled() || !sensors[j]->get_valid()) continue;
+            double expected = particles[i].sensor_readings[j];
+            double reading = sensors[j]->get_reading();
             double sensor_stdev;
             if(reading < 8) sensor_stdev = 0.2;
             else sensor_stdev = reading * 0.05;
@@ -278,8 +253,7 @@ void update_particles() {
         total_weight += weight;
     }
 
-
-    if(invalid_readings > NUM_PARTICLES * 0.01 || total_weight == 0.0) {
+    if(total_weight == 0.0) {
         double weight = 1.0 / NUM_PARTICLES;
         for(int i = 0; i < NUM_PARTICLES; ++i) {
             particles[i].weight = weight;

@@ -39,8 +39,8 @@ void update_odom() {
     double heading = robot_pose.theta + theta_delta;
     double avg_heading = robot_pose.theta + theta_delta / 2;
 
-    double left_delta_in = left_delta * WHEEL_DIAMETER * M_PI / 360.0;
-    double right_delta_in = right_delta * WHEEL_DIAMETER * M_PI / 360.0;
+    double left_delta_in = left_delta * WHEEL_DIAMETER * GEAR_RATIO * M_PI / 360.0;
+    double right_delta_in = right_delta * WHEEL_DIAMETER * GEAR_RATIO * M_PI / 360.0;
 
     double mid_delta_in = (left_delta_in + right_delta_in) / 2.0;
 

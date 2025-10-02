@@ -148,7 +148,8 @@ void setup() {
 }
 
 void test() {
-    move_pose(Pose(0, 48, 0), 3000);
+    move_pose(Pose(0, 48, 0), 3000, { .angular_weight = 1 });
+    // move_point(Point(0, 48), 3000);
     master.rumble("...");
 }
 
@@ -376,25 +377,52 @@ void initialize() {
 
     static Gif gif("/usd/miku.gif", lv_scr_act());
 
+    /*
+    left_motors.tare_position_all();
+    right_motors.tare_position_all();
+    intake.tare_position_all();
+
     imu.reset();
 	while(imu.is_calibrating()) {
 		pros::delay(10); // Wait for IMU calibration
 	}
 
-    left_motors.tare_position_all();
-    right_motors.tare_position_all();
-    intake.tare_position_all();
-}
-
-void autonomous() {
-    setPose(Pose(0, 0, 0));
+    setPose(Pose(24, -48, M_PI / 2));
+    initialize_mcl();
 
     autonomous_task = new pros::Task([]() {
         while (true) {
             update_odom();
+            log_mcl();
+
+            update_particles();
+            log_mcl();
+
+            Pose belief = get_pose_estimate();
+            belief.theta = getPose().theta;
+            setPose(belief);
+
+            resample_particles();
+
             pros::delay(10);
         }
     });
 
+    pros::Task log_task = pros::Task([]() {
+        while (true) {
+            flush_logs();
+            pros::delay(1000);
+        }
+    });
+
+    pros::delay(10);
+
+    */
+
+}
+
+void autonomous() {
+
     test();
+
 }

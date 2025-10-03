@@ -15,9 +15,9 @@
 MCLDistance back(9, 3.5, -4.75, Orientation::BACK);
 MCLDistance left(4, -5.2, 0, Orientation::LEFT);
 MCLDistance right(8, 5.2, 0, Orientation::RIGHT);
-// MCLDistance front(8, 3.25, 8.25, Orientation::FRONT);
+MCLDistance front(7, 3.25, 8.25, Orientation::FRONT);
 
-std::vector<MCLDistance*> sensors = {&back, &left, &right};
+std::vector<MCLDistance*> sensors = {&front, &back, &left, &right};
 
 void MCLDistance::update_reading() {
 

@@ -8,8 +8,6 @@
 #include "util.h"
 #include "mp.h"
 
-double voltage_lookup(double velocity);
-
 struct Point {
     double x;
     double y;
@@ -81,5 +79,7 @@ struct ExitCondition {
 };
 
 bool get_lock();
+
+double voltage_lookup(double velocity);
 
 void tune_lut();

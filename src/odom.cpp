@@ -7,16 +7,16 @@
 Pose robot_pose = Pose(0, 0, 0);
 Pose robot_speed = Pose(0, 0, 0);
 
-Pose getPose(bool standard) {
+Pose get_pose(bool standard) {
     if(standard) return Pose(robot_pose.x, robot_pose.y, M_PI/2 - robot_pose.theta);
     return robot_pose;
 }
 
-Pose getSpeed() {
+Pose get_speed() {
     return robot_speed;
 }
 
-void setPose(Pose new_pose) {
+void set_pose(Pose new_pose) {
     robot_pose = new_pose;
 }
 

@@ -34,7 +34,7 @@ void wait_until_done() {
 void wait_until_within(Point target, double threshold) {
     do {
         pros::delay(10);
-    } while (std::hypot(getPose().x - target.x, getPose().y - target.y) > threshold && distance_traveled != -1);
+    } while (std::hypot(get_pose().x - target.x, get_pose().y - target.y) > threshold && distance_traveled != -1);
 }
 
 void request_motion_start() {
@@ -91,7 +91,7 @@ void turn_heading(double target, double timeout, TurnParams params) {
     turn_large_exit.reset();
 
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
-        double current_deg = getPose().theta * (180.0 / M_PI);  // convert to degrees
+        double current_deg = get_pose().theta * (180.0 / M_PI);  // convert to degrees
         double error = wrap_angle_180(target - current_deg);      // error in degrees
 
         if (params.cutoff > 0 && fabs(error) < params.cutoff) break;
@@ -139,8 +139,8 @@ void turn_point(Point target, double timeout, TurnParams params) {
     turn_large_exit.reset();
 
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
-        double current_deg = getPose().theta * (180.0 / M_PI);  // convert to degrees
-        double target_deg = atan2(target.x - getPose().x, target.y - getPose().y) * (180 / M_PI);
+        double current_deg = get_pose().theta * (180.0 / M_PI);  // convert to degrees
+        double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
         double error = wrap_angle_180(target_deg - current_deg);      // error in degrees
 
         if (params.cutoff > 0 && fabs(error) < params.cutoff) break;
@@ -186,7 +186,7 @@ void swing_heading(double target, Side locked_side, double timeout, SwingParams 
     turn_large_exit.reset();
 
     while(!turn_small_exit.getExit() && !turn_large_exit.getExit() && !timer.isDone()) {
-        double error = target - wrap_angle(getPose().theta * (180 / M_PI), 360);
+        double error = target - wrap_angle(get_pose().theta * (180 / M_PI), 360);
         if(params.cutoff > 0 && fabs(error) < params.cutoff) break;
 
         double output = turn_pid.update(error);
@@ -194,9 +194,9 @@ void swing_heading(double target, Side locked_side, double timeout, SwingParams 
         turn_large_exit.update(error);
 
         if(locked_side == Side::LEFT) {
-            right_motors.move_velocity(output);
+            right_motors.move_voltage(output);
         } else {
-            left_motors.move_velocity(output);
+            left_motors.move_voltage(output);
         }
 
         pros::delay(10);
@@ -235,8 +235,8 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
     turn_large_exit.reset();
 
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
-        double current_deg = getPose().theta * (180.0 / M_PI);  // convert to degrees
-        double target_deg = atan2(target.x - getPose().x, target.y - getPose().y) * (180 / M_PI);
+        double current_deg = get_pose().theta * (180.0 / M_PI);  // convert to degrees
+        double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
         double error = wrap_angle_180(target_deg - current_deg);      // error in degrees
 
         if (params.cutoff > 0 && fabs(error) < params.cutoff) break;
@@ -285,7 +285,7 @@ void move_point(Point target, double timeout, MovePointParams params) {
     double prev_turn_out = 0;
 
     while (!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone()) {
-        Point current(getPose().x, getPose().y);
+        Point current(get_pose().x, get_pose().y);
 
         // Calculate angle error in compass frame (0 = +Y)
         double dx = target.x - current.x;
@@ -293,7 +293,7 @@ void move_point(Point target, double timeout, MovePointParams params) {
         double desired_deg = atan2(dx, dy);
         if (params.reverse) desired_deg = wrap_angle(desired_deg + M_PI, 2 * M_PI);
 
-        double current_deg = getPose().theta;
+        double current_deg = get_pose().theta;
         double turn_error = wrap_angle(desired_deg - current_deg, 2 * M_PI) * (180.0 / M_PI);  
 
         // Distance error
@@ -303,7 +303,7 @@ void move_point(Point target, double timeout, MovePointParams params) {
         }
 
         double angle_to_target = atan2(dy, dx);
-        double angle_error = wrap_angle(angle_to_target - getPose(true).theta, 2 * M_PI);
+        double angle_error = wrap_angle(angle_to_target - get_pose(true).theta, 2 * M_PI);
 
         drive_error *= std::cos(angle_error);  // Scale error by heading alignment
 
@@ -366,14 +366,14 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
 
     while (!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone()) {
 
-        double rho = dist(target.x, target.y, getPose().x, getPose().y);
+        double rho = dist(target.x, target.y, get_pose().x, get_pose().y);
         if (rho < params.cutoff || rho < params.end_cutoff) break;
 
-        double rh = std::fmod(getPose(true).theta, 2 * M_PI);
+        double rh = std::fmod(get_pose(true).theta, 2 * M_PI);
         if (params.reverse) rh = std::fmod(rh + M_PI, 2 * M_PI);
         
-        double gamma = std::remainder(std::atan2(target.y - getPose().y, target.x - getPose().x) - rh, 2 * M_PI);
-        double delta = std::remainder(std::atan2(target.y - getPose().y, target.x - getPose().x) - theta, 2 * M_PI);
+        double gamma = std::remainder(std::atan2(target.y - get_pose().y, target.x - get_pose().x) - rh, 2 * M_PI);
+        double delta = std::remainder(std::atan2(target.y - get_pose().y, target.x - get_pose().x) - theta, 2 * M_PI);
 
         double v = k1 * rho * std::cos(gamma);
         double w;
@@ -410,7 +410,7 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
         pros::delay(10);
     }
 
-    if(params.cutoff > 0 && dist(target.x, target.y, getPose().x, getPose().y) < params.cutoff) {
+    if(params.cutoff > 0 && dist(target.x, target.y, get_pose().x, get_pose().y) < params.cutoff) {
         distance_traveled = -1;
         end_motion();
         return;
@@ -420,7 +420,7 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
 
     distance_traveled = 0;
 
-    move_point(Point(target.x, target.y), timer.getTimeLeft(), MovePointParams(params.reverse, params.async, -1, params.max_vel * 120, params.min_vel * 120));
+    move_point(Point(target.x, target.y), timer.getTimeLeft(), MovePointParams(params.reverse, params.async, params.cutoff, params.max_vel * 120, params.min_vel * 120));
 
 }
 
@@ -486,13 +486,13 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
           time_passed < end_time - time_ahead ||
           (time_passed < end_time - time_ahead - 1000 && !timer.isDone())) {
 
-        double robot_x = getPose().x;
-        double robot_y = getPose().y;
+        double robot_x = get_pose().x;
+        double robot_y = get_pose().y;
 
-        double distance_to_end = dist(end_x, end_y, getPose().x, getPose().y);
+        double distance_to_end = dist(end_x, end_y, get_pose().x, get_pose().y);
         if (distance_to_end < params.cutoff || distance_to_end < params.end_cutoff) break;
 
-        double robot_h = getPose(true).theta;
+        double robot_h = get_pose(true).theta;
         if (params.reverse) robot_h = fmod(robot_h + M_PI, 2 * M_PI);
 
         // Update closest waypoint
@@ -563,7 +563,7 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
         pros::delay(10);
     }
 
-    if(params.cutoff > 0 && dist(end_x, end_y, getPose().x, getPose().y) < params.cutoff) {
+    if(params.cutoff > 0 && dist(end_x, end_y, get_pose().x, get_pose().y) < params.cutoff) {
         distance_traveled = -1;
         end_motion();
         return;
@@ -573,6 +573,6 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
 
     distance_traveled = 0;
 
-    move_point(Point(end_x, end_y), timer.getTimeLeft(), MovePointParams(params.reverse, params.async, -1, params.max_vel * 120, params.min_vel * 120));
+    move_point(Point(end_x, end_y), timer.getTimeLeft(), MovePointParams(params.reverse, params.async, params.cutoff, params.max_vel * 120, params.min_vel * 120));
 
 }

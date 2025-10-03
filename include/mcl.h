@@ -42,6 +42,6 @@ double get_expected_reading(Pose particle_pose, Pose offset);
 void log_mcl();
 void flush_logs();
 Pose get_pose_estimate();
-void initialize_mcl();
+void initialize_pose(Pose robot_pose);
 void update_particles();
 void resample_particles();

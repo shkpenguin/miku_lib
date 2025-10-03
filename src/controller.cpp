@@ -1,7 +1,7 @@
 #define FMT_HEADER_ONLY
 #include "fmt/core.h"
 #include "api.h"
-#include "notif.h"
+#include "controller.h"
 #include "config.h"
 #include "timer.h"
 #include "odom.h"
@@ -9,7 +9,6 @@
 #include "misc.h"
 #include <vector>
 
-Timer item_timer;
 Timer rumble_timer;
 
 struct DisplayItem {
@@ -41,29 +40,19 @@ std::vector<DisplayItem> code_display = {
     DisplayItem(
         []() -> std::string { 
             if(imu.is_calibrating()) return "IMU calibrating";
-            return fmt::format("{:.2f}", getPose().x) + " " + fmt::format("{:.2f}", getPose().y) + " " + fmt::format("{:.2f}", (getPose().theta * (180.0 / M_PI))); 
+            return fmt::format("{:.2f}", get_pose().x) + " " + fmt::format("{:.2f}", get_pose().y) + " " + fmt::format("{:.2f}", (get_pose().theta * (180.0 / M_PI))); 
         }, 
         2000, 
         NotificationType::DISPLAY
-    )
-    // DisplayItem(
-    //     []() -> std::string { 
-    //         if(imu.is_calibrating()) return "IMU calibrating";
-    //         return fmt::format("{:.2f}", getPose().theta * (180.0 / M_PI));
-    //     }, 
-    //     2000, 
-    //     NotificationType::DISPLAY
-    // )
-    // DisplayItem(
-    //     []() -> std::string { 
-    //         if(imu.is_calibrating()) return "IMU calibrating";
-    //         return fmt::format("{:.2f}", get_expected_reading(getPose(), back.offset)) + " " + 
-    //                fmt::format("{:.2f}", get_expected_reading(getPose(), left.offset)) + " " + 
-    //                fmt::format("{:.2f}", get_expected_reading(getPose(), right.offset));
-    //     }, 
-    //     2000, 
-    //     NotificationType::DISPLAY
-    // )
+    ),
+    DisplayItem(
+        []() -> std::string { 
+            if(imu.is_calibrating()) return "IMU calibrating";
+            return fmt::format("{:.2f}", get_pose().theta * (180.0 / M_PI));
+        }, 
+        2000, 
+        NotificationType::DISPLAY
+    ),
 };
 
 std::vector<DisplayItem> temp_display = {
@@ -171,7 +160,6 @@ void display() {
 
 void display_controller() {
 
-    item_timer.set(0);
     rumble_timer.set(1000);
 
     int default_index = 0;
@@ -195,22 +183,20 @@ void display_controller() {
             continue;
         }
 
-        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
+        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)) {
             master.rumble("-");
             display_index = (display_index + 1) % displays.size();
             default_index = 0;
-            master.set_text(0, 0, "            ");
+            master.set_text(0, 0, "              ");
             pros::delay(10);
             current = displays[display_index].first[default_index];
-            item_timer.set(current.timeout_ms);
         }
 
-        else if(item_timer.isDone()) {
+        else if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
             default_index = (default_index + 1) % displays[display_index].first.size();
             current = displays[display_index].first[default_index];
-            master.set_text(0, 0, "            ");
+            master.set_text(0, 0, "              ");
             pros::delay(10);
-            item_timer.set(current.timeout_ms);
         }
 
         std::string msg = current.message_func();

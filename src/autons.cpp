@@ -4,13 +4,15 @@
 #include "mcl.h"
 #include "misc.h"
 #include "autons.h"
-#include "notif.h"
+#include "controller.h"
 #include "util.h"
 #include "gif-pros/gifclass.hpp"
+#include "subsystems.h"
 #include <vector>
 
 pros::Task* autonomous_task = nullptr;
-pros::Task* controller_display = nullptr;
+pros::Task* intake_task = nullptr;
+pros::Task* controller_task = nullptr;
 
 std::vector<ControlPoint> test_cp = {
     {24, -48, 0},
@@ -350,7 +352,7 @@ void autonomous() {
     Auton& selected_auton = autons[selected_index];
 
     Pose start = selected_auton.start_pose;
-    setPose(start);
+    set_pose(start);
     initialize_mcl();
 
     autonomous_task = new pros::Task([]() {
@@ -359,8 +361,8 @@ void autonomous() {
             update_particles();
 
             Pose belief = get_pose_estimate();
-            belief.theta = getPose().theta;
-            setPose(belief);
+            belief.theta = get_pose().theta;
+            set_pose(belief);
 
             resample_particles();
 
@@ -373,34 +375,45 @@ void autonomous() {
 */
 
 void initialize() {
-    controller_display = new pros::Task(display_controller);
+
+    controller_task = new pros::Task(display_controller);
 
     static Gif gif("/usd/miku.gif", lv_scr_act());
 
-    /*
     left_motors.tare_position_all();
     right_motors.tare_position_all();
     intake.tare_position_all();
 
+    master.clear();
+
     imu.reset();
 	while(imu.is_calibrating()) {
-		pros::delay(10); // Wait for IMU calibration
+		pros::delay(10);
 	}
 
-    setPose(Pose(24, -48, M_PI / 2));
-    initialize_mcl();
+    initialize_pose(Pose(24, 48, 90));
+    #if LOGGING_ENABLED
+    file.open("log.txt");
+    #endif
+
+    intake_task = new pros::Task(intake_control);
 
     autonomous_task = new pros::Task([]() {
         while (true) {
+            #if LOGGING_ENABLED
             update_odom();
             log_mcl();
 
             update_particles();
             log_mcl();
+            #else
+            update_odom();
+            update_particles();
+            #endif
 
             Pose belief = get_pose_estimate();
-            belief.theta = getPose().theta;
-            setPose(belief);
+            belief.theta = get_pose().theta;
+            set_pose(belief);
 
             resample_particles();
 
@@ -408,16 +421,16 @@ void initialize() {
         }
     });
 
+    #if LOGGING_ENABLED
     pros::Task log_task = pros::Task([]() {
         while (true) {
             flush_logs();
             pros::delay(1000);
         }
     });
+    #endif
 
     pros::delay(10);
-
-    */
 
 }
 

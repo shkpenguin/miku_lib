@@ -2,42 +2,43 @@
 
 #include "api.h"
 #include "misc.h"
+#include "motor.h"
 
 #define WHEEL_DIAMETER 3.25
 #define GEAR_RATIO 0.75
 #define TRACK_WIDTH 12.0
 
+#define LOGGING_ENABLED 0
+
 extern pros::Controller master;
 
-extern pros::MotorGroup left_motors;
-extern pros::MotorGroup right_motors;
+extern miku::MotorGroup left_motors;
+extern miku::MotorGroup right_motors;
 
-extern pros::Motor left_front;
-extern pros::Motor left_middle;
-extern pros::Motor left_back;
-extern pros::Motor right_front;
-extern pros::Motor right_middle;
-extern pros::Motor right_back;
+extern miku::Motor left_front;
+extern miku::Motor left_middle;
+extern miku::Motor left_back;
+extern miku::Motor right_front;
+extern miku::Motor right_middle;
+extern miku::Motor right_back;
 
-extern pros::Motor bottom_intake;
-extern pros::Motor top_intake;
-extern pros::MotorGroup intake;
+extern miku::Motor bottom_intake;
+extern miku::Motor top_intake;
+extern miku::MotorGroup intake;
 
 extern pros::adi::DigitalOut hood_piston;
 extern pros::adi::DigitalOut lock_piston;
 extern pros::adi::DigitalOut loader_piston;
 extern pros::adi::DigitalOut descore_piston;
 
-// extern pros::Distance back;
-
 extern pros::Imu imu;
 
-struct Gains; // chopped
-struct ExitCondition; // chopped
+struct Gains;
+struct ExitCondition;
 
 extern Gains drive_gains;
 extern Gains turn_gains;
-extern Gains angular_gains;
+extern Gains intake_gains;
 
 extern ExitCondition drive_small_exit;
 extern ExitCondition drive_large_exit;

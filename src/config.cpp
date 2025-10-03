@@ -2,20 +2,20 @@
 
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 
-pros::MotorGroup left_motors({-11, -12, 13});
-pros::MotorGroup right_motors({20, 17, -18});
+miku::MotorGroup left_motors({-11, -12, 13});
+miku::MotorGroup right_motors({20, 17, -18});
 
-pros::MotorGroup intake({-1, 10});
+miku::MotorGroup intake({-1, 10});
 
-pros::Motor left_front(-12);
-pros::Motor left_middle(-12);
-pros::Motor left_back(13);
-pros::Motor right_front(20);
-pros::Motor right_middle(17);
-pros::Motor right_back(-18);
+miku::Motor left_front(-12);
+miku::Motor left_middle(-12);
+miku::Motor left_back(13);
+miku::Motor right_front(20);
+miku::Motor right_middle(17);
+miku::Motor right_back(-18);
 
-pros::Motor top_intake(-1);
-pros::Motor bottom_intake(10);
+miku::Motor top_intake(-1);
+miku::Motor bottom_intake(10);
 
 pros::Imu imu(3);
 
@@ -26,6 +26,7 @@ pros::adi::DigitalOut descore_piston('D');
 
 Gains drive_gains(500.0, 0.0, 3000.0);
 Gains turn_gains(340.0, 10.0, 4100.0);
+Gains intake_gains(200.0, 0.0, 1000.0);
 
 ExitCondition drive_small_exit(1.0, 400);  
 ExitCondition drive_large_exit(3.0, 800); 

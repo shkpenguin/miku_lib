@@ -15,3 +15,4 @@ struct DisplayItem;
 void add_warning(const std::string& warning, NotificationType type);
 
 void display_controller();
+extern pros::Task* controller_task;

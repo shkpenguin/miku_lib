@@ -26,8 +26,8 @@ double prev_theta_raw = robot_pose.theta * 180.0 / M_PI;
 
 void update_odom() {
 
-    double left_raw = left_motors.get_position();   
-    double right_raw = right_motors.get_position();
+    double left_raw = left_motors.get_average_position();   
+    double right_raw = right_motors.get_average_position();
 
     double theta_raw = imu.get_rotation() * M_PI / 180.0;
 

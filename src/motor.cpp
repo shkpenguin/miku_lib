@@ -36,6 +36,14 @@ double miku::MotorGroup::get_average_velocity() {
     return sum / velocities.size();
 }
 
+double miku::MotorGroup::get_average_position() {
+    double sum = 0;
+    for(auto motor : motors) {
+        sum += motor->get_position();
+    }
+    return sum / motors.size();
+}
+
 std::int32_t miku::MotorGroup::tare_position_all(void) const {
     for(auto motor : motors) {
         motor->tare_position();

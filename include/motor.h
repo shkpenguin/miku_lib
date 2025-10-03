@@ -53,6 +53,8 @@ std::vector<double> get_estimated_velocities();
 // Uses get_estimated_velocity() to return the average velocity of the group
 double get_average_velocity();
 
+double get_average_position();
+
 std::int32_t tare_position_all(void) const;
 
 std::int32_t set_brake_mode_all(pros::motor_brake_mode_e mode);

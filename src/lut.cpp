@@ -86,10 +86,8 @@ void tune_lut() {
 
         if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) drive_voltage *= -1;
 
-        std::vector<double> left_vel = left_motors.get_actual_velocity_all();
-        std::vector<double> right_vel = right_motors.get_actual_velocity_all();
-        double left_avg = std::accumulate(left_vel.begin(), left_vel.end(), 0.0) / left_vel.size();
-        double right_avg = std::accumulate(right_vel.begin(), right_vel.end(), 0.0) / right_vel.size();
+        double left_avg = left_motors.get_average_velocity();
+        double right_avg = right_motors.get_average_velocity();
 
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
             left_motors.move_voltage(drive_voltage);
@@ -100,7 +98,7 @@ void tune_lut() {
         }
 
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
-            master.set_text(0, 0, "velocity: " + std::to_string((left_avg + right_avg) / (2 * 2)));
+            master.set_text(0, 0, "velocity: " + std::to_string((left_avg + right_avg) / (2)));
         } else {
             master.set_text(0, 0, "voltage: " + std::to_string(drive_voltage));
         }

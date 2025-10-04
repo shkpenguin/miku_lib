@@ -21,10 +21,10 @@ struct Pose {
     double y;
     double theta; 
 
-    Pose(double x = 0.0, double y = 0.0, double theta = 0.0) 
-        : x(x), y(y), theta(theta) {}
-    Pose(Point position, double theta = 0.0) 
-        : x(position.x), y(position.y), theta(theta) {}
+    Pose(double x = 0.0, double y = 0.0, double theta = 0.0, bool radians = true) 
+        : x(x), y(y), theta(radians ? theta : theta * M_PI / 180.0) {}
+    Pose(Point position, double theta = 0.0, bool radians = true) 
+        : x(position.x), y(position.y), theta(radians ? theta : theta * M_PI / 180.0) {}
 };
 
 struct Gains {
@@ -35,6 +35,12 @@ struct Gains {
     Gains(double kP, double kI, double kD) : kP(kP), kI(kI), kD(kD) {}
 };
 
+/* *
+ * @param Gains gains The PID gains
+ * @param double windupRange The range at which to limit the integral term (default 0, no limit)
+ * @param bool signFlipReset Whether to reset the integral term when the error changes sign (default false)
+ * @param bool trapezoidal Whether to use trapezoidal integration for the integral term (default true)
+*/
 class PID {
     public:
         PID(double kP, double kI, double kD, double windupRange = 0, bool signFlipReset = false, bool trapezoidal = true);

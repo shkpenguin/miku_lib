@@ -15,11 +15,11 @@ pros::Task* intake_task = nullptr;
 pros::Task* controller_task = nullptr;
 
 std::vector<ControlPoint> test_cp = {
-    {24, -48, 0},
-    {24, -24, 20},
-    // {24, 24, 30},
-    {0, 48, 20},
-    {0, 48, 20}
+    {0, -48, 0},
+    {0, -48, 20},
+    {24, -48, 20},
+    {48, -48, 20},
+    {48, -48, 0}
 };
 
 std::vector<ControlPoint> right_elims_cp_1 = {
@@ -128,7 +128,6 @@ std::vector<ControlPoint> right_sawp_cp_6 = {
 };
 
 BezierPath test_path(test_cp);
-std::vector<Waypoint> test_waypoints;
 
 BezierPath right_elims_1(right_elims_cp_1);
 BezierPath right_elims_2(right_elims_cp_2);
@@ -146,12 +145,14 @@ BezierPath right_sawp_5(right_sawp_cp_5);
 BezierPath right_sawp_6(right_sawp_cp_6);
 
 void setup() {
-    turn_heading(30, 10000);
+    
+    set_drive_brake(pros::E_MOTOR_BRAKE_BRAKE);
+
 }
 
 void test() {
-    move_pose(Pose(0, 48, 0), 3000, { .angular_weight = 1 });
-    // move_point(Point(0, 48), 3000);
+    test_path.calculate_waypoints();
+    ramsete(test_path.get_waypoints(), 10000);
     master.rumble("...");
 }
 
@@ -285,13 +286,79 @@ void right_elims() {
 
 }
 
+std::vector<ControlPoint> right_9ball_cp_1 = {
+    {8, -48, 0},
+    {8, -48, 60},
+    {23, -24, 40},
+    {38, -14, 40},
+    {48, -7, 20},
+    {48, -7, 0}
+};
+
+std::vector<ControlPoint> right_9ball_cp_2 = {
+    {48, -7, 0},
+    {48, -7, 30},
+    {40, -36, 40},
+    {50, -48, 30},
+    {50, -48, 0}
+};
+
+BezierPath right_9ball_1(right_9ball_cp_1);
+BezierPath right_9ball_2(right_9ball_cp_2);
+
+void pre_right_9ball() {
+
+    set_drive_brake(pros::E_MOTOR_BRAKE_BRAKE);
+
+}
+
+void right_9ball() {
+
+    right_9ball_1.calculate_waypoints();
+    right_9ball_2.calculate_waypoints();
+
+    intake.move_voltage(12000);
+    ramsete(right_9ball_1.get_waypoints(), 3000, {.cutoff = 3.0, .end_cutoff = 3.0});
+    ramsete(right_9ball_2.get_waypoints(), 1800, {.reverse = true, .angular_weight = 0.01, .end_cutoff = 2.0});
+    set_hood(true);
+    intake.move_voltage(0);
+    set_lock(true);
+    // turn_heading(0, 500, {.cutoff = 10.0});
+    // move_pose({49, -24, 0}, 1000);
+    move_point({48, -26}, 1000);
+    intake.move_voltage(12000);
+    pros::delay(1200);
+    move_pose({46, -54, 180}, 1200, {.async = true, .distance_weight = 5.0, .angular_weight = 2.0});
+    pros::delay(200);
+    set_lock(false);
+    set_loading(true);
+    wait_until_done();
+    move_point({48, -65}, 1000);
+    move_time(5000, 1000);
+    intake.move_voltage(0);
+    set_lock(true);
+    move_pose({48, -28, 0}, 1800, {.async = true, .distance_weight = 2.5, .angular_weight = 1.5});
+    pros::delay(200);
+    set_loading(false);
+    wait_until_done();
+    intake.move_voltage(12000);
+    pros::delay(700);
+    intake.move_voltage(0);
+    move_time(3000, 3000);
+
+}
+
+std::vector<std::shared_ptr<BezierPath>> test_paths;
 std::vector<std::shared_ptr<BezierPath>> right_sawp_paths;
 std::vector<std::shared_ptr<BezierPath>> right_elims_paths;
+std::vector<std::shared_ptr<BezierPath>> right_9ball_paths;
 std::vector<Auton> autons;
 
 void init_autons() {
 
-    // Create Bezier paths dynamically
+    test_paths.clear();
+    test_paths.push_back(std::make_shared<BezierPath>(test_path));
+
     right_sawp_paths.clear();
     right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_1));
     right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_2));
@@ -309,74 +376,19 @@ void init_autons() {
     right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_5));
     right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_6));
 
+    right_9ball_paths.clear();
+    right_9ball_paths.push_back(std::make_shared<BezierPath>(right_9ball_1));
+
     // Create Autons dynamically
     autons.clear();
+    autons.emplace_back("Test", setup, test, Pose(24, -48, 90, false), test_paths);
     autons.emplace_back("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, M_PI/2), right_sawp_paths);
     autons.emplace_back("Right Elims", pre_right_elims, right_elims, Pose(18, -53, M_PI/6), right_elims_paths);
-}
-
-/*
-void initialize() {
-
-    selected_index = 1;
-
-    controller_display = new pros::Task(display_controller);
-
-    static Gif gif("/usd/miku.gif", lv_scr_act());
-
-	imu.reset();
-	while(imu.is_calibrating()) {
-		pros::delay(10); // Wait for IMU calibration
-	}
-
-    left_motors.tare_position_all();
-    right_motors.tare_position_all();
-    intake.tare_position_all();
-
-    init_autons();
-
-    Auton& selected_auton = autons[selected_index];
-    selected_auton.pre_auton();
-    // for(auto& path : selected_auton.paths) {
-    //     path->calculate_waypoints();
-    // }
-
-    // pros::Task brain_display(display_selector);
+    autons.emplace_back("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30, false), right_9ball_paths);
 
 }
-
-void autonomous() {
-
-    if (autons.empty()) return;
-
-    Auton& selected_auton = autons[selected_index];
-
-    Pose start = selected_auton.start_pose;
-    set_pose(start);
-    initialize_mcl();
-
-    autonomous_task = new pros::Task([]() {
-        while (true) {
-            update_odom();
-            update_particles();
-
-            Pose belief = get_pose_estimate();
-            belief.theta = get_pose().theta;
-            set_pose(belief);
-
-            resample_particles();
-
-            pros::delay(10);
-        }
-    });
-
-    selected_auton.auton();  // only run if non-null
-}
-*/
 
 void initialize() {
-
-    controller_task = new pros::Task(display_controller);
 
     static Gif gif("/usd/miku.gif", lv_scr_act());
 
@@ -384,19 +396,42 @@ void initialize() {
     right_motors.tare_position_all();
     intake.tare_position_all();
 
-    master.clear();
+    master.set_text(0, 0, "IMU Calibrating");
 
     imu.reset();
 	while(imu.is_calibrating()) {
 		pros::delay(10);
 	}
 
-    initialize_pose(Pose(24, 48, 90));
+    master.rumble("..");
+
+    master.set_text(0, 0, "              ");
+
+    selected_index = 3;
+
+    init_autons();
+
+    if (autons.empty()) return;
+
+    Auton& selected_auton = autons[selected_index];
+    selected_auton.pre_auton();
+    for(auto& path : selected_auton.paths) {
+        path->calculate_waypoints();
+    }
+
+    initialize_pose(selected_auton.start_pose);
+
+    controller_task = new pros::Task(display_controller);
+
+}
+
+void autonomous() { 
+    
     #if LOGGING_ENABLED
     file.open("log.txt");
     #endif
 
-    intake_task = new pros::Task(intake_control);
+    // intake_task = new pros::Task(intake_control);
 
     autonomous_task = new pros::Task([]() {
         while (true) {
@@ -430,12 +465,7 @@ void initialize() {
     });
     #endif
 
-    pros::delay(10);
-
-}
-
-void autonomous() {
-
-    test();
+    Auton& selected_auton = autons[selected_index];
+    selected_auton.auton(); 
 
 }

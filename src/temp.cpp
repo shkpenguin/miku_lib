@@ -1,12 +1,12 @@
 #include "api.h"
 #include "config.h"
-#include "notif.h"
+#include "controller.h"
 
 struct MotorTemp {
-    pros::Motor motor;
+    miku::Motor motor;
     std::string name;
     int prev_temperature = 0;
-    MotorTemp(pros::Motor m, std::string n) : motor(m), name(n) {}
+    MotorTemp(miku::Motor m, std::string n) : motor(m), name(n) {}
 };
 
 std::vector<MotorTemp> motor_temps = {

@@ -1,6 +1,7 @@
 #include "main.h"
 #include "motor.h"
 #include "util.h"
+#include <numeric>
 
 miku::MotorGroup::MotorGroup(const std::initializer_list<std::int8_t> ports) {
     for(auto port : ports) {
@@ -98,14 +99,24 @@ double miku::Motor::get_estimated_velocity() {
         median_velocity = (prev_filtered_velocities[prev_filtered_velocities.size() / 2 - 1] + prev_filtered_velocities[prev_filtered_velocities.size() / 2]) / 2.0;
     }
 
-    double accel = (sma_velocity - prev_filtered_velocities.back()) / (delta_time / 1000.0);
+    double accel = (sma_velocity - prev_filtered_velocity) / (delta_time / 1000.0);
     prev_accels.push_back(accel);
     if(prev_accels.size() > accel_filter_size) {
         prev_accels.erase(prev_accels.begin());
     }
-    double max_accel = *std::max_element(prev_accels.begin(), prev_accels.end());
 
-    double kA = 0.75 * (1 - (1 / (max_accel * (max_accel / 50) + 1.013)));
+    double filtered_accel;
+    if(accel > 0) filtered_accel = *std::max_element(prev_accels.begin(), prev_accels.end());
+    else filtered_accel = *std::min_element(prev_accels.begin(), prev_accels.end());
+    filtered_accel = fabs(filtered_accel);
+
+    double min_kA = 0.60;
+    double max_kA = 1.00;
+    double max_expected_accel = 12.0;
+
+    if(fabs(filtered_accel) > max_expected_accel) filtered_accel *= max_expected_accel / fabs(filtered_accel);
+
+    double kA = min_kA + (max_kA - min_kA) * (fabs(filtered_accel) / max_expected_accel);
     double ema_velocity = ema(median_velocity, prev_estimated_velocity, kA);
 
     prev_estimated_velocity = ema_velocity;

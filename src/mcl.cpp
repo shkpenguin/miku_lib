@@ -176,8 +176,7 @@ Pose get_pose_estimate() {
 
 void initialize_pose(Pose robot_pose) {
 
-    double theta_rad = robot_pose.theta * (M_PI / 180.0);
-    set_pose(Pose(robot_pose.x, robot_pose.y, theta_rad));
+    set_pose(robot_pose);
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
         particles[i].position = Point(robot_pose.x, robot_pose.y);
@@ -192,7 +191,7 @@ static std::normal_distribution<double> odom_noise;
 void update_particles() {
 
     double velocity = sqrt(get_speed().x * get_speed().x + get_speed().y * get_speed().y);
-    double odom_stdev = std::max(velocity / 4, 0.05);
+    double odom_stdev = std::max(velocity / 4, 0.1);
     odom_noise = std::normal_distribution<double>(0, odom_stdev);
 
     Pose robot_speed = get_speed();

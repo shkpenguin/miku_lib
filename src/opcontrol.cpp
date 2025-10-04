@@ -44,13 +44,15 @@ void opcontrol() {
 
     while (true) {
 
+        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) set_intake_velocity(50);
+
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
             driveMode = (driveMode == DriveMode::TANK) ? DriveMode::ARCADE : DriveMode::TANK;
             master.rumble("."); // Short vibration to indicate mode change
         }
 
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
-            controller_display->suspend();
+            controller_task->suspend();
             tune_lut();
             break;
         }
@@ -96,7 +98,7 @@ void opcontrol() {
             }
         }
 
-        if(shift2 && hood_up && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+        if(shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
             loading = !loading;
             loader_piston.set_value(loading);
             loader_changed = true;

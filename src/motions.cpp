@@ -320,8 +320,20 @@ void move_point(Point target, double timeout, MovePointParams params) {
         prev_drive_out = drive_out;
         prev_turn_out = turn_out;
 
+        double left_out = (drive_out + turn_out == 0) 
+            ? 0 
+            : ((drive_out + turn_out > 0) 
+                ? std::clamp(drive_out + turn_out, params.min_speed, params.max_speed) 
+                : -std::clamp(-(drive_out + turn_out), params.min_speed, params.max_speed));
+
+        double right_out = (drive_out - turn_out == 0) 
+            ? 0 
+            : ((drive_out - turn_out > 0) 
+                ? std::clamp(drive_out - turn_out, params.min_speed, params.max_speed) 
+                : -std::clamp(-(drive_out - turn_out), params.min_speed, params.max_speed));
+
         // Final motor outputs 
-        move_motors(drive_out + turn_out, drive_out - turn_out);
+        move_motors(left_out, right_out);
 
         pros::delay(10);
     }
@@ -353,14 +365,14 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
 
     distance_traveled = 0;
 
-    double theta = std::fmod(90 - target.theta, 360);
-    theta *= M_PI / 180;
+    double theta = std::fmod(90 - target.theta, 360) * M_PI / 180;
+    if(params.reverse) theta = std::fmod(theta + M_PI, 2 * M_PI);
     Timer timer(timeout);
 
     drive_small_exit.reset();
     drive_large_exit.reset();
 
-    double k1 = 4.0;
+    double k1 = params.distance_weight;
     double k2 = 4.0;
     double k3 = params.angular_weight;
 
@@ -400,7 +412,7 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
         if (params.reverse) {
             double r_volts = voltage_lookup(-r_vel);
             double l_volts = voltage_lookup(-l_vel);
-            move_motors(-l_volts, -r_volts);
+            move_motors(l_volts, r_volts);
         } else {
             double r_volts = voltage_lookup(r_vel);
             double l_volts = voltage_lookup(l_vel);
@@ -462,7 +474,6 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
     double b = params.angular_weight;
 
     bool isFinished = false;
-    const double dt = 10;
 
     Timer timer(timeout);
 
@@ -549,8 +560,8 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
         double r_volts, l_volts;
 
         if(params.reverse) {
-            r_volts = -voltage_lookup(-l_vel);
-            l_volts = -voltage_lookup(-r_vel);
+            r_volts = voltage_lookup(-l_vel);
+            l_volts = voltage_lookup(-r_vel);
         } else {
             r_volts = voltage_lookup(r_vel);
             l_volts = voltage_lookup(l_vel);

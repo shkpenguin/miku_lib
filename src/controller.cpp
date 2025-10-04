@@ -2,6 +2,7 @@
 #include "fmt/core.h"
 #include "api.h"
 #include "controller.h"
+#include "subsystems.h"
 #include "config.h"
 #include "timer.h"
 #include "odom.h"
@@ -20,7 +21,7 @@ struct DisplayItem {
     DisplayItem() = default; // Default constructor for empty item
 };
 
-std::vector<std::pair<std::string, pros::Motor*>> dt_motors = {
+std::vector<std::pair<std::string, miku::Motor*>> dt_motors = {
     {"LF", &left_front},
     {"LM", &left_middle},
     {"LB", &left_back},
@@ -29,7 +30,7 @@ std::vector<std::pair<std::string, pros::Motor*>> dt_motors = {
     {"RB", &right_back}
 };
 
-std::vector<std::pair<std::string, pros::Motor*>> intake_motors = {
+std::vector<std::pair<std::string, miku::Motor*>> intake_motors = {
     {"Bottom", &bottom_intake},
     {"Top", &top_intake}
 };
@@ -39,7 +40,6 @@ std::vector<DisplayItem> notifs;
 std::vector<DisplayItem> code_display = {
     DisplayItem(
         []() -> std::string { 
-            if(imu.is_calibrating()) return "IMU calibrating";
             return fmt::format("{:.2f}", get_pose().x) + " " + fmt::format("{:.2f}", get_pose().y) + " " + fmt::format("{:.2f}", (get_pose().theta * (180.0 / M_PI))); 
         }, 
         2000, 
@@ -47,17 +47,23 @@ std::vector<DisplayItem> code_display = {
     ),
     DisplayItem(
         []() -> std::string { 
-            if(imu.is_calibrating()) return "IMU calibrating";
-            return fmt::format("{:.2f}", get_pose().theta * (180.0 / M_PI));
+            return fmt::format("{:.2f}", intake.get_average_velocity() / 6); 
         }, 
         2000, 
         NotificationType::DISPLAY
     ),
+    DisplayItem(
+        []() -> std::string { 
+            return fmt::format("{:.2f}", imu.get_rotation());
+        }, 
+        2000, 
+        NotificationType::DISPLAY
+    )
 };
 
 std::vector<DisplayItem> temp_display = {
     { []() { 
-        std::pair<std::string, pros::Motor*> hottest_motor = dt_motors[0];
+        std::pair<std::string, miku::Motor*> hottest_motor = dt_motors[0];
         for(int i = 1; i < dt_motors.size(); ++i) {
             if (dt_motors[i].second->get_temperature() > hottest_motor.second->get_temperature()) {
                 hottest_motor = dt_motors[i];
@@ -66,7 +72,7 @@ std::vector<DisplayItem> temp_display = {
         return hottest_motor.first + ": " + std::to_string((int) hottest_motor.second->get_temperature()) + "C";
     }, 2000, NotificationType::DISPLAY },
     { []() { 
-        std::pair<std::string, pros::Motor*> hottest_motor = intake_motors[0];
+        std::pair<std::string, miku::Motor*> hottest_motor = intake_motors[0];
         for(int i = 1; i < intake_motors.size(); ++i) {
             if (intake_motors[i].second->get_temperature() > hottest_motor.second->get_temperature()) {
                 hottest_motor = intake_motors[i];
@@ -78,96 +84,20 @@ std::vector<DisplayItem> temp_display = {
 
 std::vector<DisplayItem> comp_display = {};
 
-std::vector<std::pair<std::vector<DisplayItem>, std::string>> displays = { {temp_display, "Drive Practice"}, {code_display, "Code Debug"} };
-
-/*
-
-void display() {
-    int default_index = 0;
-    int display_index = 0;
-    Timer item_timer(0);
-
-    DisplayItem current;
-    bool skip_now = false;
-    bool go_back_now = false;
-
-    while (true) {
-
-        pros::delay(10);
-
-        if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
-            display_index = (display_index + 1) % displays.size();
-            default_index = 0; 
-            item_timer.set(0);
-            add_warning(displays[display_index].second, NotificationType::IMPORTANT);
-            continue;
-        }
-
-        if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
-            skip_now = true;
-        }
-        if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
-            go_back_now = true;
-        }
-
-        // Show next item if timer is up or skip/back requested
-        if (item_timer.isDone() || skip_now || go_back_now) {
-            std::vector<DisplayItem>& curr_display = displays[display_index].first;
-
-            if (!notifs.empty()) {
-                current = notifs.front();
-                notifs.erase(notifs.begin());
-
-                // Rumble based on type
-                switch (current.m_type) {
-                    case NotificationType::FUCKED:    master.rumble("--------"); break;
-                    case NotificationType::IMPORTANT: master.rumble("..");       break;
-                    case NotificationType::WARNING:   master.rumble(".");        break;
-                    default: break;
-                }
-
-            } else {
-                if (!curr_display.empty()) {
-                    if (skip_now || go_back_now) {
-                        default_index = (default_index - 1 + curr_display.size()) % curr_display.size();
-                    } else {
-                        default_index = (default_index + 1) % curr_display.size();
-                    }
-                    current = curr_display[default_index];
-                } else {
-                    master.clear();
-                    skip_now = false;
-                    go_back_now = false;
-                    continue;  // No items to show
-                }
-            }
-
-            // Display the current message
-            std::string msg = current.message_func();
-            master.clear();
-            master.set_text(0, 0, msg.c_str());
-
-            item_timer.set(current.timeout_ms);
-            skip_now = false;
-            go_back_now = false;
-
-        }
-
-    }
-}
-
-*/
+std::vector<std::pair<std::vector<DisplayItem>, std::string>> displays = { {code_display, "Code Debug"}, {temp_display, "Drive Practice"} };
 
 void display_controller() {
 
     rumble_timer.set(1000);
 
     int default_index = 0;
-    int display_index = 1;
+    int display_index = 0;
 
     rumble_timer.pause();
 
-    DisplayItem current;
+    master.set_text(0, 0, "              ");
+
+    DisplayItem current = displays[display_index].first[default_index];
 
     while(true) {
 
@@ -178,29 +108,41 @@ void display_controller() {
             continue;
         }
 
-        if(imu.is_calibrating()) {
-            master.set_text(0, 0, "IMU Calibrating");
-            continue;
-        }
-
         if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)) {
             master.rumble("-");
             display_index = (display_index + 1) % displays.size();
             default_index = 0;
             master.set_text(0, 0, "              ");
-            pros::delay(10);
+            pros::delay(20);
             current = displays[display_index].first[default_index];
+        }
+
+        else if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+            master.rumble("-");
+            display_index = (display_index - 1 + displays.size()) % displays.size();
+            default_index = 0;
+            master.set_text(0, 0, "              ");
+            pros::delay(20);
+            current = displays[display_index].first[default_index];
+        }
+
+        else if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
+            default_index = (default_index - 1 + displays[display_index].first.size()) % displays[display_index].first.size();
+            current = displays[display_index].first[default_index];
+            master.set_text(0, 0, "              ");
+            pros::delay(20);
         }
 
         else if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
             default_index = (default_index + 1) % displays[display_index].first.size();
             current = displays[display_index].first[default_index];
             master.set_text(0, 0, "              ");
-            pros::delay(10);
+            pros::delay(20);
         }
 
         std::string msg = current.message_func();
         master.set_text(0, 0, msg.c_str());
+
 
     }
 

@@ -2,7 +2,6 @@
 
 #include "pros/motors.h"
 #include "pros/abstract_motor.hpp"
-#include "config.h"
 
 namespace miku {
 
@@ -13,9 +12,9 @@ int ticks_per_rev;
 double prev_ticks = 0;
 u_int32_t last_time = 0;
 
-double sma_filter_size = 3;
-double median_filter_size = 7;
-double accel_filter_size = 20;
+double sma_filter_size = 2;
+double median_filter_size = 3;
+double accel_filter_size = 10;
 std::vector<double> prev_raw_velocities;
 std::vector<double> prev_filtered_velocities;
 std::vector<double> prev_accels;
@@ -37,6 +36,7 @@ Motor(std::int8_t port, pros::v5::MotorGears gearset = pros::v5::MotorGears::blu
             std::cerr << "Invalid gearset for motor on port " << static_cast<int>(port) << std::endl;
         }
     }
+
 };
 
 class MotorGroup {

@@ -21,12 +21,12 @@ pros::Imu imu(3);
 
 pros::adi::DigitalOut hood_piston('C');
 pros::adi::DigitalOut lock_piston('A');
-pros::adi::DigitalOut loader_piston('E');
+pros::adi::DigitalOut loader_piston('B');
 pros::adi::DigitalOut descore_piston('D');
 
 Gains drive_gains(500.0, 0.0, 3000.0);
 Gains turn_gains(340.0, 10.0, 4100.0);
-Gains intake_gains(200.0, 0.0, 1000.0);
+Gains intake_gains(1000.0, 0.0, 0.0);
 
 ExitCondition drive_small_exit(1.0, 400);  
 ExitCondition drive_large_exit(3.0, 800); 

@@ -12,6 +12,7 @@ extern bool loading;
 extern bool descore;
 
 // Functions
+void set_intake_tbh(bool enabled);
 void intake_control();
 
 void set_lock(bool state);

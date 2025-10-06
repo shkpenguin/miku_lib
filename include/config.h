@@ -1,7 +1,6 @@
 #pragma once
 
 #include "api.h"
-#include "misc.h"
 #include "motor.h"
 
 #define WHEEL_DIAMETER 3.25
@@ -38,7 +37,6 @@ struct ExitCondition;
 
 extern Gains drive_gains;
 extern Gains turn_gains;
-extern Gains intake_gains;
 
 extern ExitCondition drive_small_exit;
 extern ExitCondition drive_large_exit;

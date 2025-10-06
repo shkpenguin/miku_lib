@@ -1,12 +1,9 @@
 #include "config.h"
+#include "lut.h"
 #include "main.h"
 #include "timer.h"
-#include "mcl.h"
-#include "misc.h"
 #include "controller.h"
 #include "motions.h"
-#include "autons.h"
-#include "util.h"
 #include "subsystems.h"
 
 enum class DriveMode {
@@ -44,8 +41,9 @@ void opcontrol() {
 
     while (true) {
 
-        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) set_intake_velocity(50);
-
+        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
+            intake.move_voltage(6000);
+        }
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
             driveMode = (driveMode == DriveMode::TANK) ? DriveMode::ARCADE : DriveMode::TANK;
             master.rumble("."); // Short vibration to indicate mode change
@@ -53,7 +51,7 @@ void opcontrol() {
 
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
             controller_task->suspend();
-            tune_lut();
+            tune_lut_intake();
             break;
         }
 
@@ -90,7 +88,7 @@ void opcontrol() {
 
         else if(shift1) {
             if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-                intake.move_voltage(-12000);
+                intake.move_voltage(0);
             }
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
                 descore = !descore;
@@ -114,9 +112,9 @@ void opcontrol() {
             hood_piston.set_value(hood_up);
         }
 
-        if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-            intake.move_voltage(0);
-        }
+        // if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+        //     intake.move_voltage(0);
+        // }
 
         pros::delay(10);
     }

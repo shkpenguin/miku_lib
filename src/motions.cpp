@@ -1,8 +1,9 @@
-#include "motions.h"
-#include "util.h"
-#include "odom.h"
-#include "config.h"
 #include "timer.h"
+#include "config.h"
+#include "motions.h"
+#include "geometry.h"
+#include "pid.h"
+#include "lut.h"
 
 pros::Mutex motion_mutex;
 
@@ -298,7 +299,8 @@ void move_point(Point target, double timeout, MovePointParams params) {
 
         // Distance error
         double drive_error = dist(current.x, current.y, target.x, target.y);
-        if (fabs(drive_error) < 6.0) {
+        bool close = fabs(drive_error) < 6.0;
+        if (close) {
             turn_error *= (drive_error / 6.0) * (drive_error / 6.0);
         }
 
@@ -314,23 +316,17 @@ void move_point(Point target, double timeout, MovePointParams params) {
         drive_large_exit.update(drive_error);
 
         // PID outputs
-        double drive_out = drive_pid.update(drive_error);
-        double turn_out = turn_pid.update(turn_error);
+        double drive_out = std::clamp(drive_pid.update(drive_error), -params.max_speed, params.max_speed);
+        double turn_out = std::clamp(turn_pid.update(turn_error), -params.max_speed, params.max_speed);
+
+        if(!params.reverse && drive_out < fabs(params.min_speed)  && drive_out > 0) drive_out = params.min_speed;
+        if(params.reverse && drive_out < fabs(params.min_speed) && drive_out > 0) drive_out = -params.min_speed;
 
         prev_drive_out = drive_out;
         prev_turn_out = turn_out;
 
-        double left_out = (drive_out + turn_out == 0) 
-            ? 0 
-            : ((drive_out + turn_out > 0) 
-                ? std::clamp(drive_out + turn_out, params.min_speed, params.max_speed) 
-                : -std::clamp(-(drive_out + turn_out), params.min_speed, params.max_speed));
-
-        double right_out = (drive_out - turn_out == 0) 
-            ? 0 
-            : ((drive_out - turn_out > 0) 
-                ? std::clamp(drive_out - turn_out, params.min_speed, params.max_speed) 
-                : -std::clamp(-(drive_out - turn_out), params.min_speed, params.max_speed));
+        double left_out = drive_out + turn_out;
+        double right_out = drive_out - turn_out;
 
         // Final motor outputs 
         move_motors(left_out, right_out);
@@ -366,7 +362,6 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
     distance_traveled = 0;
 
     double theta = std::fmod(90 - target.theta, 360) * M_PI / 180;
-    if(params.reverse) theta = std::fmod(theta + M_PI, 2 * M_PI);
     Timer timer(timeout);
 
     drive_small_exit.reset();
@@ -410,12 +405,12 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
         }
 
         if (params.reverse) {
-            double r_volts = voltage_lookup(-r_vel);
-            double l_volts = voltage_lookup(-l_vel);
+            double r_volts = drive_lut.get_voltage(-l_vel);
+            double l_volts = drive_lut.get_voltage(-r_vel);
             move_motors(l_volts, r_volts);
         } else {
-            double r_volts = voltage_lookup(r_vel);
-            double l_volts = voltage_lookup(l_vel);
+            double r_volts = drive_lut.get_voltage(r_vel);
+            double l_volts = drive_lut.get_voltage(l_vel);
             move_motors(l_volts, r_volts);
         }
         
@@ -560,11 +555,11 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
         double r_volts, l_volts;
 
         if(params.reverse) {
-            r_volts = voltage_lookup(-l_vel);
-            l_volts = voltage_lookup(-r_vel);
+            r_volts = drive_lut.get_voltage(-l_vel);
+            l_volts = drive_lut.get_voltage(-r_vel);
         } else {
-            r_volts = voltage_lookup(r_vel);
-            l_volts = voltage_lookup(l_vel);
+            r_volts = drive_lut.get_voltage(r_vel);
+            l_volts = drive_lut.get_voltage(l_vel);
         }
 
         move_motors(l_volts, r_volts);

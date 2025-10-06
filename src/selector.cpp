@@ -3,6 +3,7 @@
 #include "util.h"
 #include "autons.h"
 #include "timer.h"
+#include "odom.h"
 #include "gif-pros/gifclass.hpp"
 
 std::vector<Auton> test_autons = {

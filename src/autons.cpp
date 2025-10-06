@@ -2,7 +2,6 @@
 #include "motions.h"
 #include "main.h"
 #include "mcl.h"
-#include "misc.h"
 #include "autons.h"
 #include "controller.h"
 #include "util.h"
@@ -13,6 +12,16 @@
 pros::Task* autonomous_task = nullptr;
 pros::Task* intake_task = nullptr;
 pros::Task* controller_task = nullptr;
+
+bool tracking = true;
+
+void set_tracking(bool enabled) {
+    tracking = enabled;
+}
+
+bool get_tracking() {
+    return tracking;
+}
 
 std::vector<ControlPoint> test_cp = {
     {0, -48, 0},
@@ -288,7 +297,7 @@ void right_elims() {
 
 std::vector<ControlPoint> right_9ball_cp_1 = {
     {8, -48, 0},
-    {8, -48, 60},
+    {8, -48, 70},
     {23, -24, 40},
     {38, -14, 40},
     {48, -7, 20},
@@ -299,8 +308,8 @@ std::vector<ControlPoint> right_9ball_cp_2 = {
     {48, -7, 0},
     {48, -7, 30},
     {40, -36, 40},
-    {50, -48, 30},
-    {50, -48, 0}
+    {48, -48, 30},
+    {48, -48, 0}
 };
 
 BezierPath right_9ball_1(right_9ball_cp_1);
@@ -328,7 +337,7 @@ void right_9ball() {
     move_point({48, -26}, 1000);
     intake.move_voltage(12000);
     pros::delay(1200);
-    move_pose({46, -54, 180}, 1200, {.async = true, .distance_weight = 5.0, .angular_weight = 2.0});
+    move_pose({48, -60, 180}, 1200, {.async = true, .distance_weight = 2.5, .angular_weight = 2.5});
     pros::delay(200);
     set_lock(false);
     set_loading(true);
@@ -337,7 +346,7 @@ void right_9ball() {
     move_time(5000, 1000);
     intake.move_voltage(0);
     set_lock(true);
-    move_pose({48, -28, 0}, 1800, {.async = true, .distance_weight = 2.5, .angular_weight = 1.5});
+    move_pose({48, -28, 0}, 1800, {.async = true, .distance_weight = 2.5, .angular_weight = 2.0});
     pros::delay(200);
     set_loading(false);
     wait_until_done();
@@ -348,36 +357,75 @@ void right_9ball() {
 
 }
 
+std::vector<ControlPoint> skills_cp_1 = {
+    {-6, -48, 0},
+    {-6, -48, 100},
+    {-28, -48, 20},
+    {-44, -54, 20},
+    {-48, -64, 30},
+    {-48, -64, 0}
+};
+
+BezierPath skills_1(skills_cp_1);
+
+void pre_skills() {
+    set_drive_brake(pros::E_MOTOR_BRAKE_BRAKE);
+    set_hood(true);
+    set_loading(true);
+}
+
+void skills() {
+    intake.move_voltage(12000);
+    ramsete(skills_1.get_waypoints(), 3000, {.angular_weight = 0.015, .end_cutoff = 3.0});
+    // set_tracking(false);
+    // move_time(4000, 1000); // uncomment once aligner is fixed
+    // set_tracking(true);
+    move_pose({-48, -32, 0}, 2000, {.async = true, .distance_weight = 2.3, .angular_weight = 2.3});
+    pros::delay(200);
+    set_loading(false);
+    wait_until_done();
+    set_lock(true);
+    pros::delay(1200);
+    set_lock(false);
+    move_point({-48, -50}, 800, {.reverse = true});
+    move_pose({-24, -24, 45}, 2000);
+    move_point({-48, -48}, 2000, {.reverse = true});
+}
+
 std::vector<std::shared_ptr<BezierPath>> test_paths;
 std::vector<std::shared_ptr<BezierPath>> right_sawp_paths;
 std::vector<std::shared_ptr<BezierPath>> right_elims_paths;
 std::vector<std::shared_ptr<BezierPath>> right_9ball_paths;
+std::vector<std::shared_ptr<BezierPath>> skills_paths;
 std::vector<Auton> autons;
 
 void init_autons() {
 
     test_paths.clear();
-    test_paths.push_back(std::make_shared<BezierPath>(test_path));
+    test_paths.push_back(std::shared_ptr<BezierPath>(&test_path, [](BezierPath*){}));
 
     right_sawp_paths.clear();
-    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_1));
-    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_2));
-    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_3));
-    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_4));
-    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_5));
-    right_sawp_paths.push_back(std::make_shared<BezierPath>(right_sawp_6));
+    right_sawp_paths.push_back(std::shared_ptr<BezierPath>(&right_sawp_1, [](BezierPath*){})); 
+    right_sawp_paths.push_back(std::shared_ptr<BezierPath>(&right_sawp_2, [](BezierPath*){}));
+    right_sawp_paths.push_back(std::shared_ptr<BezierPath>(&right_sawp_3, [](BezierPath*){}));
+    right_sawp_paths.push_back(std::shared_ptr<BezierPath>(&right_sawp_4, [](BezierPath*){}));
+    right_sawp_paths.push_back(std::shared_ptr<BezierPath>(&right_sawp_5, [](BezierPath*){} ));
+    right_sawp_paths.push_back(std::shared_ptr<BezierPath>(&right_sawp_6, [](BezierPath*){}));
 
     right_elims_paths.clear();
-    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_1));
-    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_2));
-    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_3));
-    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_3_1));
-    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_4));
-    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_5));
-    right_elims_paths.push_back(std::make_shared<BezierPath>(right_elims_6));
+    right_elims_paths.push_back(std::shared_ptr<BezierPath>(&right_elims_1, [](BezierPath*){}));
+    right_elims_paths.push_back(std::shared_ptr<BezierPath>(&right_elims_2, [](BezierPath*){}));
+    right_elims_paths.push_back(std::shared_ptr<BezierPath>(&right_elims_3, [](BezierPath*){}));
+    right_elims_paths.push_back(std::shared_ptr<BezierPath>(&right_elims_3_1, [](BezierPath*){}));
+    right_elims_paths.push_back(std::shared_ptr<BezierPath>(&right_elims_4, [](BezierPath*){}));
+    right_elims_paths.push_back(std::shared_ptr<BezierPath>(&right_elims_5, [](BezierPath*){}));
+    right_elims_paths.push_back(std::shared_ptr<BezierPath>(&right_elims_6, [](BezierPath*){}));
 
     right_9ball_paths.clear();
-    right_9ball_paths.push_back(std::make_shared<BezierPath>(right_9ball_1));
+    right_9ball_paths.push_back(std::shared_ptr<BezierPath>(&right_9ball_1, [](BezierPath*){}));
+
+    skills_paths.clear();
+    skills_paths.push_back(std::shared_ptr<BezierPath>(&skills_1, [](BezierPath*){}));
 
     // Create Autons dynamically
     autons.clear();
@@ -385,6 +433,7 @@ void init_autons() {
     autons.emplace_back("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, M_PI/2), right_sawp_paths);
     autons.emplace_back("Right Elims", pre_right_elims, right_elims, Pose(18, -53, M_PI/6), right_elims_paths);
     autons.emplace_back("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30, false), right_9ball_paths);
+    autons.emplace_back("Skills", pre_skills, skills, Pose(-6, -48, -90, false), skills_paths);
 
 }
 
@@ -407,7 +456,9 @@ void initialize() {
 
     master.set_text(0, 0, "              ");
 
-    selected_index = 3;
+    // intake_task = new pros::Task(intake_control);
+
+    selected_index = 4;
 
     init_autons();
 
@@ -442,7 +493,7 @@ void autonomous() {
             update_particles();
             log_mcl();
             #else
-            update_odom();
+            if(tracking) update_odom();
             update_particles();
             #endif
 

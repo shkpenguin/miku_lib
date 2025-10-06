@@ -2,18 +2,39 @@
 
 #include "config.h"
 #include "subsystems.h"
+#include "lut.h"
 
 double target_vel = 0;
 
-PID intake_pid(intake_gains, 1000, true);
+double gain = 20.0;
+double output = 0;
+double prev_error = 0;
+double tbh = 0;
+bool tbh_enabled = false;
+
+void set_intake_tbh(bool enabled) {
+    tbh_enabled = enabled;
+}
 
 void intake_control() {
 
     while(true) {
 
+        if(!tbh_enabled) {
+            pros::delay(100);
+            continue;
+        }
+
         double intake_vel = intake.get_average_velocity() / 6;
         double error = target_vel - intake_vel;
-        double output = intake_pid.update(error);
+        output += error * gain;
+
+        if ((error > 0 && prev_error <= 0) || (error < 0 && prev_error >= 0)) {
+            output = 0.5 * (output + tbh);
+            tbh = output;
+        }
+
+        prev_error = error;
 
         intake.move_voltage(output);
         
@@ -23,28 +44,37 @@ void intake_control() {
 
 }
 
+void set_intake_velocity(double vel) {
+    target_vel = vel;
+    output = intake_lut.get_voltage(vel);
+    prev_error = 0;
+    tbh = output;
+}
+
 bool hood_up = false;
 bool lock = false;
 bool loading = false;
 bool descore = false;
 
-void intake_control();
-
-void set_lock(bool state) {
-    lock = state;
+// @param state true = open, false = closed
+void set_lock(bool open) {
+    lock = open;
     lock_piston.set_value(lock);
 }
 
-void set_loading(bool state) {
-    loading = state;
+// @param state true = active, false = inactive
+void set_loading(bool active) {
+    loading = active;
     loader_piston.set_value(loading);
 }
 
-void set_hood(bool state) {
-    hood_up = state;
+// @param state true = up, false = down
+void set_hood(bool up) {
+    hood_up = up;
     hood_piston.set_value(hood_up);
 }
 
+// 
 void set_descore(bool state) {
     descore = state;
     descore_piston.set_value(descore);
@@ -64,8 +94,4 @@ bool get_lock() {
 
 bool get_descore() {
     return descore;
-}
-
-void set_intake_velocity(double vel) {
-    target_vel = vel;
 }

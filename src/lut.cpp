@@ -1,9 +1,9 @@
 #include "api.h"
-#include "misc.h"
+#include "lut.h"
 #include "config.h"
 #include <numeric>
 
-std::vector<std::pair<double, double>> lookup = {
+std::vector<std::pair<double, double>> drive_table = {
     {-100.0, -12000},
     {-99.0, -11000}, 
     {-91.0, -10000}, 
@@ -49,30 +49,61 @@ std::vector<std::pair<double, double>> lookup = {
     {100, 12000}
 };
 
-double voltage_lookup(double velocity) {
+std::vector<std::pair<double, double>> intake_table = {
+    {-100.0, -12000},
+    {-97.0, -11000},
+    {-88.0, -10000},
+    {-78.5, -9000},
+    {-68.0, -8000},
+    {-58.0, -7000},
+    {-49.0, -6000},
+    {-38.0, -5000},
+    {-30.0, -4000},
+    {-20.0, -3000},
+    {-10.0, -2000},
+    {0.0, -1500},
+    {0.0, 0},
+    {0.0, 1500},
+    {10.0, 2000},
+    {20.0, 3000},
+    {30.0, 4000},
+    {37.0, 5000},
+    {48.0, 6000},
+    {58.0, 7000},
+    {66.5, 8000},
+    {78.0, 9000},
+    {86.5, 10000},
+    {96.5, 11000},
+    {100.0, 12000}
+};
+
+LookupTable drive_lut(drive_table);
+LookupTable intake_lut(intake_table);
+
+double LookupTable::get_voltage(double velocity) {
     // use binary search to find least voltage below desired velocity
     int low = 0;
-    int high = lookup.size() - 1;
+    int high = table.size() - 1;
     while (low < high) {
         int mid = (low + high + 1) / 2;
-        if (lookup[mid].first <= velocity) {
+        if (table[mid].first <= velocity) {
             low = mid;
         } else {
             high = mid - 1;
         }
     }
     // use linear interpolation
-    if (low == lookup.size() - 1) {
-        return lookup[low].second;
+    if (low == table.size() - 1) {
+        return table[low].second;
     }
-    double x0 = lookup[low].first;
-    double y0 = lookup[low].second;
-    double x1 = lookup[low + 1].first;
-    double y1 = lookup[low + 1].second;
+    double x0 = table[low].first;
+    double y0 = table[low].second;
+    double x1 = table[low + 1].first;
+    double y1 = table[low + 1].second;
     return y0 + (y1 - y0) * (velocity - x0) / (x1 - x0);
 }
 
-void tune_lut() {
+void tune_lut_drive() {
 
     double drive_voltage = 0;
 
@@ -101,6 +132,39 @@ void tune_lut() {
             master.set_text(0, 0, "velocity: " + std::to_string((left_avg + right_avg) / (2)));
         } else {
             master.set_text(0, 0, "voltage: " + std::to_string(drive_voltage));
+        }
+
+        pros::delay(20);
+
+    }
+}
+
+void tune_lut_intake() {
+
+    double intake_voltage = 0;
+
+    while(true) {
+
+        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)) {
+            intake_voltage += 500;
+        } else if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+            intake_voltage -= 500;
+        }
+
+        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) intake_voltage *= -1;
+
+        double velocity = intake.get_average_velocity();
+
+        if(master.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
+            intake.move_voltage(intake_voltage);
+        } else {
+            intake.move_voltage(0);
+        }
+
+        if(master.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+            master.set_text(0, 0, "velocity: " + std::to_string(velocity / 6));
+        } else {
+            master.set_text(0, 0, "voltage: " + std::to_string(intake_voltage));
         }
 
         pros::delay(20);

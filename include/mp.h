@@ -43,5 +43,7 @@ struct BezierPath {
 
     BezierPath(std::vector<ControlPoint> control_points)
         : control_points(control_points) {}
+    BezierPath(const BezierPath& other) 
+        : control_points(other.control_points), waypoints(other.waypoints) {}
     BezierPath() = default;
 };

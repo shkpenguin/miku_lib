@@ -9,7 +9,7 @@
 std::vector<Auton> test_autons = {
     Auton("Test 1", nullptr, nullptr, Pose(0,0,0), {}),
     Auton("Test 2", nullptr, nullptr, Pose(0,0,0), {}),
-    Auton("Test 3", nullptr, nullptr, Pose(0,0,0), {}),
+    Auton("Test 3", nullptr, nullptr, Pose(0,0,0), {})
 };
 
 int selected_index = 0;
@@ -156,9 +156,8 @@ void display_selector() {
     lv_obj_set_size(list_container, 480, 240 - 50);
     lv_obj_set_pos(list_container, 0, 50);
     lv_obj_set_flex_flow(list_container, LV_FLEX_FLOW_COLUMN);
-
     while (true) {
-        selected_auton = test_autons[selected_index];
+        selected_auton = test_autons[selected_index];//issue is here
 
         update_sensors();
         if(new_back && !imu.is_calibrating()) {
@@ -168,6 +167,7 @@ void display_selector() {
 
         if(new_both) { // confirm selection
             make_selection(auton_list);
+            break;
         }
         if (new_left) {
             selected_index--;

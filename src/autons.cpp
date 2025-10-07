@@ -439,7 +439,7 @@ void init_autons() {
 
 void initialize() {
 
-    static Gif gif("/usd/miku.gif", lv_scr_act());
+    pros::lcd::initialize();
 
     left_motors.tare_position_all();
     right_motors.tare_position_all();
@@ -463,6 +463,7 @@ void initialize() {
     init_autons();
 
     if (autons.empty()) return;
+    display_selector();
 
     Auton& selected_auton = autons[selected_index];
     selected_auton.pre_auton();
@@ -482,6 +483,7 @@ void autonomous() {
     file.open("log.txt");
     #endif
 
+    static Gif gif("/usd/miku.gif", lv_scr_act());
     // intake_task = new pros::Task(intake_control);
 
     autonomous_task = new pros::Task([]() {

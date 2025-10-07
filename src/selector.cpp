@@ -157,7 +157,7 @@ void display_selector() {
     lv_obj_set_pos(list_container, 0, 50);
     lv_obj_set_flex_flow(list_container, LV_FLEX_FLOW_COLUMN);
     while (true) {
-        selected_auton = test_autons[selected_index];//issue is here
+        //selected_auton = test_autons[selected_index];//issue is here
 
         update_sensors();
         if(new_back && !imu.is_calibrating()) {

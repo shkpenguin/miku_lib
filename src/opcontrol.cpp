@@ -40,7 +40,11 @@ void opcontrol() {
     int count = 0;
 
     while (true) {
-
+        if(master.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
+            set_intake_tbh(true);
+        }else{
+            set_intake_tbh(false);
+        }
         if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
             intake.move_voltage(6000);
         }
@@ -76,7 +80,7 @@ void opcontrol() {
         bool loader_changed = false;
 
         if(!shift1 && !shift2) {
-            if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+            if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)&&!master.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
                 intake.move_voltage(12000);
                 intaking = true;
             }

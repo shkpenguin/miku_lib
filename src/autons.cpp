@@ -439,8 +439,7 @@ void init_autons() {
 
 void initialize() {
 
-    pros::lcd::initialize();
-
+    //pros::lcd::initialize();
     left_motors.tare_position_all();
     right_motors.tare_position_all();
     intake.tare_position_all();
@@ -456,14 +455,14 @@ void initialize() {
 
     master.set_text(0, 0, "              ");
 
-    // intake_task = new pros::Task(intake_control);
+    intake_task = new pros::Task(intake_control);
 
-    selected_index = 4;
+    selected_index = 3;
 
     init_autons();
 
     if (autons.empty()) return;
-    display_selector();
+    //display_selector();
 
     Auton& selected_auton = autons[selected_index];
     selected_auton.pre_auton();

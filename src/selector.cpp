@@ -3,9 +3,9 @@
 #include "gif-pros/gifclass.hpp"
 
 std::vector<Auton> test_autons = {
-    Auton("Test 1", nullptr, nullptr, Pose(0,0,0), {}),
-    Auton("Test 2", nullptr, nullptr, Pose(0,0,0), {}),
-    Auton("Test 3", nullptr, nullptr, Pose(0,0,0), {})
+    // Auton("Test 1", Pose(0,0,0), {}),
+    // Auton("Test 2", Pose(0,0,0), {}),
+    // Auton("Test 3", Pose(0,0,0), {})
 };
 
 int selected_index = 0;

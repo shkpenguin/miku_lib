@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include "geometry.h"
 
 #define HALF_FIELD 71.5
 
@@ -40,6 +41,13 @@ inline double angle_error(double target, double current) {
 
 inline double ema(double current, double previous, double alpha) {
     return alpha * current + (1 - alpha) * previous;
+}
+
+inline int find_quadrant(Pose robot_pose) {
+    if(robot_pose.x >= 0 && robot_pose.y >= 0) return 1;
+    if(robot_pose.x < 0 && robot_pose.y >= 0) return 2;
+    if(robot_pose.x < 0 && robot_pose.y < 0) return 3;
+    return 4;
 }
 
 enum class Orientation {

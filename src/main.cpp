@@ -1,3 +1,5 @@
+#include "main.h"
+#include "auton.h"
 #include "miku-api.h"
 #include <vector>
 
@@ -5,12 +7,16 @@ pros::Task* autonomous_task = nullptr;
 pros::Task* intake_task = nullptr;
 pros::Task* controller_task = nullptr;
 
-std::vector<Auton> autons = {
-    Auton("Test", pre_test, test, Pose(24, -48, 90, false), test_paths),
-    Auton("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, 90, false), right_sawp_paths),
-    Auton("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30, false), right_9ball_paths),
-    Auton("Skills", pre_skills, skills, Pose(6, -48, 90, false), skills_paths)
-};
+std::vector<Auton> autons;
+
+void init_autons() {
+    autons = {
+        Auton("Test", pre_test, test, Pose(6, -48, 90, false), test_paths),
+        Auton("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, 90, false), right_sawp_paths),
+        Auton("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30, false), right_9ball_paths),
+        Auton("Skills", pre_skills, skills, Pose(6, -48, 90, false), skills_paths)
+    };
+}
 
 void initialize() {
 
@@ -24,6 +30,8 @@ void initialize() {
 	while(imu.is_calibrating()) {
 		pros::delay(10);
 	}
+
+    init_autons();
 
     master.set_text(0, 0, "              ");
 
@@ -42,8 +50,8 @@ void initialize() {
 
     initialize_pose(selected_auton.start_pose);
 
-    master.rumble("..");
-    pros::delay(500);
+    master.print(0, 0, "Paths: %d", selected_auton.paths.size());
+    pros::delay(2000);
 
     controller_task = new pros::Task(display_controller);
 
@@ -59,7 +67,11 @@ void autonomous() {
     // intake_task = new pros::Task(intake_control);
 
     autonomous_task = new pros::Task([]() {
+
+        uint32_t prev_time = pros::millis();
+
         while (true) {
+
             #if LOGGING_ENABLED
             update_odom();
             log_mcl();
@@ -77,8 +89,10 @@ void autonomous() {
 
             resample_particles();
 
-            pros::delay(10);
+            pros::Task::delay_until(&prev_time, DELTA_TIME);
+
         }
+
     });
 
     #if LOGGING_ENABLED
@@ -123,29 +137,23 @@ DriveMode driveMode = DriveMode::TANK;
 void opcontrol() {
 
     // rumble_timer.resume();
-    if(autonomous_task != nullptr) autonomous_task->remove();
+    // if(autonomous_task != nullptr) autonomous_task->remove();
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
-
-    int count = 0;
 
     while (true) {
 
         if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)){
-            if(!get_intake_tbh()) set_intake_velocity(300);
+            if(!get_intake_tbh()) set_intake_velocity(200);
             else set_intake_tbh(false);
         }
-        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
-            intake.move_voltage(6000);
-        }
+
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
             driveMode = (driveMode == DriveMode::TANK) ? DriveMode::ARCADE : DriveMode::TANK;
             master.rumble("."); // Short vibration to indicate mode change
         }
 
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
-            controller_task->suspend();
-            tune_lut_intake();
-            break;
+            test();
         }
 
         if(driveMode == DriveMode::TANK) {

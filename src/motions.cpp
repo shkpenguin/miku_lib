@@ -97,6 +97,8 @@ void turn_heading(double target, double timeout, TurnParams params) {
     turn_small_exit.reset();
     turn_large_exit.reset();
 
+    uint32_t prev_time = pros::millis();
+
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
         double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
         double error = wrap_angle(target - current_deg, 360);      // error in degrees
@@ -110,7 +112,7 @@ void turn_heading(double target, double timeout, TurnParams params) {
         turn_small_exit.update(error);
         turn_large_exit.update(error);
 
-        pros::delay(10);
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
     stop_motors();
@@ -145,6 +147,8 @@ void turn_point(Point target, double timeout, TurnParams params) {
     turn_small_exit.reset();
     turn_large_exit.reset();
 
+    uint32_t prev_time = pros::millis();
+
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
         double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
         double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
@@ -159,7 +163,7 @@ void turn_point(Point target, double timeout, TurnParams params) {
         turn_small_exit.update(error);
         turn_large_exit.update(error);
 
-        pros::delay(10);
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
     stop_motors();
@@ -192,6 +196,8 @@ void swing_heading(double target, Side locked_side, double timeout, SwingParams 
     turn_small_exit.reset();
     turn_large_exit.reset();
 
+    uint32_t prev_time = pros::millis();
+
     while(!turn_small_exit.getExit() && !turn_large_exit.getExit() && !timer.isDone()) {
         double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
         double error = wrap_angle(target - current_deg, 360);
@@ -207,7 +213,7 @@ void swing_heading(double target, Side locked_side, double timeout, SwingParams 
             left_motors.move_voltage(output);
         }
 
-        pros::delay(10);
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
     distance_traveled = -1;
@@ -242,6 +248,8 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
     turn_small_exit.reset();
     turn_large_exit.reset();
 
+    uint32_t prev_time = pros::millis();
+
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
         double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
         double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
@@ -256,7 +264,7 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
         turn_small_exit.update(error);
         turn_large_exit.update(error);
 
-        pros::delay(10);
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
     distance_traveled = -1;
@@ -292,6 +300,8 @@ void move_point(Point target, double timeout, MovePointParams params) {
     double prev_drive_out = 0;
     double prev_turn_out = 0;
 
+    uint32_t prev_time = pros::millis();
+
     while (!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone()) {
         Point current(get_pose().x, get_pose().y);
 
@@ -307,10 +317,6 @@ void move_point(Point target, double timeout, MovePointParams params) {
         // Distance error
         double drive_error = dist(current.x, current.y, target.x, target.y);
         if (params.cutoff > 0 && drive_error < params.cutoff) break;
-        bool close = fabs(drive_error) < 6.0;
-        if (close) {
-            turn_error *= (drive_error / 6.0) * (drive_error / 6.0);
-        }
 
         double angle_to_target = atan2(dy, dx);
         double angle_error = wrap_angle(angle_to_target - get_pose({.standard = true}).theta, 2 * M_PI);
@@ -323,6 +329,10 @@ void move_point(Point target, double timeout, MovePointParams params) {
         // PID outputs
         double drive_out = std::clamp(drive_pid.update(drive_error), -params.max_speed, params.max_speed);
         double turn_out = std::clamp(turn_pid.update(turn_error), -params.max_speed, params.max_speed);
+        if(fabs(drive_error) < 1.0) turn_out = 0;
+        else if(fabs(drive_error) < 6.0) {
+            turn_out *= (drive_error / 6.0) * (drive_error / 6.0);
+        }
 
         if(!params.reverse && drive_out < fabs(params.min_speed)  && drive_out > 0) drive_out = params.min_speed;
         if(params.reverse && drive_out < fabs(params.min_speed) && drive_out > 0) drive_out = -params.min_speed;
@@ -336,7 +346,7 @@ void move_point(Point target, double timeout, MovePointParams params) {
         // Final motor outputs 
         move_motors(left_out, right_out);
 
-        pros::delay(10);
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
     // stop_motors();
@@ -375,6 +385,8 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
     double k1 = params.distance_weight;
     double k2 = 4.0;
     double k3 = params.angular_weight;
+
+    uint32_t prev_time = pros::millis();
 
     while (!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone()) {
 
@@ -419,7 +431,7 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
             move_motors(l_volts, r_volts);
         }
         
-        pros::delay(10);
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
     if(params.cutoff > 0 && dist(target.x, target.y, get_pose().x, get_pose().y) < params.cutoff) {
@@ -439,16 +451,27 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
 
 }
 
-void move_time(double volts, double timeout) {
+void move_time(double volts, double timeout, bool async) {
     request_motion_start();
     if (!motion_running) return;
+
+    if (async) {
+        pros::Task move_task([volts, timeout]() mutable {
+            move_time(volts, timeout, false);
+        });
+        end_motion();
+        pros::delay(10);
+        return;
+    }
 
     distance_traveled = 0;
     Timer timer(timeout);
 
+    uint32_t prev_time = pros::millis();
+
     while (!timer.isDone() && motion_running) {
         move_motors(volts, volts);
-        pros::delay(10);
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
     stop_motors();
@@ -495,6 +518,8 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
 
     drive_large_exit.reset();
     drive_small_exit.reset();
+
+    uint32_t prev_time = pros::millis();
 
     while (!drive_small_exit.getExit() && !drive_large_exit.getExit() && !timer.isDone() &&
           time_passed < end_time - time_ahead ||
@@ -574,7 +599,7 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
 
         distance_traveled += std::abs(error_x) + std::abs(error_y); // crude progress metric
 
-        pros::delay(10);
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
     if(params.cutoff > 0 && dist(end_x, end_y, get_pose().x, get_pose().y) < params.cutoff) {

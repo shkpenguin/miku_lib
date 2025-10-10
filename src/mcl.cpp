@@ -187,7 +187,7 @@ void initialize_pose(Pose robot_pose) {
 
 }
 
-#define MAX_ERROR 6.0
+#define MAX_ERROR 8.0
 static std::normal_distribution<double> odom_noise;
 
 void update_particles() {
@@ -203,6 +203,19 @@ void update_particles() {
 
     std::vector<bool> valid_sensors(sensors.size(), true);
 
+    // max error check
+    for(size_t i = 0; i < sensors.size(); ++i) {
+        double expected = get_expected_reading(
+            Point(get_pose().x, get_pose().y), 
+            sensors[i].get().offset_x, 
+            sensors[i].get().offset_y, 
+            cos_theta, 
+            sin_theta, 
+            sensors[i].get().orientation);
+        if(fabs(expected - sensors[i].get().get_reading()) > MAX_ERROR) valid_sensors[i] = false;
+    }
+
+    // check for particles with invalid readings
     for(size_t i = 0; i < particles.size(); ++i) {
         for(size_t j = 0; j < sensors.size(); ++j) {
             particles[i].sensor_readings[j] = get_expected_reading(
@@ -242,11 +255,7 @@ void update_particles() {
             if(reading < 8) sensor_stdev = 0.2;
             else sensor_stdev = reading * 0.05;
             double dev = reading - expected;
-            if(fabs(dev) > MAX_ERROR) {
-                weight *= 0.0;
-                break;
-            }
-            else weight *= std::exp(-(dev * dev) / (2 * sensor_stdev * sensor_stdev));
+            weight *= std::exp(-(dev * dev) / (2 * sensor_stdev * sensor_stdev));
         }
 
         particles[i].weight = weight;

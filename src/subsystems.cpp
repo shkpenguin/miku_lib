@@ -1,12 +1,11 @@
 #include "main.h"
-
 #include "config.h"
 #include "subsystems.h"
 #include "lut.h"
 
 double target_vel = 400;
 
-double gain = 1.28;//1.25 | 1.28125
+double gain = 1.28125; // 1.25 | 1.28125
 double output = 0;
 double prev_error = 0;
 double tbh = output;

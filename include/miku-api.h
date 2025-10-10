@@ -7,7 +7,7 @@
 #include "util.h"
 #include "config.h"
 
-#include "autons.h"
+#include "auton.h"
 #include "controller.h"
 #include "geometry.h"
 #include "lut.h"

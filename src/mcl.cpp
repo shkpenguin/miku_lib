@@ -17,7 +17,7 @@ MCLDistance left(4, -5.2, 0, Orientation::LEFT);
 MCLDistance right(8, 5.2, 0, Orientation::RIGHT);
 MCLDistance front(7, 3.25, 8.25, Orientation::FRONT);
 
-std::vector<MCLDistance*> sensors = {&front, &back, &left, &right};
+std::vector<std::reference_wrapper<MCLDistance>> sensors = {std::ref(front), std::ref(back), std::ref(left), std::ref(right)};
 
 void MCLDistance::update_reading() {
 
@@ -39,7 +39,7 @@ void MCLDistance::update_reading() {
 
 inline void set_all_sensors(bool enabled) {
     for(auto sensor : sensors) {
-        sensor->set_enabled(enabled);
+        sensor.get().set_enabled(enabled);
     }
 }
 
@@ -207,17 +207,17 @@ void update_particles() {
         for(size_t j = 0; j < sensors.size(); ++j) {
             particles[i].sensor_readings[j] = get_expected_reading(
                 particles[i].position, 
-                sensors[j]->offset_x, 
-                sensors[j]->offset_y, 
+                sensors[j].get().offset_x, 
+                sensors[j].get().offset_y, 
                 cos_theta, 
                 sin_theta, 
-                sensors[j]->orientation);
+                sensors[j].get().orientation);
             if(particles[i].sensor_readings[j] == -1) valid_sensors[j] = false;
         }
     }
 
     for(auto &sensor : sensors) {
-        sensor->update_reading();
+        sensor.get().update_reading();
     }
 
     double total_weight = 0.0;
@@ -235,9 +235,9 @@ void update_particles() {
         double weight = 1.0;
 
         for(int j = 0; j < sensors.size(); ++j) {
-            if(!valid_sensors[j] || !sensors[j]->get_enabled() || !sensors[j]->get_valid()) continue;
+            if(!valid_sensors[j] || !sensors[j].get().get_enabled() || !sensors[j].get().get_valid()) continue;
             double expected = particles[i].sensor_readings[j];
-            double reading = sensors[j]->get_reading();
+            double reading = sensors[j].get().get_reading();
             double sensor_stdev;
             if(reading < 8) sensor_stdev = 0.2;
             else sensor_stdev = reading * 0.05;

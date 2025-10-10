@@ -26,8 +26,12 @@ struct ControlPoint {
     double x;
     double y;
     double velocity;
-    ControlPoint(double x = 0.0, double y = 0.0, double velocity = 0.0) 
+
+    ControlPoint(double x, double y, double velocity)
         : x(x), y(y), velocity(velocity) {}
+    ControlPoint(double x, double y)
+        : x(x), y(y), velocity(0) {}
+    ControlPoint() : x(0), y(0), velocity(0) {}
 };
 
 double get_t_param(const std::vector<std::vector<double>> P);
@@ -41,6 +45,8 @@ struct BezierPath {
         return waypoints;
     }
 
+    BezierPath(std::initializer_list<ControlPoint> points)
+        : control_points(points) {}
     BezierPath(std::vector<ControlPoint> control_points)
         : control_points(control_points) {}
     BezierPath(const BezierPath& other) 

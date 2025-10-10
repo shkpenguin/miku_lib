@@ -1,9 +1,5 @@
-#include "config.h"
+#include "miku-api.h"
 #include "liblvgl/lvgl.h"
-#include "util.h"
-#include "autons.h"
-#include "timer.h"
-#include "odom.h"
 #include "gif-pros/gifclass.hpp"
 
 std::vector<Auton> test_autons = {
@@ -55,7 +51,7 @@ void make_selection(std::vector<lv_obj_t*>& list) {
     selected_auton = test_autons[selected_index];
     selected_auton.pre_auton();
     for(auto& path : selected_auton.paths) {
-        path->calculate_waypoints();
+        path.get().calculate_waypoints();
     }
 
 }

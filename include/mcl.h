@@ -27,7 +27,7 @@ extern MCLDistance front;
 
 extern std::ofstream file;
 
-extern std::vector<MCLDistance*> sensors;
+extern std::vector<std::reference_wrapper<MCLDistance>> sensors;
 
 struct Particle {
     Point position; 

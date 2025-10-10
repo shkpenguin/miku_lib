@@ -1,7 +1,5 @@
 #pragma once
 
-#include "config.h"
-
 extern pros::Task* intake_task;
 
 extern double target_vel;
@@ -13,6 +11,7 @@ extern bool descore;
 
 // Functions
 void set_intake_tbh(bool enabled);
+bool get_intake_tbh();
 void intake_control();
 
 void set_lock(bool state);

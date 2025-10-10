@@ -7,13 +7,17 @@
 double target_vel = 400;
 
 double gain = 1.28;//1.25 | 1.28125
-double output = 6000;
+double output = 0;
 double prev_error = 0;
 double tbh = output;
 bool tbh_enabled = false;
 
 void set_intake_tbh(bool enabled) {
     tbh_enabled = enabled;
+}
+
+bool get_intake_tbh() {
+    return tbh_enabled;
 }
 
 void intake_control() {
@@ -44,6 +48,7 @@ void intake_control() {
 }
 
 void set_intake_velocity(double vel) {
+    tbh_enabled = true;
     target_vel = vel;
     output = intake_lut.get_voltage(vel);
     prev_error = 0;

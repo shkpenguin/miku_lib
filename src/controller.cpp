@@ -1,10 +1,6 @@
 #define FMT_HEADER_ONLY
 #include "fmt/core.h"
-#include "api.h"
-#include "controller.h"
-#include "config.h"
-#include "odom.h"
-#include "subsystems.h"
+#include "miku-api.h"
 #include <vector>
 
 Timer rumble_timer;
@@ -37,7 +33,7 @@ std::vector<DisplayItem> notifs;
 std::vector<DisplayItem> code_display = {
     DisplayItem(
         []() -> std::string { 
-            return fmt::format("{:.2f}", get_pose().x) + " " + fmt::format("{:.2f}", get_pose().y) + " " + fmt::format("{:.2f}", (get_pose().theta * (180.0 / M_PI))); 
+            return fmt::format("{:.2f}", get_pose().x) + " " + fmt::format("{:.2f}", get_pose().y) + " " + fmt::format("{:.2f}", (get_pose({.degrees = true}).theta)); 
         }, 
         2000, 
         NotificationType::DISPLAY
@@ -139,7 +135,6 @@ void display_controller() {
 
         std::string msg = current.message_func();
         master.set_text(0, 0, msg.c_str());
-
 
     }
 

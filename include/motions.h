@@ -1,11 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "util.h"
-#include "odom.h"
-#include "config.h"
-#include "timer.h"
-#include "mp.h"
+#include "miku-api.h"
 
 void move_motors(double l, double r);
 
@@ -16,6 +12,8 @@ void set_drive_brake(pros::motor_brake_mode_e mode);
 // Motion control functions
 void wait_until_done();
 void wait_until_within(Point target, double threshold);
+void wait_until_within(double target_angle, double threshold);
+
 void request_motion_start();
 void end_motion();
 void cancel_motion();

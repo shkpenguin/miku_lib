@@ -1,8 +1,7 @@
 #pragma once
 
-#include "api.h"
-#include "geometry.h"
-#include "util.h"
+#include "miku-api.h"
+#include <fstream>
 
 class MCLDistance {
     double data = -1;
@@ -25,6 +24,8 @@ extern MCLDistance back;
 extern MCLDistance left;
 extern MCLDistance right;
 extern MCLDistance front;
+
+extern std::ofstream file;
 
 extern std::vector<MCLDistance*> sensors;
 

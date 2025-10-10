@@ -33,17 +33,17 @@ DriveMode driveMode = DriveMode::TANK;
 
 void opcontrol() {
 
-    rumble_timer.resume();
-    // autonomous_task.remove();
+    // rumble_timer.resume();
+    if(autonomous_task != nullptr) autonomous_task->remove();
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
 
     int count = 0;
 
     while (true) {
-        if(master.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
-            set_intake_tbh(true);
-        }else{
-            set_intake_tbh(false);
+
+        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)){
+            if(!get_intake_tbh()) set_intake_velocity(300);
+            else set_intake_tbh(false);
         }
         if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
             intake.move_voltage(6000);
@@ -69,20 +69,12 @@ void opcontrol() {
             arcade(throttle, turn);
         }
 
-        //r1 toggle hood
-        //r2 intake
-        //shift r2 intake
-
         bool shift1 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
         bool shift2 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
 
-        bool intaking = false;
-        bool loader_changed = false;
-
         if(!shift1 && !shift2) {
-            if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)&&!master.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
+            if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && !get_intake_tbh()) {
                 intake.move_voltage(12000);
-                intaking = true;
             }
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
                 lock = !lock;
@@ -92,7 +84,7 @@ void opcontrol() {
 
         else if(shift1) {
             if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-                intake.move_voltage(0);
+                intake.move_voltage(-12000);
             }
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
                 descore = !descore;
@@ -103,7 +95,6 @@ void opcontrol() {
         if(shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
             loading = !loading;
             loader_piston.set_value(loading);
-            loader_changed = true;
         }
 
         bool hood_toggle_pressed =
@@ -116,9 +107,9 @@ void opcontrol() {
             hood_piston.set_value(hood_up);
         }
 
-        // if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-        //     intake.move_voltage(0);
-        // }
+        if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && !get_intake_tbh()) {
+            intake.move_voltage(0);
+        }
 
         pros::delay(10);
     }

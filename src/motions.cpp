@@ -38,6 +38,12 @@ void wait_until_within(Point target, double threshold) {
     } while (std::hypot(get_pose().x - target.x, get_pose().y - target.y) > threshold && distance_traveled != -1);
 }
 
+void wait_until_within(double target_angle, double threshold) {
+    do {
+        pros::delay(10);
+    } while (fabs(wrap_angle(get_pose({.degrees = true}).theta - target_angle, 360)) > threshold && distance_traveled != -1);
+}
+
 void request_motion_start() {
     if(motion_running) motion_queued = true;
     else {
@@ -82,9 +88,9 @@ void turn_heading(double target, double timeout, TurnParams params) {
     Timer timer(timeout);
     distance_traveled = 0;
 
-    target = wrap_angle_180(target);
-    if (params.reverse) target = wrap_angle_180(target + 180);
-    
+    target = wrap_angle(target, 360);
+    if (params.reverse) target = wrap_angle(target + 180, 360);
+
     // PID tuned in degrees
     PID turn_pid(turn_gains, 3.0, true);  
 
@@ -92,8 +98,8 @@ void turn_heading(double target, double timeout, TurnParams params) {
     turn_large_exit.reset();
 
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
-        double current_deg = get_pose().theta * (180.0 / M_PI);  // convert to degrees
-        double error = wrap_angle_180(target - current_deg);      // error in degrees
+        double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
+        double error = wrap_angle(target - current_deg, 360);      // error in degrees
 
         if (params.cutoff > 0 && fabs(error) < params.cutoff) break;
 
@@ -134,15 +140,15 @@ void turn_point(Point target, double timeout, TurnParams params) {
 
     double target_deg;
     
-    PID turn_pid(turn_gains, 2.0, true);  
+    PID turn_pid(turn_gains, 0.0, true);  
 
     turn_small_exit.reset();
     turn_large_exit.reset();
 
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
-        double current_deg = get_pose().theta * (180.0 / M_PI);  // convert to degrees
+        double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
         double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
-        double error = wrap_angle_180(target_deg - current_deg);      // error in degrees
+        double error = wrap_angle(target_deg - current_deg, 360);      // error in degrees
 
         if (params.cutoff > 0 && fabs(error) < params.cutoff) break;
 
@@ -187,7 +193,8 @@ void swing_heading(double target, Side locked_side, double timeout, SwingParams 
     turn_large_exit.reset();
 
     while(!turn_small_exit.getExit() && !turn_large_exit.getExit() && !timer.isDone()) {
-        double error = target - wrap_angle(get_pose().theta * (180 / M_PI), 360);
+        double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
+        double error = wrap_angle(target - current_deg, 360);
         if(params.cutoff > 0 && fabs(error) < params.cutoff) break;
 
         double output = turn_pid.update(error);
@@ -236,9 +243,9 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
     turn_large_exit.reset();
 
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
-        double current_deg = get_pose().theta * (180.0 / M_PI);  // convert to degrees
+        double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
         double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
-        double error = wrap_angle_180(target_deg - current_deg);      // error in degrees
+        double error = wrap_angle(target_deg - current_deg, 360);      // error in degrees
 
         if (params.cutoff > 0 && fabs(error) < params.cutoff) break;
 
@@ -299,18 +306,16 @@ void move_point(Point target, double timeout, MovePointParams params) {
 
         // Distance error
         double drive_error = dist(current.x, current.y, target.x, target.y);
+        if (params.cutoff > 0 && drive_error < params.cutoff) break;
         bool close = fabs(drive_error) < 6.0;
         if (close) {
             turn_error *= (drive_error / 6.0) * (drive_error / 6.0);
         }
 
         double angle_to_target = atan2(dy, dx);
-        double angle_error = wrap_angle(angle_to_target - get_pose(true).theta, 2 * M_PI);
+        double angle_error = wrap_angle(angle_to_target - get_pose({.standard = true}).theta, 2 * M_PI);
 
         drive_error *= std::cos(angle_error);  // Scale error by heading alignment
-
-        // Exit if close enough
-        if (params.cutoff > 0 && drive_error < params.cutoff) break;
 
         drive_small_exit.update(drive_error);
         drive_large_exit.update(drive_error);
@@ -376,7 +381,7 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
         double rho = dist(target.x, target.y, get_pose().x, get_pose().y);
         if (rho < params.cutoff || rho < params.end_cutoff) break;
 
-        double rh = std::fmod(get_pose(true).theta, 2 * M_PI);
+        double rh = std::fmod(get_pose({.standard = true}).theta, 2 * M_PI);
         if (params.reverse) rh = std::fmod(rh + M_PI, 2 * M_PI);
         
         double gamma = std::remainder(std::atan2(target.y - get_pose().y, target.x - get_pose().x) - rh, 2 * M_PI);
@@ -419,9 +424,12 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
 
     if(params.cutoff > 0 && dist(target.x, target.y, get_pose().x, get_pose().y) < params.cutoff) {
         distance_traveled = -1;
+        stop_motors();
         end_motion();
         return;
     }
+
+    stop_motors();
 
     end_motion();
 
@@ -498,7 +506,7 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
         double distance_to_end = dist(end_x, end_y, get_pose().x, get_pose().y);
         if (distance_to_end < params.cutoff || distance_to_end < params.end_cutoff) break;
 
-        double robot_h = get_pose(true).theta;
+        double robot_h = get_pose({.standard = true}).theta;
         if (params.reverse) robot_h = fmod(robot_h + M_PI, 2 * M_PI);
 
         // Update closest waypoint

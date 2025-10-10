@@ -1,27 +1,9 @@
-#include "mp.h"
-#include "motions.h"
-#include "main.h"
-#include "mcl.h"
-#include "autons.h"
-#include "controller.h"
-#include "util.h"
-#include "gif-pros/gifclass.hpp"
-#include "subsystems.h"
+#include "miku-api.h"
 #include <vector>
 
 pros::Task* autonomous_task = nullptr;
 pros::Task* intake_task = nullptr;
 pros::Task* controller_task = nullptr;
-
-bool tracking = true;
-
-void set_tracking(bool enabled) {
-    tracking = enabled;
-}
-
-bool get_tracking() {
-    return tracking;
-}
 
 std::vector<ControlPoint> test_cp = {
     {0, -48, 0},
@@ -160,9 +142,11 @@ void setup() {
 }
 
 void test() {
-    test_path.calculate_waypoints();
-    ramsete(test_path.get_waypoints(), 10000);
-    master.rumble("...");
+    // test_path.calculate_waypoints();
+    // ramsete(test_path.get_waypoints(), 10000);
+    // master.rumble("...");
+
+    turn_point({24, -24}, 2000);
 }
 
 void pre_right_sawp() {
@@ -358,38 +342,109 @@ void right_9ball() {
 }
 
 std::vector<ControlPoint> skills_cp_1 = {
-    {-6, -48, 0},
-    {-6, -48, 100},
-    {-28, -48, 20},
-    {-44, -54, 20},
-    {-48, -64, 30},
-    {-48, -64, 0}
+    {48, -54, 0},
+    {48, -54, 50},
+    {32, -30, 30},
+    {24, -24, 25},
+    {13, -13, 0},
+    {13, -13, 0}
+};
+
+std::vector<ControlPoint> skills_cp_2 = {
+    {24, -24, 0},
+    {24, -24, 100},
+    {24, 0, 70},
+    {24, 12, 20},
+    {24, 26, 0},
+    {24, 26, 0}
+};
+
+std::vector<ControlPoint> skills_cp_3 = {
+    {15, 15, 0},
+    {15, 15, 100},
+    {24, 24, 60},
+    {36, 32, 30},
+    {48, 36, 0}
+};
+
+std::vector<ControlPoint> skills_cp_4 = {
+    {48, 20, 0},
+    {48, 31, 70},
+    {36, 60, 30},
+    {24, 65, 20},
+    {18, 65, 0},
+    {18, 65, 0}
 };
 
 BezierPath skills_1(skills_cp_1);
+BezierPath skills_2(skills_cp_2);
+BezierPath skills_3(skills_cp_3);
+BezierPath skills_4(skills_cp_4);
 
 void pre_skills() {
     set_drive_brake(pros::E_MOTOR_BRAKE_BRAKE);
     set_hood(true);
-    set_loading(true);
 }
 
 void skills() {
     intake.move_voltage(12000);
-    ramsete(skills_1.get_waypoints(), 3000, {.angular_weight = 0.015, .end_cutoff = 3.0});
-    // set_tracking(false);
-    // move_time(4000, 1000); // uncomment once aligner is fixed
-    // set_tracking(true);
-    move_pose({-48, -32, 0}, 2000, {.async = true, .distance_weight = 2.3, .angular_weight = 2.3});
+    move_pose({48, -48, 90}, 1200, {.cutoff = 2.0, .angular_weight = 0});
+
+    /*
+    turn_heading(180, 800, {.async = true, .cutoff = 10.0});
+    wait_until_within(180, 20.0);
+    set_loading(true);
+    wait_until_done();
+    pros::delay(300);
+    move_point({48, -61}, 1000);
+    // set_wheel_tracking(false);
+    // move_time(6000, 1500);
+    pros::delay(1000);
+    // set_wheel_tracking(true);
+    move_pose({48, -31, 0}, 2000, {.async = true, .angular_weight = 1.0});
     pros::delay(200);
     set_loading(false);
     wait_until_done();
     set_lock(true);
-    pros::delay(1200);
+    pros::delay(1500);
+    move_point({48, -54}, 1200, {.reverse = true, .cutoff = 3.0});
     set_lock(false);
-    move_point({-48, -50}, 800, {.reverse = true});
-    move_pose({-24, -24, 45}, 2000);
-    move_point({-48, -48}, 2000, {.reverse = true});
+    turn_heading(-45, 600, {.cutoff = 5.0});
+    ramsete(skills_1.get_waypoints(), 3000, {.end_cutoff = 3.0});
+    set_intake_velocity(-400);
+    pros::delay(1800);
+    set_intake_tbh(false);
+    intake.move_voltage(12000);
+    move_point({24, -24}, 1200, {.reverse = true, .cutoff = 3.0});
+    turn_heading(0, 800, {.cutoff = 5.0});
+    ramsete(skills_2.get_waypoints(), 3000, {.end_cutoff = 3.0});
+    turn_point({15, 15}, 1000);
+    set_hood(false);
+    move_point({15, 15}, 800);
+    set_lock(true);
+    pros::delay(1000);
+    set_lock(false);
+    set_hood(true);
+    ramsete(skills_3.get_waypoints(), 3000, {.reverse = true});
+    turn_point({48, 61}, 1000, {.async = true});
+    wait_until_within(0, 20.0);
+    set_loading(true);
+    wait_until_done();
+    pros::delay(300);
+    move_point({48, 61}, 1000);
+    // set_wheel_tracking(false);
+    // move_time(6000, 1500);
+    pros::delay(1000);
+    // set_wheel_tracking(true);
+    move_pose({48, 31, 0}, 2000, {.reverse = true, .async = true, .angular_weight = 1.0});
+    pros::delay(200);
+    set_loading(false);
+    wait_until_done();
+    set_lock(true);
+    pros::delay(1500);
+    ramsete(skills_4.get_waypoints(), 3000, {.reverse = true, .end_cutoff = 3.0});
+    */
+
 }
 
 std::vector<std::shared_ptr<BezierPath>> test_paths;
@@ -426,14 +481,17 @@ void init_autons() {
 
     skills_paths.clear();
     skills_paths.push_back(std::shared_ptr<BezierPath>(&skills_1, [](BezierPath*){}));
+    skills_paths.push_back(std::shared_ptr<BezierPath>(&skills_2, [](BezierPath*){}));
+    skills_paths.push_back(std::shared_ptr<BezierPath>(&skills_3, [](BezierPath*){}));
+    skills_paths.push_back(std::shared_ptr<BezierPath>(&skills_4, [](BezierPath*){}));
 
     // Create Autons dynamically
     autons.clear();
     autons.emplace_back("Test", setup, test, Pose(24, -48, 90, false), test_paths);
-    autons.emplace_back("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, M_PI/2), right_sawp_paths);
-    autons.emplace_back("Right Elims", pre_right_elims, right_elims, Pose(18, -53, M_PI/6), right_elims_paths);
+    autons.emplace_back("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, 90, false), right_sawp_paths);
+    autons.emplace_back("Right Elims", pre_right_elims, right_elims, Pose(18, -53, 30, false), right_elims_paths);
     autons.emplace_back("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30, false), right_9ball_paths);
-    autons.emplace_back("Skills", pre_skills, skills, Pose(-6, -48, -90, false), skills_paths);
+    autons.emplace_back("Skills", pre_skills, skills, Pose(6, -48, 90, false), skills_paths);
 
 }
 
@@ -451,13 +509,11 @@ void initialize() {
 		pros::delay(10);
 	}
 
-    master.rumble("..");
-
     master.set_text(0, 0, "              ");
 
     intake_task = new pros::Task(intake_control);
 
-    selected_index = 3;
+    selected_index = 4;
 
     init_autons();
 
@@ -471,6 +527,9 @@ void initialize() {
     }
 
     initialize_pose(selected_auton.start_pose);
+
+    master.rumble("..");
+    pros::delay(500);
 
     controller_task = new pros::Task(display_controller);
 
@@ -494,7 +553,7 @@ void autonomous() {
             update_particles();
             log_mcl();
             #else
-            if(tracking) update_odom();
+            update_odom();
             update_particles();
             #endif
 

@@ -3,13 +3,27 @@
 #include "config.h"
 
 #define FUCKED_ODOM_CONSTANT 1.2
+#define IMU_CW_DRIFT 1.0
+#define IMU_CCW_DRIFT 1.0
+
+bool wheel_tracking_enabled = true;
+
+void set_wheel_tracking(bool enabled) {
+    wheel_tracking_enabled = enabled;
+}
+
+bool get_wheel_tracking() {
+    return wheel_tracking_enabled;
+}
 
 Pose robot_pose = Pose(0, 0, 0);
 Pose robot_speed = Pose(0, 0, 0);
 
-Pose get_pose(bool standard) {
-    if(standard) return Pose(robot_pose.x, robot_pose.y, M_PI/2 - robot_pose.theta);
-    return robot_pose;
+Pose get_pose(PoseSettings settings) {
+    double theta = robot_pose.theta;
+    if(settings.degrees) theta *= 180.0 / M_PI;
+    if(settings.standard) return Pose(robot_pose.x, robot_pose.y, M_PI / 2 - theta);
+    return Pose(robot_pose.x, robot_pose.y, theta);
 }
 
 Pose get_speed() {
@@ -22,7 +36,15 @@ void set_pose(Pose new_pose) {
 
 double prev_left_raw = 0;
 double prev_right_raw = 0;
-double prev_theta_raw = robot_pose.theta * 180.0 / M_PI;
+double prev_theta_raw = 0;
+
+void start_odom(Pose initial_pose) {
+    robot_pose = initial_pose;
+    robot_speed = Pose(0, 0, 0);
+    prev_left_raw = left_motors.get_average_position();   
+    prev_right_raw = right_motors.get_average_position();
+    prev_theta_raw = imu.get_rotation() * M_PI / 180.0;
+}
 
 void update_odom() {
 
@@ -30,11 +52,20 @@ void update_odom() {
     double right_raw = right_motors.get_average_position();
 
     double theta_raw = imu.get_rotation() * M_PI / 180.0;
+    // theta_raw *= (theta_raw > prev_theta_raw) ? IMU_CW_DRIFT : IMU_CCW_DRIFT;
 
     double left_delta = left_raw - prev_left_raw;
     double right_delta = right_raw - prev_right_raw;
 
     double theta_delta = theta_raw - prev_theta_raw;
+
+    if(!wheel_tracking_enabled) {
+        robot_speed.x = 0;
+        robot_speed.y = 0;
+        robot_pose.theta += theta_delta;
+        prev_theta_raw = theta_raw;
+        return;
+    }
 
     double heading = robot_pose.theta + theta_delta;
     double avg_heading = robot_pose.theta + theta_delta / 2;

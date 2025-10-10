@@ -22,9 +22,5 @@ class Auton {
 extern std::vector<Auton> autons;
 extern int selected_index;
 
-void set_tracking(bool enabled);
-
-bool get_tracking();
-
 void display_selector();
 extern pros::Task* autonomous_task;

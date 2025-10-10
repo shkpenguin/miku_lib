@@ -133,9 +133,11 @@ void log_mcl() {
     log_buffer << NUM_PARTICLES << "," << robot_pose.x << "," << robot_pose.y << "," << robot_pose.theta << ",";
     log_buffer << left.distance_sensor.get_distance() / 25.4 << "," 
                << right.distance_sensor.get_distance() / 25.4 << "," 
+               << front.distance_sensor.get_distance() / 25.4 << ","
                << back.distance_sensor.get_distance() / 25.4 << ",";
     log_buffer << left.distance_sensor.get_object_size() << "," 
                << right.distance_sensor.get_object_size() << "," 
+                << front.distance_sensor.get_object_size() << ","
                << back.distance_sensor.get_object_size() << ",";
 
     for(size_t i = 0; i < particles.size(); ++i) {
@@ -176,7 +178,7 @@ Pose get_pose_estimate() {
 
 void initialize_pose(Pose robot_pose) {
 
-    set_pose(robot_pose);
+    start_odom(robot_pose);
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
         particles[i].position = Point(robot_pose.x, robot_pose.y);
@@ -195,7 +197,7 @@ void update_particles() {
     odom_noise = std::normal_distribution<double>(0, odom_stdev);
 
     Pose robot_speed = get_speed();
-    double robot_theta = get_pose(true).theta;
+    double robot_theta = get_pose({.standard = true}).theta;
     double sin_theta = sin(robot_theta);
     double cos_theta = cos(robot_theta);
 

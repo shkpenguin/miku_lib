@@ -30,12 +30,6 @@ inline double wrap_angle(double angle, double range = 2.0 * M_PI) {
     return angle - range / 2.0;
 }
 
-inline double wrap_angle_180(double angle) {
-    angle = std::fmod(angle + 180.0, 360.0);
-    if (angle < 0) angle += 360.0;
-    return angle - 180.0;
-}
-
 inline double dist(double x1, double y1, double x2, double y2) {
     return std::hypot(x2 - x1, y2 - y1);
 }
@@ -58,4 +52,15 @@ enum class Orientation {
 enum class Side {
     LEFT,
     RIGHT
+};
+
+enum MotionType {
+    TURN_HEADING,
+    TURN_POINT,
+    SWING_HEADING,
+    SWING_POINT,
+    MOVE_POINT,
+    MOVE_POSE,
+    MOVE_TIME,
+    RAMSETE
 };

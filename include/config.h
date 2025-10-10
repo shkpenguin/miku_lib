@@ -6,8 +6,9 @@
 #define WHEEL_DIAMETER 3.25
 #define GEAR_RATIO 0.75
 #define TRACK_WIDTH 12.0
+#define DELTA_TIME 10
 
-#define LOGGING_ENABLED 0
+#define LOGGING_ENABLED 1
 
 extern pros::Controller master;
 

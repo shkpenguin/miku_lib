@@ -64,6 +64,12 @@ void cancel_motion() {
     pros::delay(10);
 }
 
+void stop_motion() {
+    end_motion();
+    distance_traveled = -1;
+    stop_motors();
+}
+
 void cancel_all_motions() {
     motion_running = false;
     motion_queued = false;

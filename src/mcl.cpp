@@ -15,7 +15,7 @@
 MCLDistance back(9, 3.5, -4.75, Orientation::BACK);
 MCLDistance left(4, -5.2, 0, Orientation::LEFT);
 MCLDistance right(8, 5.2, 0, Orientation::RIGHT);
-MCLDistance front(7, 3.25, 8.25, Orientation::FRONT);
+MCLDistance front(7, -3.25, 8.25, Orientation::FRONT);
 
 std::vector<std::reference_wrapper<MCLDistance>> sensors = {std::ref(front), std::ref(back), std::ref(left), std::ref(right)};
 
@@ -182,6 +182,20 @@ void initialize_pose(Pose robot_pose) {
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
         particles[i].position = Point(robot_pose.x, robot_pose.y);
+        particles[i].weight = 1.0 / NUM_PARTICLES;
+    }
+
+}
+
+void initialize_particles_uniform(Point center, double length) {
+
+    std::uniform_real_distribution<double> dist(length / -2, length / 2);
+
+    for(int i = 0; i < NUM_PARTICLES; ++i) {
+        particles[i].position = Point(
+            clamp_field(center.x + dist(rng)), 
+            clamp_field(center.y + dist(rng))
+        );
         particles[i].weight = 1.0 / NUM_PARTICLES;
     }
 

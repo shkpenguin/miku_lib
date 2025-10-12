@@ -44,5 +44,6 @@ void log_mcl();
 void flush_logs();
 Pose get_pose_estimate();
 void initialize_pose(Pose robot_pose);
+void initialize_particles_uniform(Point center, double length);
 void update_particles();
 void resample_particles();

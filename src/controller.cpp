@@ -40,14 +40,21 @@ std::vector<DisplayItem> code_display = {
     ),
     DisplayItem(
         []() -> std::string { 
-            return fmt::format("{:.2f}", intake.get_average_velocity() / 6); 
+            return fmt::format("Velocity: {:.2f}", intake.get_average_velocity() / 6); 
         }, 
         2000, 
         NotificationType::DISPLAY
     ),
     DisplayItem(
         []() -> std::string { 
-            return fmt::format("{:.2f}", imu.get_rotation());
+            return fmt::format("Heading: {:.2f}", imu.get_rotation());
+        }, 
+        2000, 
+        NotificationType::DISPLAY
+    ),
+    DisplayItem(
+        []() -> std::string { 
+            return fmt::format("Pitch: {:.2f}", imu.get_pitch());
         }, 
         2000, 
         NotificationType::DISPLAY

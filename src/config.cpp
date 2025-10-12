@@ -22,7 +22,7 @@ pros::Imu imu(3);
 
 pros::adi::DigitalOut hood_piston('C');
 pros::adi::DigitalOut lock_piston('A');
-pros::adi::DigitalOut loader_piston('B');
+pros::adi::DigitalOut loader_piston('H');
 pros::adi::DigitalOut descore_piston('D');
 
 Gains drive_gains(500.0, 0.0, 1000.0);

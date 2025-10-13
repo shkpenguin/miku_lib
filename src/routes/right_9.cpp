@@ -41,27 +41,24 @@ void right_9ball() {
     set_hood(true);
     intake.move_voltage(0);
     set_lock(true);
-    // turn_heading(0, 500, {.cutoff = 10.0});
+    turn_heading(0, 1000);
     // move_pose({49, -24, 0}, 1000);
-    move_point({48, -26}, 1000);
+    move_point({48, -32}, 1000);
     intake.move_voltage(12000);
     pros::delay(1200);
-    move_pose({48, -60, 180}, 1200, {.async = true, .distance_weight = 2.5, .angular_weight = 2.5});
-    pros::delay(200);
     set_lock(false);
     set_loading(true);
     wait_until_done();
-    move_point({48, -65}, 1000);
-    move_time(5000, 1000);
+    move_point({48, -59}, 2000);
+    pros::delay(1000);
     intake.move_voltage(0);
     set_lock(true);
-    move_pose({48, -28, 0}, 1800, {.async = true, .distance_weight = 2.5, .angular_weight = 2.0});
-    pros::delay(200);
+    move_time(-12000, 200);
     set_loading(false);
+    move_point({48, -32}, 2000);
     wait_until_done();
     intake.move_voltage(12000);
     pros::delay(700);
     intake.move_voltage(0);
-    move_time(3000, 3000);
 
 }

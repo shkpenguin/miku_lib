@@ -76,16 +76,44 @@ std::vector<std::pair<double, double>> intake_table = {
     {620.0, 12000}
 };
 
+std::vector<std::pair<double, double>> turn_kp_lookup = {
+    {0, 300},
+    {10, 300},
+    {20, 170},
+    {30, 150},
+    {40, 130},
+    {50, 115},
+    {60, 100},
+    {70, 100},
+    {80, 95},
+    {180, 80}
+};
+
+std::vector<std::pair<double, double>> turn_kd_lookup = {
+    {0, 0},
+    {10, 0},
+    {20, 800},
+    {30, 1100},
+    {40, 800},
+    {50, 800},
+    {60, 600},
+    {70, 800},
+    {80, 600},
+    {180, 400}
+};
+
 LookupTable drive_lut(drive_table);
 LookupTable intake_lut(intake_table);
+LookupTable turn_kp_lut(turn_kp_lookup);
+LookupTable turn_kd_lut(turn_kd_lookup);
 
-double LookupTable::get_voltage(double velocity) {
+double LookupTable::get_value(double key) {
     // use binary search to find least voltage below desired velocity
     int low = 0;
     int high = table.size() - 1;
     while (low < high) {
         int mid = (low + high + 1) / 2;
-        if (table[mid].first <= velocity) {
+        if (table[mid].first <= key) {
             low = mid;
         } else {
             high = mid - 1;
@@ -99,7 +127,7 @@ double LookupTable::get_voltage(double velocity) {
     double y0 = table[low].second;
     double x1 = table[low + 1].first;
     double y1 = table[low + 1].second;
-    return y0 + (y1 - y0) * (velocity - x0) / (x1 - x0);
+    return y0 + (y1 - y0) * (key - x0) / (x1 - x0);
 }
 
 void tune_lut_drive() {

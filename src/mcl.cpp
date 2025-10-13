@@ -12,6 +12,11 @@
 #include <fstream>
 #include <climits>
 
+enum DistanceError {
+    NOT_IN_FIELD = -1,
+    BAD_INTERSECT = -2
+};
+
 MCLDistance back(9, 3.5, -4.75, Orientation::BACK);
 MCLDistance left(4, -5.2, 0, Orientation::LEFT);
 MCLDistance right(8, 5.2, 0, Orientation::RIGHT);
@@ -103,7 +108,7 @@ double get_expected_reading(Point particle_position, double offset_x, double off
         }
     }
 
-    if (!std::isfinite(tMin)) return -1; // no valid hit
+    if (!std::isfinite(tMin)) return NOT_IN_FIELD; // no valid hit
 
     double x_intersect = sensor_x + tMin * dx;
     double y_intersect = sensor_y + tMin * dy;
@@ -112,7 +117,7 @@ double get_expected_reading(Point particle_position, double offset_x, double off
     if (fabs(y_intersect - HALF_FIELD) < 1.0 || fabs(y_intersect + HALF_FIELD) < 1.0) {
         if ((x_intersect >= -54.0 && x_intersect <= -42.0) ||
             (x_intersect >=  42.0 && x_intersect <=  54.0)) {
-            return -1;
+            return BAD_INTERSECT;
         }
     }
 
@@ -185,6 +190,10 @@ void initialize_pose(Pose robot_pose) {
         particles[i].weight = 1.0 / NUM_PARTICLES;
     }
 
+    #if LOGGING_ENABLED
+    log_mcl();
+    #endif
+
 }
 
 void initialize_particles_uniform(Point center, double length) {
@@ -201,12 +210,12 @@ void initialize_particles_uniform(Point center, double length) {
 
 }
 
-#define MAX_ERROR 8.0
+#define MAX_ERROR 5.0
 static std::normal_distribution<double> odom_noise;
 
 void update_particles() {
 
-    double velocity = sqrt(get_speed().x * get_speed().x + get_speed().y * get_speed().y);
+    double velocity = get_speed().magnitude();
     double odom_stdev = std::max(velocity / 4, 0.1);
     odom_noise = std::normal_distribution<double>(0, odom_stdev);
 
@@ -239,7 +248,7 @@ void update_particles() {
                 cos_theta, 
                 sin_theta, 
                 sensors[j].get().orientation);
-            if(particles[i].sensor_readings[j] == -1) valid_sensors[j] = false;
+            if(particles[i].sensor_readings[j] == BAD_INTERSECT) valid_sensors[j] = false;
         }
     }
 
@@ -264,6 +273,7 @@ void update_particles() {
         for(int j = 0; j < sensors.size(); ++j) {
             if(!valid_sensors[j] || !sensors[j].get().get_enabled() || !sensors[j].get().get_valid()) continue;
             double expected = particles[i].sensor_readings[j];
+            if(expected == NOT_IN_FIELD) weight *= 0;
             double reading = sensors[j].get().get_reading();
             double sensor_stdev;
             if(reading < 8) sensor_stdev = 0.2;
@@ -286,6 +296,10 @@ void update_particles() {
             particles[i].weight /= total_weight;
         }
     }
+
+    #if LOGGING_ENABLED
+    log_mcl();
+    #endif
 
 }
 
@@ -313,5 +327,9 @@ void resample_particles() {
         p.weight = 1.0 / NUM_PARTICLES;
     }
     particles = newParticles;
+
+    #if LOGGING_ENABLED
+    log_mcl();
+    #endif
 
 }

@@ -6,8 +6,9 @@ struct Gains {
     double kP;
     double kI;
     double kD;
+    double windupRange = 0.0;
 
-    Gains(double kP, double kI, double kD) : kP(kP), kI(kI), kD(kD) {}
+    Gains(double kP, double kI, double kD, double windupRange = 0.0) : kP(kP), kI(kI), kD(kD), windupRange(windupRange) {}
 };
 
 /**
@@ -19,12 +20,15 @@ struct Gains {
 class PID {
     public:
         PID(double kP, double kI, double kD, double windupRange = 0, bool signFlipReset = false, bool trapezoidal = true);
-        PID(Gains gains, double windupRange = 0, bool signFlipReset = false, bool trapezoidal = true)
-            : PID(gains.kP, gains.kI, gains.kD, windupRange, signFlipReset, trapezoidal) {}
+        PID(Gains gains, bool signFlipReset = true, bool trapezoidal = true)
+            : PID(gains.kP, gains.kI, gains.kD, gains.windupRange, signFlipReset, trapezoidal) {}
 
         double update(double error);
 
         void setGains(Gains gains);
+        void setKp(double p);
+        void setKi(double i);
+        void setKd(double d);
 
         void reset();
     protected:

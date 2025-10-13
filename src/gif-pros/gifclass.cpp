@@ -122,7 +122,7 @@ void Gif::_render() {
 
 			lv_obj_invalidate(_canvas); // force canvas redraw
 
-			int32_t delay = _gif->gce.delay * 20;
+			int32_t delay = _gif->gce.delay * 10;
 			int32_t delta = pros::millis() - now;
 			delay -= delta;
 

@@ -3,6 +3,22 @@
 #include <vector>
 #include "miku-api.h"
 
+enum MotionType {
+    TURN_HEADING,
+    TURN_POINT,
+    SWING_HEADING,
+    SWING_POINT,
+    MOVE_POINT,
+    MOVE_POSE,
+    MOVE_TIME,
+    RAMSETE
+};
+
+enum class Side {
+    LEFT,
+    RIGHT
+};
+
 void move_motors(double l, double r);
 
 void stop_motors();
@@ -18,6 +34,7 @@ void request_motion_start();
 void end_motion();
 void cancel_motion();
 void cancel_all_motions();
+bool get_motion_running();
 
 struct TurnParams {
     bool reverse = false;

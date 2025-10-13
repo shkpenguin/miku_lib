@@ -11,7 +11,7 @@ std::vector<Auton> autons;
 
 void init_autons() {
     autons = {
-        Auton("Test", pre_test, test, Pose(24, 66, -90, false), test_paths),
+        Auton("Test", pre_test, test, Pose(0, 0, 0, false), test_paths),
         Auton("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, 90, false), right_sawp_paths),
         Auton("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30, false), right_9ball_paths),
         Auton("Skills", pre_skills, skills, Pose(6, -48, 90, false), skills_paths)
@@ -25,6 +25,8 @@ void initialize() {
     intake.tare_position_all();
 
     master.set_text(0, 0, "IMU Calibrating");
+
+    static Gif gif("/usd/jiachenma.gif", lv_scr_act());
 
     imu.reset();
 	while(imu.is_calibrating()) {
@@ -40,7 +42,7 @@ void initialize() {
     selected_index = 3;
 
     if (autons.empty()) return;
-    //display_selector();
+    // display_selector();
 
     Auton& selected_auton = autons[selected_index];
     selected_auton.pre_auton();
@@ -50,20 +52,14 @@ void initialize() {
 
     initialize_pose(selected_auton.start_pose);
 
-    master.print(0, 0, "Paths: %d", selected_auton.paths.size());
-    pros::delay(2000);
-
     controller_task = new pros::Task(display_controller);
 
 }
 
 void autonomous() { 
-    
     #if LOGGING_ENABLED
     file.open("log.txt");
     #endif
-
-    static Gif gif("/usd/miku.gif", lv_scr_act());
     // intake_task = new pros::Task(intake_control);
 
     autonomous_task = new pros::Task([]() {
@@ -72,16 +68,8 @@ void autonomous() {
 
         while (true) {
 
-            #if LOGGING_ENABLED
-            update_odom();
-            log_mcl();
-
-            update_particles();
-            log_mcl();
-            #else
             update_odom();
             update_particles();
-            #endif
 
             Pose belief = get_pose_estimate();
             belief.theta = get_pose().theta;
@@ -111,7 +99,8 @@ void autonomous() {
 
 enum class DriveMode {
     TANK = 0,
-    ARCADE = 1
+    ARCADE = 1,
+    FUNNY_TANK = 2
 };
 
 int curve(int pos) {
@@ -120,19 +109,33 @@ int curve(int pos) {
 }
 
 void tank(int left, int right) {
-    left_motors.move_voltage(curve(left));
-    right_motors.move_voltage(curve(right));
+    left_motors.move(left);
+    right_motors.move(right);
+}
+
+void funny_tank(int left_x, int left_y, int right_x, int right_y) {
+    if(fabs(left_x) > 50 && fabs(right_x) > 50) {
+        int sign = (left_x > 0 || right_x < 0) ? 1 : -1;
+        left_x = (fabs(left_x) - 50) * 127 / 77;
+        right_x = (fabs(right_x) - 50) * 127 / 77;
+        double speed = (fabs(left_x) + fabs(right_x)) / 2.0 * sign;
+        left_motors.move(speed);
+        right_motors.move(speed);
+    } else {
+        left_motors.move(left_y);
+        right_motors.move(right_y);
+    }
 }
 
 void arcade(int throttle, int turn) {
     int left = throttle + turn;
     int right = throttle - turn;
 
-    left_motors.move_voltage(curve(left));
-    right_motors.move_voltage(curve(right));
+    left_motors.move(left);
+    right_motors.move(right);
 }
 
-DriveMode driveMode = DriveMode::TANK;
+DriveMode driveMode = DriveMode::FUNNY_TANK;
 
 void opcontrol() {
 
@@ -164,6 +167,12 @@ void opcontrol() {
             int throttle = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
             int turn = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
             arcade(throttle, turn);
+        } else if(driveMode == DriveMode::FUNNY_TANK) {
+            int left_x = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
+            int left_y = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+            int right_x = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+            int right_y = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
+            funny_tank(left_x, left_y, right_x, right_y);
         }
 
         bool shift1 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L1);

@@ -49,26 +49,3 @@ inline int find_quadrant(Pose robot_pose) {
     if(robot_pose.x < 0 && robot_pose.y < 0) return 3;
     return 4;
 }
-
-enum class Orientation {
-    LEFT,
-    RIGHT,
-    FRONT,
-    BACK
-};
-
-enum class Side {
-    LEFT,
-    RIGHT
-};
-
-enum MotionType {
-    TURN_HEADING,
-    TURN_POINT,
-    SWING_HEADING,
-    SWING_POINT,
-    MOVE_POINT,
-    MOVE_POSE,
-    MOVE_TIME,
-    RAMSETE
-};

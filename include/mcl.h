@@ -3,6 +3,13 @@
 #include "miku-api.h"
 #include <fstream>
 
+enum class Orientation {
+    LEFT,
+    RIGHT,
+    FRONT,
+    BACK
+};
+
 class MCLDistance {
     double data = -1;
     bool valid = false;

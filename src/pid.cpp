@@ -40,6 +40,18 @@ void PID::setGains(Gains gains) {
     kD = gains.kD;
 }
 
+void PID::setKp(double p) {
+    kP = p;
+}
+
+void PID::setKi(double i) {
+    kI = i;
+}
+
+void PID::setKd(double d) {
+    kD = d;
+}
+
 void PID::reset() {
     integral = 0;
     prevError = 0;

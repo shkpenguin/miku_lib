@@ -49,7 +49,7 @@ void intake_control() {
 void set_intake_velocity(double vel) {
     tbh_enabled = true;
     target_vel = vel;
-    output = intake_lut.get_voltage(vel);
+    output = intake_lut.get_value(vel);
     prev_error = 0;
     tbh = output;
 }

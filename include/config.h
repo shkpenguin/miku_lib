@@ -37,7 +37,6 @@ struct Gains;
 struct ExitCondition;
 
 extern Gains drive_gains;
-extern Gains turn_gains;
 
 extern ExitCondition drive_small_exit;
 extern ExitCondition drive_large_exit;

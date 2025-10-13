@@ -76,6 +76,10 @@ void cancel_all_motions() {
     pros::delay(10);
 }
 
+bool get_motion_running() {
+    return distance_traveled != -1;
+};
+
 void turn_heading(double target, double timeout, TurnParams params) {
 
     request_motion_start();
@@ -97,8 +101,16 @@ void turn_heading(double target, double timeout, TurnParams params) {
     target = wrap_angle(target, 360);
     if (params.reverse) target = wrap_angle(target + 180, 360);
 
+    double initial_error = fabs(wrap_angle(target - get_pose({.degrees = true}).theta, 360));
+
     // PID tuned in degrees
-    PID turn_pid(turn_gains, 3.0, true);  
+    Gains turn_gains = Gains(
+        turn_kp_lut.get_value(initial_error), 
+        0.0, 
+        turn_kd_lut.get_value(initial_error)
+    );
+
+    PID turn_pid(turn_gains, 0.0, true);
 
     turn_small_exit.reset();
     turn_large_exit.reset();
@@ -147,13 +159,22 @@ void turn_point(Point target, double timeout, TurnParams params) {
     distance_traveled = 0;
 
     double target_deg;
-    
-    PID turn_pid(turn_gains, 0.0, true);  
 
     turn_small_exit.reset();
     turn_large_exit.reset();
 
     uint32_t prev_time = pros::millis();
+
+    double initial_error = fabs(atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI) - get_pose({.degrees = true}).theta);
+
+    // PID tuned in degrees
+    Gains turn_gains = Gains(
+        turn_kp_lut.get_value(initial_error), 
+        0.0, 
+        turn_kd_lut.get_value(initial_error)
+    );
+
+    PID turn_pid(turn_gains, 0.0, true);
 
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
         double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
@@ -163,6 +184,8 @@ void turn_point(Point target, double timeout, TurnParams params) {
         if (params.cutoff > 0 && fabs(error) < params.cutoff) break;
 
         double output = turn_pid.update(error);
+        std::clamp(output, -params.max_speed, params.max_speed);
+        if (fabs(output) < params.min_speed) output = (output < 0 ? -params.min_speed : params.min_speed);
 
         move_motors(output, -output);
 
@@ -196,7 +219,18 @@ void swing_heading(double target, Side locked_side, double timeout, SwingParams 
 
     distance_traveled = 0;
     Timer timer(timeout);
-    PID turn_pid(turn_gains);
+
+    double initial_error = fabs(wrap_angle(target - get_pose({.degrees = true}).theta, 360));
+
+    // PID tuned in degrees
+    Gains turn_gains = Gains(
+        turn_kp_lut.get_value(initial_error), 
+        0.0, 
+        turn_kd_lut.get_value(initial_error)
+    );
+
+    PID turn_pid(turn_gains, 0.0, true);
+
     if(params.reverse) target = wrap_angle(target + 180, 360);
 
     turn_small_exit.reset();
@@ -249,7 +283,16 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
     double target_deg;
     
     // PID tuned in degrees
-    PID turn_pid(turn_gains, 3.0, true);  
+    double initial_error = fabs(atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI) - get_pose({.degrees = true}).theta);
+
+    // PID tuned in degrees
+    Gains turn_gains = Gains(
+        turn_kp_lut.get_value(initial_error), 
+        0.0, 
+        turn_kd_lut.get_value(initial_error)
+    );
+
+    PID turn_pid(turn_gains, 0.0, true);
 
     turn_small_exit.reset();
     turn_large_exit.reset();
@@ -298,7 +341,17 @@ void move_point(Point target, double timeout, MovePointParams params) {
     Timer timer(timeout);
 
     PID drive_pid(drive_gains);
-    PID turn_pid(turn_gains, 2.0, true);
+    
+    double initial_error = fabs(atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI) - get_pose({.degrees = true}).theta);
+
+    // PID tuned in degrees
+    Gains turn_gains = Gains(
+        turn_kp_lut.get_value(initial_error), 
+        0.0, 
+        turn_kd_lut.get_value(initial_error)
+    );
+
+    PID turn_pid(turn_gains, 0.0, true);
 
     drive_small_exit.reset();
     drive_large_exit.reset();
@@ -340,7 +393,7 @@ void move_point(Point target, double timeout, MovePointParams params) {
             turn_out *= (drive_error / 6.0) * (drive_error / 6.0);
         }
 
-        if(!params.reverse && drive_out < fabs(params.min_speed)  && drive_out > 0) drive_out = params.min_speed;
+        if(!params.reverse && drive_out < fabs(params.min_speed) && drive_out > 0) drive_out = params.min_speed;
         if(params.reverse && drive_out < fabs(params.min_speed) && drive_out > 0) drive_out = -params.min_speed;
 
         prev_drive_out = drive_out;
@@ -428,12 +481,12 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
         }
 
         if (params.reverse) {
-            double r_volts = drive_lut.get_voltage(-l_vel);
-            double l_volts = drive_lut.get_voltage(-r_vel);
+            double r_volts = drive_lut.get_value(-l_vel);
+            double l_volts = drive_lut.get_value(-r_vel);
             move_motors(l_volts, r_volts);
         } else {
-            double r_volts = drive_lut.get_voltage(r_vel);
-            double l_volts = drive_lut.get_voltage(l_vel);
+            double r_volts = drive_lut.get_value(r_vel);
+            double l_volts = drive_lut.get_value(l_vel);
             move_motors(l_volts, r_volts);
         }
         
@@ -594,11 +647,11 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
         double r_volts, l_volts;
 
         if(params.reverse) {
-            r_volts = drive_lut.get_voltage(-l_vel);
-            l_volts = drive_lut.get_voltage(-r_vel);
+            r_volts = drive_lut.get_value(-l_vel);
+            l_volts = drive_lut.get_value(-r_vel);
         } else {
-            r_volts = drive_lut.get_voltage(r_vel);
-            l_volts = drive_lut.get_voltage(l_vel);
+            r_volts = drive_lut.get_value(r_vel);
+            l_volts = drive_lut.get_value(l_vel);
         }
 
         move_motors(l_volts, r_volts);

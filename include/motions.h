@@ -56,6 +56,7 @@ struct MovePointParams {
     bool reverse = false;
     bool async = false;
     double cutoff = -1.0;
+    double angular_speed = -1.0;
     double max_speed = 12000;
     double min_speed = 1000;
 };
@@ -67,7 +68,7 @@ struct MovePoseParams {
     double max_vel = 100;
     double min_vel = 0;
     double distance_weight = 4.0;
-    double angular_weight = 0.0; 
+    double angular_speed = 0.0; 
     double end_cutoff = 6.0;
 };
 
@@ -77,7 +78,7 @@ struct RamseteParams {
     double cutoff = -1.0;
     double max_vel = 100;
     double min_vel = 0;
-    double angular_weight = 0.003;
+    double angular_speed = 0.003;
     double end_cutoff = 6.0;
 };
 
@@ -87,7 +88,7 @@ void turn_point(Point target, double timeout, TurnParams params = TurnParams(fal
 void swing_heading(double target, Side locked_side, double timeout, SwingParams params = SwingParams(false, false, -1.0, 12000, 0));
 void swing_point(Point target, Side locked_side, double timeout, SwingParams params = SwingParams(false, false, -1.0, 12000, 0));
 
-void move_point(Point target, double timeout, MovePointParams params = MovePointParams(false, false, -1.0, 12000, 1000));
+void move_point(Point target, double timeout, MovePointParams params = MovePointParams(false, false, -1.0, -1.0, 12000, 1000));
 void move_pose(Pose target, double timeout, MovePoseParams params = MovePoseParams(false, false, -1.0, 100, 0.0, 1.0, 6.0));
 void move_time(double volts, double timeout, bool async = false);
 

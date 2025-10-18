@@ -37,7 +37,7 @@ void right_9ball() {
 
     intake.move_voltage(12000);
     ramsete(right_9ball_1.get_waypoints(), 3000, {.cutoff = 3.0, .end_cutoff = 3.0});
-    ramsete(right_9ball_2.get_waypoints(), 1800, {.reverse = true, .angular_weight = 0.01, .end_cutoff = 2.0});
+    ramsete(right_9ball_2.get_waypoints(), 1800, {.reverse = true, .angular_speed = 0.01, .end_cutoff = 2.0});
     set_hood(true);
     intake.move_voltage(0);
     set_lock(true);

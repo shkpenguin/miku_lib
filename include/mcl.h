@@ -45,12 +45,17 @@ struct Particle {
 };
 
 void set_all_sensors(bool enabled);
+void set_max_distance_error(double error);
+void set_min_odom_noise(double noise);
 
-double get_expected_reading(Pose particle_pose, Pose offset);
-void log_mcl();
-void flush_logs();
-Pose get_pose_estimate();
 void initialize_pose(Pose robot_pose);
 void initialize_particles_uniform(Point center, double length);
+
+void log_mcl();
+void flush_logs();
+
+double get_expected_reading(Point particle_position, double offset_x, double offset_y, 
+    double cos_theta, double sin_theta, Orientation orientation);
+Pose get_pose_estimate();
 void update_particles();
 void resample_particles();

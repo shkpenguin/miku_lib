@@ -340,6 +340,8 @@ void move_point(Point target, double timeout, MovePointParams params) {
     distance_traveled = 0;
     Timer timer(timeout);
 
+    Gains mtp_gains = params.angular_speed != -1.0 ? 
+        Gains(params.angular_speed, 0.0, 0) : drive_gains;
     PID drive_pid(drive_gains);
     
     double initial_error = fabs(atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI) - get_pose({.degrees = true}).theta);
@@ -443,7 +445,7 @@ void move_pose(Pose target, double timeout, MovePoseParams params) {
 
     double k1 = params.distance_weight;
     double k2 = 4.0;
-    double k3 = params.angular_weight;
+    double k3 = params.angular_speed;
 
     uint32_t prev_time = pros::millis();
 
@@ -556,7 +558,7 @@ void ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams para
 
     double zeta = 0.7;
     double time_multi = 1.2;
-    double b = params.angular_weight;
+    double b = params.angular_speed;
 
     bool isFinished = false;
 

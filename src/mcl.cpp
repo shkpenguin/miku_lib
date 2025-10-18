@@ -210,13 +210,20 @@ void initialize_particles_uniform(Point center, double length) {
 
 }
 
-#define MAX_ERROR 5.0
+double max_error = 4.0;
+double min_odom_noise = 0.1;
+void set_max_distance_error(double error) {
+    max_error = error;
+}
+void set_min_odom_noise(double noise) {
+    min_odom_noise = noise;
+}
 static std::normal_distribution<double> odom_noise;
 
 void update_particles() {
 
     double velocity = get_speed().magnitude();
-    double odom_stdev = std::max(velocity / 4, 0.1);
+    double odom_stdev = std::max(velocity / 4, min_odom_noise);
     odom_noise = std::normal_distribution<double>(0, odom_stdev);
 
     Pose robot_speed = get_speed();
@@ -235,7 +242,7 @@ void update_particles() {
             cos_theta, 
             sin_theta, 
             sensors[i].get().orientation);
-        if(fabs(expected - sensors[i].get().get_reading()) > MAX_ERROR) valid_sensors[i] = false;
+        if(fabs(expected - sensors[i].get().get_reading()) > max_error) valid_sensors[i] = false;
     }
 
     // check for particles with invalid readings
@@ -273,12 +280,19 @@ void update_particles() {
         for(int j = 0; j < sensors.size(); ++j) {
             if(!valid_sensors[j] || !sensors[j].get().get_enabled() || !sensors[j].get().get_valid()) continue;
             double expected = particles[i].sensor_readings[j];
-            if(expected == NOT_IN_FIELD) weight *= 0;
+            if(expected == NOT_IN_FIELD) {
+                weight *= 0.0;
+                continue;
+            }
             double reading = sensors[j].get().get_reading();
+            double dev = reading - expected;
+            if(fabs(dev) > max_error) {
+                weight *= 0.0;
+                continue;
+            }
             double sensor_stdev;
             if(reading < 8) sensor_stdev = 0.2;
             else sensor_stdev = reading * 0.05;
-            double dev = reading - expected;
             weight *= std::exp(-(dev * dev) / (2 * sensor_stdev * sensor_stdev));
         }
 

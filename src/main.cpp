@@ -24,9 +24,10 @@ void initialize() {
     right_motors.tare_position_all();
     intake.tare_position_all();
 
-    master.set_text(0, 0, "IMU Calibrating");
+    optical.set_led_pwm(100);
+    optical.set_integration_time(10);
 
-    static Gif gif("/usd/jiachenma.gif", lv_scr_act());
+    master.set_text(0, 0, "IMU Calibrating");
 
     imu.reset();
 	while(imu.is_calibrating()) {
@@ -139,9 +140,13 @@ DriveMode driveMode = DriveMode::FUNNY_TANK;
 
 void opcontrol() {
 
+    optical.set_led_pwm(0);
+
     // rumble_timer.resume();
     // if(autonomous_task != nullptr) autonomous_task->remove();
     set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
+
+    static Gif gif("/usd/jiachenma.gif", lv_scr_act());
 
     while (true) {
 

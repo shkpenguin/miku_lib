@@ -25,6 +25,8 @@ pros::adi::DigitalOut lock_piston('A');
 pros::adi::DigitalOut loader_piston('H');
 pros::adi::DigitalOut descore_piston('D');
 
+miku::Optical optical(16);
+
 Gains drive_gains(500.0, 0.0, 1000.0);
 
 ExitCondition drive_small_exit(1.0, 400);  

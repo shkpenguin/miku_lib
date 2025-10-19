@@ -77,7 +77,7 @@ std::vector<std::pair<double, double>> intake_table = {
 };
 
 std::vector<std::pair<double, double>> turn_kp_lookup = {
-    {0, 300},
+    {0, 600},
     {10, 300},
     {20, 170},
     {30, 150},

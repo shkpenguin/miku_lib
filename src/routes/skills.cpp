@@ -11,8 +11,8 @@ BezierPath skills_1 = {
 };
 
 BezierPath skills_2 = {
-    {18, -20, 0},
-    {18, -20, 60},
+    {17, -17, 0},
+    {17, -17, 60},
     {21, 0, 35},
     {23, 12, 20},
     {24, 20, 15},
@@ -84,12 +84,11 @@ void skills() {
     turn_point({24, -24}, 700);
     ramsete(skills_1.get_waypoints(), 1500, {.async = true, .end_cutoff = 3.0});
     pros::delay(300);
-    move_point({18, -18}, 800, {.async = true});
-    wait_until_within({18, -18}, 1.0);
+    move_point({17, -17}, 800);
     // set_intake_velocity(-300);
-    intake.move_voltage(-10000);
     wait_until_done();
-    turn_point({0, 0}, 300);
+    intake.move_voltage(-9000);
+    turn_point({0, 0}, 500);
     pros::delay(1800);
     // set_intake_tbh(false);
     intake.move_voltage(12000);
@@ -131,18 +130,18 @@ void skills() {
     pros::delay(1500);
     // set_wheel_tracking(true);
     move_time(-12000, 200);
-    move_point({48, 32}, 2000, {.async = true, .angular_speed = 90});
+    move_point({48, 32}, 2000, {.async = true});
     pros::delay(200);
     set_loading(false);
     pros::delay(200);
     intake.move_voltage(0);
     wait_until_within({48, 32}, 4.0);
     set_lock(true);
-    intake.move_voltage(5000);
+    intake.move_voltage(7000);
     wait_until_done();
-    pros::delay(1500);
+    pros::delay(1200);
     intake.move_voltage(12000);
-    pros::delay(200);
+    pros::delay(500);
     intake.move_voltage(0);
     move_point({48, 54}, 800, {.reverse = true, .cutoff = 2.0});
     turn_point({36, 60}, 700);
@@ -154,11 +153,12 @@ void skills() {
     move_time(8000, 600);
     intake.move_voltage(0);
     move_motors(4000, 4000);
-    while(front.distance_sensor.get_distance() > 1100) pros::delay(20);
-    pros::delay(300);
+    while(!optical.get_color(BLUE)) pros::delay(20);
+    while(!optical.get_color(TILE)) pros::delay(20);
+    pros::delay(500);
     stop_motors();
     start_odom({-24, 66, get_pose().theta});
-    initialize_particles_uniform({-32, 60}, 16.0);
+    initialize_particles_uniform({-24, 60}, 24.0);
     set_wheel_tracking(true);
     set_hood(true);
     move_point({-48, 48}, 3000, {.max_speed = 6000});
@@ -175,73 +175,16 @@ void skills() {
     }
     wait_until_done();
     pros::delay(1200);
-    /*
     move_time(-12000, 200);
     move_point({-48, 32}, 2000, {.async = true});
     pros::delay(200);
     set_loading(false);
     pros::delay(200);
     intake.move_voltage(0);
+    wait_until_within({-48, 32}, 4.0);
     set_lock(true);
-    wait_until_within({-48, 32}, 3.0);
     intake.move_voltage(12000);
     wait_until_done();
-    pros::delay(1500);
-    move_point({-48, 52}, 1200, {.reverse = true, .cutoff = 3.0});
-    set_lock(false);
-    turn_heading(135, 600, {.cutoff = 5.0});
-    ramsete(skills_1_reverse.get_waypoints(), 3000, {.end_cutoff = 2.0});
-    set_intake_velocity(-400);
-    pros::delay(1800);
-    set_intake_tbh(false);
-    intake.move_voltage(12000);
-    move_point({-27, 27}, 1200, {.reverse = true});
-    turn_heading(180, 1000, {.cutoff = 3.0});
-    ramsete(skills_2_reverse.get_waypoints(), 3000, {.end_cutoff = 3.0});
-    turn_point({-15, -15}, 1000);
-    set_hood(false);
-    ramsete(skills_2_1_reverse.get_waypoints(), 2000, {.async = true, .end_cutoff = 2.0});
-    pros::delay(200);
-    set_intake_velocity(400);
-    wait_until_done();
-    set_lock(true);
-    pros::delay(1000);
-    set_intake_tbh(false);
-    intake.move_voltage(12000);
-    set_lock(false);
-    set_hood(true);
-    ramsete(skills_3_reverse.get_waypoints(), 3000, {.reverse = true});
-    turn_heading(180, 1000, {.async = true});
-    wait_until_within(180, 20.0);
-    set_loading(true);
-    wait_until_done();
-    pros::delay(300);
-    move_point({-48, -59}, 1000);
-    // set_wheel_tracking(false);
-    // move_time(6000, 1500);
-    pros::delay(1200);
-    // set_wheel_tracking(true);
-    move_time(-12000, 200);
-    move_point({-48, -32}, 2000, {.async = true});
-    pros::delay(200);
-    set_loading(false);
-    pros::delay(200);
-    intake.move_voltage(0);
-    set_lock(true);
-    wait_until_within({-48, -32}, 3.0);
-    set_intake_velocity(400);
-    wait_until_done();
-    pros::delay(1500);
-    set_intake_tbh(false);
-    intake.move_voltage(12000);
-    move_point({-48, -60}, 1200, {.reverse = true, .cutoff = 3.0});
-    turn_point({-36, -64}, 1000);
-    ramsete(skills_4_reverse.get_waypoints(), 3000, {.end_cutoff = 2.0});
-    set_wheel_tracking(false);
-    move_motors(6000, 6000);
-    Timer park_timer(1000);
-    while(front.distance_sensor.get_distance() > 1500 && !park_timer.isDone()) pros::delay(10);
-    stop_motors();
 
     // */
 }

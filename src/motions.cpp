@@ -170,7 +170,7 @@ void turn_point(Point target, double timeout, TurnParams params) {
     // PID tuned in degrees
     Gains turn_gains = Gains(
         turn_kp_lut.get_value(initial_error), 
-        0.0, 
+        0.0,
         turn_kd_lut.get_value(initial_error)
     );
 

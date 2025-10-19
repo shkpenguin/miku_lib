@@ -1,4 +1,4 @@
-#define NUM_PARTICLES 1000
+#define NUM_PARTICLES 500
 
 #include "api.h"
 #include "odom.h"
@@ -17,10 +17,10 @@ enum DistanceError {
     BAD_INTERSECT = -2
 };
 
-MCLDistance back(9, 3.5, -4.75, Orientation::BACK);
+MCLDistance back(9, 3.0, -5.5, Orientation::BACK);
 MCLDistance left(4, -5.2, 0, Orientation::LEFT);
 MCLDistance right(8, 5.2, 0, Orientation::RIGHT);
-MCLDistance front(7, -3.25, 8.25, Orientation::FRONT);
+MCLDistance front(7, -6.5, 8.25, Orientation::FRONT);
 
 std::vector<std::reference_wrapper<MCLDistance>> sensors = {std::ref(front), std::ref(back), std::ref(left), std::ref(right)};
 

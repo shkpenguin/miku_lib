@@ -2,6 +2,7 @@
 
 #include "api.h"
 #include "motor.h"
+#include "optical.h"
 
 #define WHEEL_DIAMETER 3.25
 #define GEAR_RATIO 0.75
@@ -32,6 +33,8 @@ extern pros::adi::DigitalOut loader_piston;
 extern pros::adi::DigitalOut descore_piston;
 
 extern pros::Imu imu;
+
+extern miku::Optical optical;
 
 struct Gains;
 struct ExitCondition;

@@ -47,6 +47,7 @@ struct Particle {
 void set_all_sensors(bool enabled);
 void set_max_distance_error(double error);
 void set_min_odom_noise(double noise);
+void set_max_sensor_stdev(double stdev);
 
 void initialize_pose(Pose robot_pose);
 void initialize_particles_uniform(Point center, double length);

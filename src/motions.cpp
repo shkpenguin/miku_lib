@@ -19,6 +19,7 @@ void move_motors(double l, double r) {
 void stop_motors() {
     left_motors.move_voltage(0);
     right_motors.move_voltage(0);
+    pros::delay(10);
 }
 
 void set_drive_brake(pros::motor_brake_mode_e mode) {
@@ -202,88 +203,44 @@ void turn_point(Point target, double timeout, TurnParams params) {
 
 }
 
-void swing_heading(double target, Side locked_side, double timeout, SwingParams params) {
-    
-    request_motion_start();
-    if(!motion_running) return;
+void swing_heading(double target, double timeout, Side locked_side, SwingParams params) {
 
-    if(params.async) {
-        pros::Task([target, locked_side, timeout, params]() mutable { 
+    request_motion_start();
+    if (!motion_running) return;
+
+    if (params.async) {
+        pros::Task([target, timeout, locked_side, params]() mutable { 
             params.async = false;
-            swing_heading(target, locked_side, timeout, params); 
+            swing_heading(target, timeout, locked_side, params); 
         });
         end_motion();
         pros::delay(10);
         return;
     }
 
-    distance_traveled = 0;
     Timer timer(timeout);
+    distance_traveled = 0;
+
+    target = wrap_angle(target, 360);
+    if (params.reverse) target = wrap_angle(target + 180, 360);
 
     double initial_error = fabs(wrap_angle(target - get_pose({.degrees = true}).theta, 360));
-
-    // PID tuned in degrees
-    Gains turn_gains = Gains(
-        turn_kp_lut.get_value(initial_error), 
-        0.0, 
-        turn_kd_lut.get_value(initial_error)
-    );
-
-    PID turn_pid(turn_gains, 0.0, true);
-
-    if(params.reverse) target = wrap_angle(target + 180, 360);
-
-    turn_small_exit.reset();
-    turn_large_exit.reset();
-
-    uint32_t prev_time = pros::millis();
-
-    while(!turn_small_exit.getExit() && !turn_large_exit.getExit() && !timer.isDone()) {
-        double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
-        double error = wrap_angle(target - current_deg, 360);
-        if(params.cutoff > 0 && fabs(error) < params.cutoff) break;
-
-        double output = turn_pid.update(error);
-        turn_small_exit.update(error);
-        turn_large_exit.update(error);
-
-        if(locked_side == Side::LEFT) {
-            right_motors.move_voltage(output);
+    if(locked_side == Side::AUTO) {
+        // if turning left, lock right side, else lock left side
+        if(initial_error < 0) {
+            locked_side = Side::RIGHT;
         } else {
-            left_motors.move_voltage(output);
+            locked_side = Side::LEFT;
         }
-
-        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
-    distance_traveled = -1;
-
-    end_motion();
-
-}
-
-void swing_point(Point target, Side locked_side, double timeout, SwingParams params) {
-
-    request_motion_start();
-    if(!motion_running) return;
-
-    if(params.async) {
-        pros::Task swing_task([target, locked_side, timeout, params]() mutable {
-            params.async = false;
-            swing_point(target, locked_side, timeout, params);
-        });
-        end_motion();
-        pros::delay(10);
-        return;
+    if(params.hold) {
+        if(locked_side == Side::LEFT) {
+            left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+        } else {
+            right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+        }
     }
-
-    Timer timer(timeout);
-    distance_traveled = 0;
-
-    double target_deg;
-    
-    // PID tuned in degrees
-    double initial_error = fabs(atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI) - get_pose({.degrees = true}).theta);
 
     // PID tuned in degrees
     Gains turn_gains = Gains(
@@ -301,14 +258,17 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
 
     while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
         double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
-        double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
-        double error = wrap_angle(target_deg - current_deg, 360);      // error in degrees
+        double error = wrap_angle(target - current_deg, 360);      // error in degrees
 
         if (params.cutoff > 0 && fabs(error) < params.cutoff) break;
 
         double output = turn_pid.update(error);
 
-        move_motors(output, -output);
+        if(locked_side == Side::LEFT) {
+            right_motors.move_voltage(output);
+        } else {
+            left_motors.move_voltage(output);
+        }
 
         turn_small_exit.update(error);
         turn_large_exit.update(error);
@@ -316,8 +276,95 @@ void swing_point(Point target, Side locked_side, double timeout, SwingParams par
         pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
-    distance_traveled = -1;
+    set_drive_brake(DEFAULT_AUTONOMOUS_BRAKE_MODE);
 
+    stop_motors();
+
+    distance_traveled = -1;
+    end_motion();
+
+}
+
+void swing_point(Point target, double timeout, Side locked_side, SwingParams params) {
+
+    request_motion_start();
+    if (!motion_running) return;
+
+    if (params.async) {
+        pros::Task([target, timeout, locked_side, params]() mutable {
+            params.async = false;
+            swing_point(target, timeout, locked_side, params);
+        });
+        end_motion();
+        pros::delay(10);
+        return;
+    }
+
+    Timer timer(timeout);
+    distance_traveled = 0;
+
+    if(locked_side == Side::AUTO) {
+        double angle_to_target = atan2(target.y - get_pose().y, target.x - get_pose().x);
+        double angle_error = wrap_angle(angle_to_target - get_pose({.standard = true}).theta, 2 * M_PI);
+        if(angle_error < 0) {
+            locked_side = Side::RIGHT;
+        } else {
+            locked_side = Side::LEFT;
+        }
+    }
+
+    if(locked_side == Side::LEFT) {
+        left_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    } else {
+        right_motors.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
+    }
+
+    double target_deg;
+
+    turn_small_exit.reset();
+    turn_large_exit.reset();
+
+    uint32_t prev_time = pros::millis();
+
+    double initial_error = fabs(atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI) - get_pose({.degrees = true}).theta);
+
+    // PID tuned in degrees
+    Gains turn_gains = Gains(
+        turn_kp_lut.get_value(initial_error), 
+        0.0,
+        turn_kd_lut.get_value(initial_error)
+    );
+
+    PID turn_pid(turn_gains, 0.0, true);
+
+    while (!timer.isDone() && !turn_small_exit.getExit() && !turn_large_exit.getExit() && motion_running) {
+        double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
+        double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
+        double error = wrap_angle(target_deg - current_deg, 360);      // error in degrees
+
+        if (params.cutoff > 0 && fabs(error) < params.cutoff) break;
+
+        double output = turn_pid.update(error);
+        std::clamp(output, -params.max_speed, params.max_speed);
+        if (fabs(output) < params.min_speed) output = (output < 0 ? -params.min_speed : params.min_speed);
+
+        if(locked_side == Side::LEFT) {
+            right_motors.move_voltage(-output);
+        } else {
+            left_motors.move_voltage(output);
+        }
+
+        turn_small_exit.update(error);
+        turn_large_exit.update(error);
+
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
+    }
+
+    set_drive_brake(DEFAULT_AUTONOMOUS_BRAKE_MODE);
+
+    stop_motors();
+
+    distance_traveled = -1;
     end_motion();
 
 }
@@ -390,9 +437,9 @@ void move_point(Point target, double timeout, MovePointParams params) {
         // PID outputs
         double drive_out = std::clamp(drive_pid.update(drive_error), -params.max_speed, params.max_speed);
         double turn_out = std::clamp(turn_pid.update(turn_error), -params.max_speed, params.max_speed);
-        if(fabs(drive_error) < 1.0) turn_out = 0;
+        if(fabs(drive_error) < 2.0) turn_out = 0;
         else if(fabs(drive_error) < 6.0) {
-            turn_out *= (drive_error / 6.0) * (drive_error / 6.0);
+            turn_out *= (drive_error / 6.0);
         }
 
         if(!params.reverse && drive_out < fabs(params.min_speed) && drive_out > 0) drive_out = params.min_speed;
@@ -410,10 +457,7 @@ void move_point(Point target, double timeout, MovePointParams params) {
         pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
 
-    // stop_motors();
-
-    left_motors.move_voltage(0);
-    right_motors.move_voltage(0);
+    stop_motors();
 
     distance_traveled = -1;
     end_motion();

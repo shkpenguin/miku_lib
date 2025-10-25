@@ -12,7 +12,7 @@ std::vector<Auton> autons;
 void init_autons() {
     autons = {
         Auton("Test", pre_test, test, Pose(0, 0, 0, false), test_paths),
-        Auton("Right Sawp", pre_right_sawp, right_sawp, Pose(6.5, -48, 90, false), right_sawp_paths),
+        Auton("Right Sawp", pre_right_sawp, right_sawp, Pose(6, -48, 90, false), right_sawp_paths),
         Auton("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30, false), right_9ball_paths),
         Auton("Skills", pre_skills, skills, Pose(6, -48, 90, false), skills_paths)
     };
@@ -47,6 +47,7 @@ void initialize() {
 
     Auton& selected_auton = autons[selected_index];
     selected_auton.pre_auton();
+    set_drive_brake(DEFAULT_AUTONOMOUS_BRAKE_MODE);
     for(auto& path : selected_auton.paths) {
         path.get().calculate_waypoints();
     }
@@ -136,7 +137,7 @@ void arcade(int throttle, int turn) {
     right_motors.move(right);
 }
 
-DriveMode driveMode = DriveMode::FUNNY_TANK;
+DriveMode driveMode = DriveMode::TANK;
 
 void opcontrol() {
 
@@ -149,6 +150,10 @@ void opcontrol() {
     static Gif gif("/usd/jiachenma.gif", lv_scr_act());
 
     while (true) {
+
+        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
+            flush_logs();
+        }
 
         if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)){
             if(!get_intake_tbh()) set_intake_velocity(200);

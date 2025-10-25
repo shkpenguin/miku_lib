@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <vector>
 
 struct Point {
     double x;
@@ -31,4 +32,8 @@ struct Pose {
     double angle_to(const Point& other) const {
         return atan2(other.y - y, other.x - x);
     }
+};
+
+struct Polygon {
+    std::vector<Point> ccw_vertices;
 };

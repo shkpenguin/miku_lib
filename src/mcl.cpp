@@ -20,7 +20,7 @@ enum DistanceError {
 MCLDistance back(9, 3.0, -5.5, Orientation::BACK);
 MCLDistance left(4, -5.2, 0, Orientation::LEFT);
 MCLDistance right(8, 5.2, 0, Orientation::RIGHT);
-MCLDistance front(7, -6.5, 8.25, Orientation::FRONT);
+MCLDistance front(6, -6.5, 8.25, Orientation::FRONT);
 
 std::vector<std::reference_wrapper<MCLDistance>> sensors = {std::ref(front), std::ref(back), std::ref(left), std::ref(right)};
 
@@ -210,14 +210,19 @@ void initialize_particles_uniform(Point center, double length) {
 
 }
 
-double max_error = 4.0;
-double min_odom_noise = 0.1;
+double max_error = 8.0;
+double min_odom_noise = 0.05;
+double max_sensor_stdev = 100.0;
 void set_max_distance_error(double error) {
     max_error = error;
 }
 void set_min_odom_noise(double noise) {
     min_odom_noise = noise;
 }
+void set_max_sensor_stdev(double stdev) {
+    max_sensor_stdev = stdev;
+}
+
 static std::normal_distribution<double> odom_noise;
 
 void update_particles() {
@@ -291,8 +296,9 @@ void update_particles() {
                 continue;
             }
             double sensor_stdev;
-            if(reading < 8) sensor_stdev = 0.2;
-            else sensor_stdev = reading * 0.05;
+            if(reading < 8) sensor_stdev = 0.1;
+            else sensor_stdev = reading * 0.02;
+            if(sensor_stdev > max_sensor_stdev) sensor_stdev = max_sensor_stdev;
             weight *= std::exp(-(dev * dev) / (2 * sensor_stdev * sensor_stdev));
         }
 

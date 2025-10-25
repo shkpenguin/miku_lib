@@ -23,7 +23,7 @@ pros::Imu imu(3);
 pros::adi::DigitalOut hood_piston('C');
 pros::adi::DigitalOut lock_piston('A');
 pros::adi::DigitalOut loader_piston('H');
-pros::adi::DigitalOut descore_piston('D');
+pros::adi::DigitalOut descore_piston('B');
 
 miku::Optical optical(16);
 

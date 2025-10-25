@@ -3,7 +3,7 @@
 #include <cmath>
 #include "geometry.h"
 
-#define HALF_FIELD 71.5
+#define HALF_FIELD 71.0
 
 inline double clamp(double value, double min, double max) {
     if(value < min) return min;

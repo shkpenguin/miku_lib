@@ -85,7 +85,7 @@ std::vector<std::pair<double, double>> turn_kp_lookup = {
     {50, 115},
     {60, 100},
     {70, 100},
-    {80, 95},
+    {80, 90},
     {180, 80}
 };
 

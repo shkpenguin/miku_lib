@@ -16,7 +16,8 @@ enum MotionType {
 
 enum class Side {
     LEFT,
-    RIGHT
+    RIGHT,
+    AUTO
 };
 
 void move_motors(double l, double r);
@@ -47,6 +48,7 @@ struct TurnParams {
 struct SwingParams {
     bool reverse = false;
     bool async = false;
+    bool hold = true;
     double cutoff = -1.0;
     double max_speed = 12000;
     double min_speed = 0;
@@ -85,8 +87,8 @@ struct RamseteParams {
 void turn_heading(double target, double timeout, TurnParams params = TurnParams(false, false, -1.0, 12000, 0));
 void turn_point(Point target, double timeout, TurnParams params = TurnParams(false, false, -1.0, 12000, 0));
 
-void swing_heading(double target, Side locked_side, double timeout, SwingParams params = SwingParams(false, false, -1.0, 12000, 0));
-void swing_point(Point target, Side locked_side, double timeout, SwingParams params = SwingParams(false, false, -1.0, 12000, 0));
+void swing_heading(double target, double timeout, Side locked_side = Side::AUTO, SwingParams params = SwingParams(false, false, true, -1.0, 12000, 0));
+void swing_point(Point target, double timeout, Side locked_side = Side::AUTO, SwingParams params = SwingParams(false, false, true, -1.0, 12000, 0));
 
 void move_point(Point target, double timeout, MovePointParams params = MovePointParams(false, false, -1.0, -1.0, 12000, 1000));
 void move_pose(Pose target, double timeout, MovePoseParams params = MovePoseParams(false, false, -1.0, 100, 0.0, 1.0, 6.0));

@@ -14,10 +14,17 @@ void set_intake_tbh(bool enabled);
 bool get_intake_tbh();
 void intake_control();
 
-void set_lock(bool state);
-void set_loading(bool state);
-void set_hood(bool state);
-void set_descore(bool state);
+// @param state true = closed, false = open
+void set_lock(bool closed);
+
+// @param state true = down, false = up
+void set_loading(bool down);
+
+// @param state true = up, false = down
+void set_hood(bool up);
+
+// @param state true = down, false = up
+void set_descore(bool down);
 
 bool get_hood();
 bool get_loading();

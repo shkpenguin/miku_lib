@@ -59,27 +59,23 @@ bool lock = false;
 bool loading = false;
 bool descore = false;
 
-// @param state true = open, false = closed
-void set_lock(bool open) {
-    lock = open;
+void set_lock(bool closed) {
+    lock = closed;
     lock_piston.set_value(lock);
 }
 
-// @param state true = active, false = inactive
 void set_loading(bool active) {
     loading = active;
     loader_piston.set_value(loading);
 }
 
-// @param state true = up, false = down
 void set_hood(bool up) {
     hood_up = up;
     hood_piston.set_value(hood_up);
 }
 
-// 
-void set_descore(bool state) {
-    descore = state;
+void set_descore(bool down) {
+    descore = down;
     descore_piston.set_value(descore);
 }
 

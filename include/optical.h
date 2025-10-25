@@ -5,9 +5,9 @@ struct Color {
     double max_hue;
 };
 
-#define TILE Color{40.0, 45.0} // Color of VEX field tiles
+#define TILE Color{40.0, 50.0} // Color of VEX field tiles
 #define RED Color{0.0, 20.0} // Bright red VEX field element color
-#define BLUE Color{200.0, 220.0} // Bright blue VEX field element color
+#define BLUE Color{180.0, 220.0} // Bright blue VEX field element color
 
 namespace miku {
     class Optical : public pros::Optical {

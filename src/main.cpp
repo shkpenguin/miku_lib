@@ -40,7 +40,7 @@ void initialize() {
 
     intake_task = new pros::Task(intake_control);
 
-    selected_index = 3;
+    selected_index = 1;
 
     if (autons.empty()) return;
     // display_selector();
@@ -137,9 +137,16 @@ void arcade(int throttle, int turn) {
     right_motors.move(right);
 }
 
-DriveMode driveMode = DriveMode::TANK;
+List<DriveMode> driveModes = {
+    DriveMode::TANK,
+    DriveMode::ARCADE,
+};
 
 void opcontrol() {
+
+    // autonomous();
+
+    // /*
 
     optical.set_led_pwm(0);
 
@@ -151,33 +158,24 @@ void opcontrol() {
 
     while (true) {
 
-        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
-            flush_logs();
-        }
-
         if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)){
             if(!get_intake_tbh()) set_intake_velocity(200);
             else set_intake_tbh(false);
         }
 
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
-            driveMode = (driveMode == DriveMode::TANK) ? DriveMode::ARCADE : DriveMode::TANK;
-            master.rumble("."); // Short vibration to indicate mode change
+            driveModes.cycle_forward();
         }
 
-        if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
-            test();
-        }
-
-        if(driveMode == DriveMode::TANK) {
+        if(driveModes.get_value() == DriveMode::TANK) {
             int left = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
             int right = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
             tank(left, right);
-        } else if(driveMode == DriveMode::ARCADE) {
+        } else if(driveModes.get_value() == DriveMode::ARCADE) {
             int throttle = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
             int turn = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
             arcade(throttle, turn);
-        } else if(driveMode == DriveMode::FUNNY_TANK) {
+        } else if(driveModes.get_value() == DriveMode::FUNNY_TANK) {
             int left_x = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
             int left_y = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
             int right_x = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
@@ -193,8 +191,7 @@ void opcontrol() {
                 intake.move_voltage(12000);
             }
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
-                lock = !lock;
-                lock_piston.set_value(lock);
+                lock_piston.toggle();
             }
         }
 
@@ -203,24 +200,20 @@ void opcontrol() {
                 intake.move_voltage(-12000);
             }
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
-                descore = !descore;
-                descore_piston.set_value(descore);
+                descore_piston.toggle();
             }
         }
 
         if(shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
-            loading = !loading;
-            loader_piston.set_value(loading);
+            loader_piston.toggle();
         }
 
         bool hood_toggle_pressed =
         (shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) ||
         (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2) && master.get_digital(pros::E_CONTROLLER_DIGITAL_R2));
 
-        if((!loading || !hood_up) && 
-           (hood_toggle_pressed)) {
-            hood_up = !hood_up;
-            hood_piston.set_value(hood_up);
+        if((!loader_piston.get_value() || !hood_piston.get_value()) && (hood_toggle_pressed)) {
+            hood_piston.toggle();
         }
 
         if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && !get_intake_tbh()) {
@@ -229,4 +222,7 @@ void opcontrol() {
 
         pros::delay(10);
     }
+
+    // */
+
 }

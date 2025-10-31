@@ -20,6 +20,13 @@ enum class Side {
     AUTO
 };
 
+struct MotionPrimitive {
+    virtual void start() = 0;
+    virtual void update() = 0;
+    virtual bool is_done() = 0;
+    virtual ~MotionPrimitive() {}
+};
+
 void move_motors(double l, double r);
 
 void stop_motors();

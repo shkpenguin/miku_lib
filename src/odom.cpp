@@ -85,6 +85,7 @@ void update_odom() {
     
     robot_speed.x = local_y * sin(avg_heading);
     robot_speed.y = local_y * cos(avg_heading);
+    robot_speed.theta = theta_delta;
 
     robot_pose.x += robot_speed.x;
     robot_pose.y += robot_speed.y;

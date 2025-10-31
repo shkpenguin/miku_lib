@@ -45,20 +45,3 @@ class PID {
         double integral = 0;
         double prevError = 0;
 };
-
-/**
- * @param range The acceptable range of error
- * @param time The time duration to check for the exit condition(ms)
- */
-struct ExitCondition {
-    double range;
-    int time;
-    int startTime = -1;
-    bool done = false;
-
-    ExitCondition(const double range, const int time);
-
-    bool getExit();
-    bool update(const double input);
-    void reset();
-};

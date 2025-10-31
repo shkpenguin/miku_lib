@@ -49,3 +49,24 @@ inline int find_quadrant(Pose robot_pose) {
     if(robot_pose.x < 0 && robot_pose.y < 0) return 3;
     return 4;
 }
+
+template<typename T>
+class List {
+    std::vector<T> values;
+    int size;
+    int index = 0;
+    public:
+    List(std::vector<T> vals) : values(vals), size(vals.size()) {}
+    List(std::initializer_list<T> vals) : values(vals), size(vals.size()) {}
+    T cycle_forward() {
+        index = (index + 1) % size;
+        return values[index];
+    }
+    T cycle_reverse() {
+        index = (index - 1 + size) % size;
+        return values[index];
+    }
+    T get_value() const {
+        return values[index];
+    }
+};

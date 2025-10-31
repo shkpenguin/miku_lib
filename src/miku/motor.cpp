@@ -1,5 +1,5 @@
 #include "main.h"
-#include "motor.h"
+#include "miku/motor.h"
 #include "util.h"
 #include <numeric>
 

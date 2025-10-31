@@ -1,8 +1,9 @@
 #pragma once
 
 #include "api.h"
-#include "motor.h"
-#include "optical.h"
+#include "miku/motor.h"
+#include "miku/optical.h"
+#include "miku/pneumatic.h"
 
 #define WHEEL_DIAMETER 3.25
 #define GEAR_RATIO 0.75
@@ -28,10 +29,10 @@ extern miku::Motor bottom_intake;
 extern miku::Motor top_intake;
 extern miku::MotorGroup intake;
 
-extern pros::adi::DigitalOut hood_piston;
-extern pros::adi::DigitalOut lock_piston;
-extern pros::adi::DigitalOut loader_piston;
-extern pros::adi::DigitalOut descore_piston;
+extern miku::Pneumatic hood_piston;
+extern miku::Pneumatic lock_piston;
+extern miku::Pneumatic loader_piston;
+extern miku::Pneumatic descore_piston;
 
 extern pros::Imu imu;
 

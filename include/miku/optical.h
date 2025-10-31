@@ -17,5 +17,9 @@ namespace miku {
             double hue = get_hue();
             return (hue >= color.min_hue && hue <= color.max_hue);
         }
+        void initialize() {
+            this->set_integration_time(5);
+            this->set_led_pwm(100);
+        }
     };
 }

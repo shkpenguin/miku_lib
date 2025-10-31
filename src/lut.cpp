@@ -99,7 +99,7 @@ std::vector<std::pair<double, double>> turn_kd_lookup = {
     {60, 600},
     {70, 800},
     {80, 600},
-    {180, 400}
+    {180, 500}
 };
 
 LookupTable drive_lut(drive_table);

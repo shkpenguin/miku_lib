@@ -32,8 +32,8 @@ BezierPath skills_3 = {
 BezierPath skills_4 = {
     {48, 58, 0},
     {48, 58, 80},
-    {36, 63, 50},
-    {24, 64, 30},
+    {36, 61, 40},
+    {24, 64, 20},
     {18, 64, 0},
     {18, 64, 0}
 };
@@ -113,7 +113,7 @@ void skills() {
     turn_point({48, -31}, 700);
     intake.move_voltage(0);
     move_point({48, -31}, 1300, {.async = true});
-    wait_until_within({48, -31}, 4.0);
+    wait_until_within({48, -31}, 6.0);
     set_lock(false);
     intake.move_voltage(12000);
     wait_until_done();
@@ -129,8 +129,9 @@ void skills() {
     // set_intake_velocity(-300);
     wait_until_done();
     intake.move_voltage(-9000);
-    turn_point({0, 0}, 500);
-    pros::delay(1600);
+    pros::delay(100);
+    turn_heading(-45, 500);
+    pros::delay(1400);
     move_time(-8000, 150);
     // set_intake_tbh(false);
     intake.move_voltage(12000);
@@ -146,7 +147,8 @@ void skills() {
     wait_until_within({14, 14}, 1.0);
     intake.move_voltage(7000);
     wait_until_done();
-    turn_point({0, 0}, 600);
+    pros::delay(100);
+    turn_point({0, 0}, 500);
     pros::delay(500);
     intake.move_voltage(12000);
     pros::delay(300);
@@ -182,7 +184,7 @@ void skills() {
     intake.move_voltage(0);
     wait_until_within({48, 31}, 6.0);
     set_lock(false);
-    intake.move_voltage(7000);
+    intake.move_voltage(12000);
     wait_until_done();
     swing_point({48, 20}, 500);
     pros::delay(400);
@@ -191,7 +193,7 @@ void skills() {
     intake.move_voltage(0);
     move_point({48, 54}, 800, {.reverse = true, .cutoff = 2.0});
     turn_point({36, 64}, 600);
-    ramsete(skills_4.get_waypoints(), 700);
+    ramsete(skills_4.get_waypoints(), 900);
     set_hood(false);
     set_loading(true);
     set_wheel_tracking(false);
@@ -236,7 +238,7 @@ void skills() {
     turn_point({-48, 31}, 700);
     intake.move_voltage(0);
     move_point({-48, 31}, 1300, {.async = true});
-    wait_until_within({-48, 31}, 4.0);
+    wait_until_within({-48, 31}, 6.0);
     set_lock(false);
     intake.move_voltage(12000);
     wait_until_done();
@@ -254,8 +256,9 @@ void skills() {
     // set_intake_velocity(-300);
     wait_until_done();
     intake.move_voltage(-8000);
+    pros::delay(100);
     turn_heading(135, 500);
-    pros::delay(1600);
+    pros::delay(1400);
     move_time(-8000, 150);
     // set_intake_tbh(false);
     intake.move_voltage(12000);
@@ -268,10 +271,11 @@ void skills() {
     set_loading(true);
     move_point({-14, -14}, 700, {.async = true});
     wait_until_within({-14, -14}, 1.0);
-    intake.move_voltage(6000);
+    intake.move_voltage(9000);
     wait_until_done();
+    pros::delay(100);
     turn_point({0, 0}, 500);
-    pros::delay(800);
+    pros::delay(700);
     intake.move_voltage(12000);
     set_max_distance_error(8.0);
     set_loading(false);
@@ -298,9 +302,9 @@ void skills() {
     turn_point({-48, -31}, 700);
     intake.move_voltage(0);
     move_point({-48, -31}, 1300, {.async = true});
-    wait_until_within({-48, -31}, 4.0);
+    wait_until_within({-48, -31}, 6.0);
     set_lock(false);
-    intake.move_voltage(7000);
+    intake.move_voltage(12000);
     wait_until_done();
     swing_point({-48, -20}, 500);
     pros::delay(400);

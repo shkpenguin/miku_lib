@@ -12,15 +12,16 @@ class Timer {
          * @note if the timer is constructed in a global scope, its behavior is undefined. You can
          *       call set() before using the timer if you absolutely need to construct it in a global scope
          *
-         * @param time how long to wait
+         * @param time how long to wait in ms
          *
          * @b Example
          * @code {.cpp}
          * // create a timer that will wait for 1 second
-         * Timer timer(1_sec);
+         * Timer timer(1000);
          * @endcode
          */
         Timer(int time);
+        Timer() = default;
         /**
          * @brief Get the amount of time the timer was set to
          *
@@ -31,11 +32,10 @@ class Timer {
          * // create a timer that will wait for 1 second
          * Timer timer(1_sec);
          * // get the time the timer was set to
-         * const Time time = timer.getTimeSet(); // time = 1_sec
+         * const Time time = timer.get_time_set(); // time = 1_sec
          * @endcode
          */
-        Timer() = default;
-        int getTimeSet() const;
+        int get_time_set() const;
         /**
          * @brief Get the amount of time left on the timer
          *
@@ -48,10 +48,10 @@ class Timer {
          * // delay for 300ms
          * pros::delay(300);
          * // get the time left on the timer
-         * const Time time = timer.getTimeLeft(); // time = 700_msec
+         * const Time time = timer.get_time_left(); // time = 700_msec
          * @endcode
          */
-        int getTimeLeft();
+        int get_time_left();
         /**
          * @brief Get the amount of time passed on the timer
          *
@@ -67,7 +67,7 @@ class Timer {
          * const Time time = timer.getTimePassed(); // time = 300_msec
          * @endcode
          */
-        int getTimePassed();
+        int get_time_passed();
         /**
          * @brief Get whether the timer is done or not
          *
@@ -81,14 +81,14 @@ class Timer {
          * // delay for 500ms
          * pros::delay(500);
          * // check if the timer is done
-         * const bool done = timer.isDone(); // done = false
+         * const bool done = timer.is_done(); // done = false
          * // delay for another 500ms
          * pros::delay(500);
          * // check if the timer is done
-         * const bool done = timer.isDone(); // done = true
+         * const bool done = timer.is_done(); // done = true
          * @endcode
          */
-        bool isDone();
+        bool is_done();
         /**
          * @brief Get whether the timer is paused or not
          *
@@ -102,14 +102,14 @@ class Timer {
          * // pause the timer
          * timer.pause();
          * // check if the timer is paused
-         * bool paused = timer.isPaused(); // paused = true
+         * bool paused = timer.is_paused(); // paused = true
          * // resume the timer
          * timer.resume();
          * // check if the timer is paused
-         * paused = timer.isPaused(); // paused = false
+         * paused = timer.is_paused(); // paused = false
          * @endcode
          */
-        bool isPaused() const;
+        bool is_paused() const;
         /**
          * @brief Set the amount of time the timer should count down. Resets the timer
          *
@@ -190,7 +190,7 @@ class Timer {
          * std::cout << "done!" << std::endl;
          * @endcode
          */
-        void waitUntilDone();
+        void wait_until_done();
     private:
         void update();
 

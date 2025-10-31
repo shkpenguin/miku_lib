@@ -3,6 +3,10 @@
 
 #include "api.h"
 
+#include "miku/motor.h"
+#include "miku/optical.h"
+#include "miku/pneumatic.h"
+
 #include "gif-pros/gifclass.hpp"
 #include "util.h"
 #include "config.h"
@@ -14,7 +18,6 @@
 #include "main.h"
 #include "mcl.h"
 #include "motions.h"
-#include "motor.h"
 #include "mp.h"
 #include "odom.h"
 #include "pid.h"

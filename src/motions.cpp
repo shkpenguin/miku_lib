@@ -27,58 +27,52 @@ void set_drive_brake(pros::motor_brake_mode_e mode) {
     right_motors.set_brake_mode_all(mode);
 }
 
-void wait_until_done() {
-    do {
-        pros::delay(10);
-    } while(distance_traveled != -1);
-}
+struct TurnHeading : MotionPrimitive {
+    double target;
+    double timeout;
+    TurnParams params;
 
-void wait_until_within(Point target, double threshold) {
-    do {
-        pros::delay(10);
-    } while (std::hypot(get_pose().x - target.x, get_pose().y - target.y) > threshold && distance_traveled != -1);
-}
+    PID turn_pid;
+    ExitCondition turn_small_exit = ExitCondition(5.0, 500);
+    ExitCondition turn_large_exit = ExitCondition(15.0, 1000);
+    Timer timer;
 
-void wait_until_within(double target_angle, double threshold) {
-    do {
-        pros::delay(10);
-    } while (fabs(wrap_angle(get_pose({.degrees = true}).theta - target_angle, 360)) > threshold && distance_traveled != -1);
-}
+    bool done;
 
-void request_motion_start() {
-    if(motion_running) motion_queued = true;
-    else {
-        motion_running = true;
+    void start() override {
+        done = false;
+        turn_pid.reset();
+        timer.set(timeout);
+        timer.reset();
+        turn_small_exit.reset();
+        turn_large_exit.reset();
     }
 
-    motion_mutex.take(TIMEOUT_MAX);
-}
+    void update() override {
+        double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
+        double error = wrap_angle(target - current_deg, 360);      // error in degrees
 
-void end_motion() {
-    motion_running = motion_queued;
-    motion_queued = false;
-    motion_mutex.give();
-}
+        if (params.cutoff > 0 && fabs(error) < params.cutoff) {
+            done = true;
+            return;
+        }
 
-void cancel_motion() {
-    motion_running = false; 
-    pros::delay(10);
-}
+        double output = turn_pid.update(error);
 
-void stop_motion() {
-    end_motion();
-    distance_traveled = -1;
-    stop_motors();
-}
+        move_motors(output, -output);
 
-void cancel_all_motions() {
-    motion_running = false;
-    motion_queued = false;
-    pros::delay(10);
-}
+        turn_small_exit.update(error);
+        turn_large_exit.update(error);
 
-bool get_motion_running() {
-    return distance_traveled != -1;
+        if(timer.is_done() || turn_small_exit.get_exit() || turn_large_exit.get_exit()) {
+            done = true;
+            return;
+        }
+    }
+
+    bool is_done() override {
+        return done;
+    }
 };
 
 void turn_heading(double target, double timeout, TurnParams params) {

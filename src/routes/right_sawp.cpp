@@ -34,7 +34,7 @@ void pre_right_sawp() {
 void right_sawp() {
 
     intake.move_voltage(12000);
-    move_point({45, -48}, 800, {.cutoff = 4.0});
+    move_point({48, -48}, 800);
     pros::delay(200);
     turn_point({47, -59}, 700, {.async = true});
     wait_until_within(180, 40.0);
@@ -46,23 +46,22 @@ void right_sawp() {
         pros::delay(10);
     }
     wait_until_done();
+    pros::delay(300);
     // set_wheel_tracking(false);
     // move_time(6000, 1500);
-    pros::delay(500);
     // set_wheel_tracking(true);
     move_time(-12000, 100);
     set_loading(false);
-    turn_point({48, -32}, 700);
+    turn_point({48, -31}, 700);
     intake.move_voltage(0);
-    move_point({48, -32}, 2000, {.async = true});
-    wait_until_within({48, -32}, 4.0);
-    set_lock(false);
+    move_point({48, -31}, 1300, {.async = true});
+    wait_until_within({48, -31}, 6.0);
+    lock_piston.set_value(false);
     intake.move_voltage(12000);
     wait_until_done();
-    swing_point({48, -20}, 700);
-    pros::delay(700);
+    swing_point({48, -20}, 500);
     move_point({48, -40}, 500, {.reverse = true, .cutoff = 1.0});
-    set_lock(true);
+    lock_piston.set_value(true);
     turn_point({24, -24}, 500);
     ramsete(right_sawp_1.get_waypoints(), 1500, {.async = true, .end_cutoff = 3.0});
     pros::delay(300);
@@ -71,9 +70,28 @@ void right_sawp() {
     // set_intake_velocity(-300);
     wait_until_done();
     intake.move_voltage(-9000);
+    turn_heading(315, 500);
+    pros::delay(1000);
+    
+    /*
+    move_time(-8000, 200);
+
+    intake.move_voltage(12000);
+
+    turn_point({0, -24}, 700);
+    ramsete(right_sawp_2.get_waypoints(), 1500, {.end_cutoff = 3.0});
+
+    turn_point({-14, -14}, 700);
+    intake.move_voltage(0);
+    set_hood(false);
+    set_lock(false);
+    set_loading(true);
+    move_point({-14, -14}, 700, {.async = true});
+    wait_until_within({-14, -14}, 1.0);
+    intake.move_voltage(9000);
+    wait_until_done();
     turn_point({0, 0}, 500);
-    pros::delay(1600);
-    move_time(-8000, 100);
+    pros::delay(800);
 
     /*
     turn_point({0, -24}, 700);

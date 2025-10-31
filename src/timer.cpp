@@ -11,28 +11,28 @@ void Timer::update() {
     m_lastTime = time; // update last time
 }
 
-int Timer::getTimeSet() const {
+int Timer::get_time_set() const {
     return m_period;
 }
 
-int Timer::getTimeLeft() {
+int Timer::get_time_left() {
     this->update();
     const int delta = m_period - m_timeWaited; // calculate how much time is left
     return (delta > 0) ? delta : 0; // return 0 if timer is done
 }
 
-int Timer::getTimePassed() {
+int Timer::get_time_passed() {
     this->update();
     return m_timeWaited;
 }
 
-bool Timer::isDone() {
+bool Timer::is_done() {
     this->update();
     int delta = m_period - m_timeWaited; // calculate how much time is left
     return delta <= 0;
 }
 
-bool Timer::isPaused() const {
+bool Timer::is_paused() const {
     return m_paused;
 }
 
@@ -58,7 +58,7 @@ void Timer::resume() {
     m_paused = false;
 }
 
-void Timer::waitUntilDone() {
+void Timer::wait_until_done() {
     do pros::delay(5);
-    while (!this->isDone());
+    while (!this->is_done());
 }

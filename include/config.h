@@ -4,6 +4,8 @@
 #include "miku/motor.h"
 #include "miku/optical.h"
 #include "miku/pneumatic.h"
+#include "miku/distance.h"
+#include "exit.h"
 
 #define WHEEL_DIAMETER 3.25
 #define GEAR_RATIO 0.75
@@ -34,16 +36,22 @@ extern miku::Pneumatic lock_piston;
 extern miku::Pneumatic loader_piston;
 extern miku::Pneumatic descore_piston;
 
+extern miku::Distance front_distance;
+extern miku::Distance back_distance;
+extern miku::Distance left_distance;
+extern miku::Distance right_distance;
+
 extern pros::Imu imu;
 
 extern miku::Optical optical;
 
 struct Gains;
-struct ExitCondition;
+struct RangeExit;
 
+extern Gains turn_gains;
 extern Gains drive_gains;
 
-extern ExitCondition drive_small_exit;
-extern ExitCondition drive_large_exit;
-extern ExitCondition turn_small_exit;
-extern ExitCondition turn_large_exit;
+extern RangeExit drive_small_exit;
+extern RangeExit drive_large_exit;
+extern RangeExit turn_small_exit;
+extern RangeExit turn_large_exit;

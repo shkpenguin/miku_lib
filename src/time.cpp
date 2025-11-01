@@ -1,4 +1,4 @@
-#include "timer.h"
+#include "time.h"
 
 Timer::Timer(int time)
     : m_period(time) {
@@ -61,4 +61,16 @@ void Timer::resume() {
 void Timer::wait_until_done() {
     do pros::delay(5);
     while (!this->is_done());
+}
+
+Stopwatch::Stopwatch() {
+    this->reset();
+}
+
+int Stopwatch::get_time_passed() {
+    return pros::millis() - m_startTime;
+}
+
+void Stopwatch::reset() {
+    m_startTime = pros::millis();
 }

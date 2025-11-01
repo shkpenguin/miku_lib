@@ -199,3 +199,53 @@ class Timer {
         int m_timeWaited = 0;
         bool m_paused = false;
 };
+
+class Stopwatch {
+    public:
+        /**
+         * @brief Construct a new Stopwatch
+         *
+         * @b Example
+         * @code {.cpp}
+         * // create a stopwatch
+         * Stopwatch stopwatch;
+         * @endcode
+         */
+        Stopwatch() = default;
+        /**
+         * @brief Get the time passed since the stopwatch was created or last reset
+         *
+         * @return Time time
+         *
+         * @b Example
+         * @code {.cpp}
+         * // create a stopwatch
+         * Stopwatch stopwatch;
+         * // delay for 500ms
+         * pros::delay(500);
+         * // get the time passed
+         * const Time time = stopwatch.get_time_passed(); // time = 500_msec
+         * @endcode
+         */
+        int get_time_passed();
+        /**
+         * @brief reset the stopwatch
+         *
+         * @b Example
+         * @code {.cpp}
+         * // create a stopwatch
+         * Stopwatch stopwatch;
+         * // delay for 500ms
+         * pros::delay(500);
+         * // reset the stopwatch
+         * stopwatch.reset();
+         * // delay for another 500ms
+         * pros::delay(500);
+         * // get the time passed
+         * const Time time = stopwatch.get_time_passed(); // time = 500_msec
+         * @endcode
+         */
+        void reset();
+    private:
+        int m_startTime = pros::millis();
+};

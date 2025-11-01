@@ -3,38 +3,9 @@
 #include "miku-api.h"
 #include <fstream>
 
-enum class Orientation {
-    LEFT,
-    RIGHT,
-    FRONT,
-    BACK
-};
-
-class MCLDistance {
-    double data = -1;
-    bool valid = false;
-    bool enabled = true;
-public:
-    pros::Distance distance_sensor;
-    double offset_x, offset_y;
-    Orientation orientation;
-    MCLDistance(int32_t port, double offset_x, double offset_y, Orientation orientation) : 
-        distance_sensor(port), offset_x(offset_x), offset_y(offset_y), orientation(orientation) {}
-    void set_enabled(bool enable) { enabled = enable; }
-    void update_reading();
-    bool get_enabled() { return enabled; }
-    bool get_valid() { return valid; }
-    double get_reading() { return data; }
-};
-
-extern MCLDistance back;
-extern MCLDistance left;
-extern MCLDistance right;
-extern MCLDistance front;
-
 extern std::ofstream file;
 
-extern std::vector<std::reference_wrapper<MCLDistance>> sensors;
+extern std::vector<std::reference_wrapper<miku::Distance>> sensors;
 
 struct Particle {
     Point position; 

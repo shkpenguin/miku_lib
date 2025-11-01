@@ -9,7 +9,7 @@ class Motor : public pros::Motor {
 int ticks_per_rev;
 
 double prev_ticks = 0;
-u_int32_t last_time = 0;
+uint32_t last_time = 0;
 
 double sma_filter_size = 2;
 double median_filter_size = 3;

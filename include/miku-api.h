@@ -6,10 +6,12 @@
 #include "miku/motor.h"
 #include "miku/optical.h"
 #include "miku/pneumatic.h"
+#include "miku/distance.h"
 
 #include "gif-pros/gifclass.hpp"
 #include "util.h"
 #include "config.h"
+#include "system.h"
 
 #include "auton.h"
 #include "controller.h"
@@ -22,6 +24,6 @@
 #include "odom.h"
 #include "pid.h"
 #include "subsystems.h"
-#include "timer.h"
+#include "time.h"
 
 #endif // MIKU_API_H

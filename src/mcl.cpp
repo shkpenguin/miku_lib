@@ -17,30 +17,7 @@ enum DistanceError {
     BAD_INTERSECT = -2
 };
 
-MCLDistance back(9, 3.0, -5.5, Orientation::BACK);
-MCLDistance left(4, -5.2, 0, Orientation::LEFT);
-MCLDistance right(8, 5.2, 0, Orientation::RIGHT);
-MCLDistance front(6, -6.5, 8.25, Orientation::FRONT);
-
-std::vector<std::reference_wrapper<MCLDistance>> sensors = {std::ref(front), std::ref(back), std::ref(left), std::ref(right)};
-
-void MCLDistance::update_reading() {
-
-    if(!enabled) valid = false;
-
-    bool visible = distance_sensor.get_object_size() > 20 || distance_sensor.get_distance() < 100;
-
-    bool within_range = distance_sensor.get_distance() < 2000;
-
-    if(visible && within_range) {
-        data = distance_sensor.get_distance() / 25.4;
-        valid = true;
-    } else {
-        data = -1;
-        valid = false;
-    }
-
-}
+std::vector<std::reference_wrapper<miku::Distance>> sensors = {std::ref(front_distance), std::ref(back_distance), std::ref(left_distance), std::ref(right_distance)};
 
 inline void set_all_sensors(bool enabled) {
     for(auto sensor : sensors) {
@@ -136,14 +113,14 @@ void log_mcl() {
     Pose robot_pose = get_pose();
 
     log_buffer << NUM_PARTICLES << "," << robot_pose.x << "," << robot_pose.y << "," << robot_pose.theta << ",";
-    log_buffer << left.distance_sensor.get_distance() / 25.4 << "," 
-               << right.distance_sensor.get_distance() / 25.4 << "," 
-               << front.distance_sensor.get_distance() / 25.4 << ","
-               << back.distance_sensor.get_distance() / 25.4 << ",";
-    log_buffer << left.distance_sensor.get_object_size() << "," 
-               << right.distance_sensor.get_object_size() << "," 
-                << front.distance_sensor.get_object_size() << ","
-               << back.distance_sensor.get_object_size() << ",";
+    log_buffer << left_distance.get_distance() / 25.4 << "," 
+               << right_distance.get_distance() / 25.4 << "," 
+               << front_distance.get_distance() / 25.4 << ","
+               << back_distance.get_distance() / 25.4 << ",";
+    log_buffer << left_distance.get_object_size() << "," 
+               << right_distance.get_object_size() << "," 
+               << front_distance.get_object_size() << ","
+               << back_distance.get_object_size() << ",";
 
     for(size_t i = 0; i < particles.size(); ++i) {
         log_buffer << particles[i].position.x << "," 

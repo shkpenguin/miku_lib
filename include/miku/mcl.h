@@ -28,6 +28,6 @@ void flush_logs();
 
 double get_expected_reading(Point particle_position, double offset_x, double offset_y, 
     double cos_theta, double sin_theta, Orientation orientation);
-Pose get_pose_estimate();
+Point get_position_estimate();
 void update_particles();
 void resample_particles();

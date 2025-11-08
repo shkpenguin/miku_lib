@@ -1,6 +1,7 @@
 #include "main.h"
 #include "auton.h"
 #include "miku-api.h"
+#include "system.h"
 #include <vector>
 
 pros::Task* autonomous_task = nullptr;
@@ -11,18 +12,18 @@ std::vector<Auton> autons;
 
 void init_autons() {
     autons = {
-        Auton("Test", pre_test, test, Pose(0, 0, 0, false), test_paths),
-        Auton("Right Sawp", pre_right_sawp, right_sawp, Pose(6, -48, 90, false), right_sawp_paths),
-        Auton("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30, false), right_9ball_paths),
-        Auton("Skills", pre_skills, skills, Pose(6, -48, 90, false), skills_paths)
+        Auton("Test", pre_test, test, Pose(0, 0, 0), test_paths),
+        Auton("Right Sawp", pre_right_sawp, right_sawp, Pose(6, -48, 90), right_sawp_paths),
+        Auton("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30), right_9ball_paths),
+        Auton("Skills", pre_skills, skills, Pose(6, -48, 90), skills_paths)
     };
 }
 
 void initialize() {
 
-    left_motors.tare_position_all();
-    right_motors.tare_position_all();
-    intake.tare_position_all();
+    left_motors.tare_position();
+    right_motors.tare_position();
+    intake.tare_position();
 
     optical.set_led_pwm(100);
     optical.set_integration_time(10);
@@ -38,8 +39,6 @@ void initialize() {
 
     master.set_text(0, 0, "              ");
 
-    intake_task = new pros::Task(intake_control);
-
     selected_index = 1;
 
     if (autons.empty()) return;
@@ -47,7 +46,7 @@ void initialize() {
 
     Auton& selected_auton = autons[selected_index];
     selected_auton.pre_auton();
-    set_drive_brake(DEFAULT_AUTONOMOUS_BRAKE_MODE);
+    miku.set_brake_mode(DEFAULT_AUTONOMOUS_BRAKE_MODE);
     for(auto& path : selected_auton.paths) {
         path.get().calculate_waypoints();
     }
@@ -64,26 +63,7 @@ void autonomous() {
     #endif
     // intake_task = new pros::Task(intake_control);
 
-    autonomous_task = new pros::Task([]() {
-
-        uint32_t prev_time = pros::millis();
-
-        while (true) {
-
-            update_odom();
-            update_particles();
-
-            Pose belief = get_pose_estimate();
-            belief.theta = get_pose().theta;
-            set_pose(belief);
-
-            resample_particles();
-
-            pros::Task::delay_until(&prev_time, DELTA_TIME);
-
-        }
-
-    });
+    pros::Task system_task(system_task);
 
     #if LOGGING_ENABLED
     pros::Task log_task = pros::Task([]() {
@@ -93,9 +73,6 @@ void autonomous() {
         }
     });
     #endif
-
-    Auton& selected_auton = autons[selected_index];
-    selected_auton.auton(); 
 
 }
 
@@ -152,16 +129,11 @@ void opcontrol() {
 
     // rumble_timer.resume();
     // if(autonomous_task != nullptr) autonomous_task->remove();
-    set_drive_brake(pros::E_MOTOR_BRAKE_COAST);
+    miku.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
     static Gif gif("/usd/jiachenma.gif", lv_scr_act());
 
     while (true) {
-
-        if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)){
-            if(!get_intake_tbh()) set_intake_velocity(200);
-            else set_intake_tbh(false);
-        }
 
         if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
             driveModes.cycle_forward();
@@ -187,7 +159,7 @@ void opcontrol() {
         bool shift2 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
 
         if(!shift1 && !shift2) {
-            if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && !get_intake_tbh()) {
+            if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
                 intake.move_voltage(12000);
             }
             if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
@@ -216,7 +188,7 @@ void opcontrol() {
             hood_piston.toggle();
         }
 
-        if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && !get_intake_tbh()) {
+        if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
             intake.move_voltage(0);
         }
 

@@ -4,17 +4,17 @@
 #include "motions.h"
 #include "mcl.h"
 
-std::deque<std::shared_ptr<MotionPrimitive>> motion_queue;
+std::deque<MotionPrimitive*> motion_queue;
 pros::Mutex queue_mutex;
-std::shared_ptr<MotionPrimitive> current_motion = nullptr;
+MotionPrimitive* current_motion = nullptr;
 
-void queue_motion(std::shared_ptr<MotionPrimitive> motion) {
+void queue_motion(MotionPrimitive* motion) {
     queue_mutex.take();
     motion_queue.push_back(motion);
     queue_mutex.give();
 }
 
-void queue_after_current(std::shared_ptr<MotionPrimitive> motion) {
+void queue_after_current(MotionPrimitive* motion) {
     queue_mutex.take();
     if (current_motion == nullptr) {
         motion_queue.push_front(motion);
@@ -30,9 +30,7 @@ void system_task(void*) {
     uint32_t prev_time = pros::millis();
 
     while (true) {
-
-        update_odom();
-        update_particles();
+        miku.update_odometry();
 
         if (!current_motion) {
             queue_mutex.take();

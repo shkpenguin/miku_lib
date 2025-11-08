@@ -21,7 +21,7 @@ void Ramsete::start() {
 }
 
 void Ramsete::update() {
-    Pose current = get_pose();
+    Pose current = get_robot_pose();
 
     double end_x = waypoints.back().x;
     double end_y = waypoints.back().y;
@@ -29,7 +29,7 @@ void Ramsete::update() {
 
     double robot_x = current.x;
     double robot_y = current.y;
-    double robot_h = current.theta;
+    standard_radians robot_h = current.theta;
     if (params.reverse) robot_h = fmod(robot_h + M_PI, 2 * M_PI);
 
     // Distance to end
@@ -59,7 +59,7 @@ void Ramsete::update() {
 
     const auto& wp = waypoints[current_waypoint];
     double target_x = wp.x, target_y = wp.y;
-    double target_h = wp.theta;
+    standard_radians target_h = wp.theta;
     double target_v = wp.linvel, target_w = wp.angvel;
 
     double dx = target_x - robot_x;
@@ -67,7 +67,7 @@ void Ramsete::update() {
 
     double error_x =  std::cos(robot_h) * dx + std::sin(robot_h) * dy;
     double error_y = -std::sin(robot_h) * dx + std::cos(robot_h) * dy;
-    double error_h = angle_error(target_h, robot_h);
+    standard_radians error_h = (target_h - robot_h).norm();
 
     double k = 2 * zeta * std::sqrt(target_w * target_w + b * target_v * target_v);
     double u1 = -k * error_x;
@@ -76,23 +76,19 @@ void Ramsete::update() {
     double v = target_v * std::cos(error_h) - u1;
     double w = target_w - u2;
 
-    double percent_v = v / (0.01 * MAX_RPM / 60 * GEAR_RATIO * CIRC);
-    double percent_w = w * TRACK_WIDTH / (0.01 * MAX_RPM / 60 * GEAR_RATIO * CIRC);
+    double l_vel = v - w * TRACK_WIDTH / 2; // in/s
+    double r_vel = v + w * TRACK_WIDTH / 2; // in/s
 
-    double r_vel = percent_v + percent_w / 2;
-    double l_vel = percent_v - percent_w / 2;
-
-    // Limit motor outputs
-    double max_vel = std::max(std::abs(r_vel), std::abs(l_vel));
-    if (max_vel > 100) {
-        r_vel *= 100 / max_vel;
-        l_vel *= 100 / max_vel;
+    double l_rpm = (l_vel / CIRC) * 60.0 * GEAR_RATIO;
+    double r_rpm = (r_vel / CIRC) * 60.0 * GEAR_RATIO;
+    
+    double max_rpm = std::max(std::abs(r_rpm), std::abs(l_rpm));
+    if (max_rpm > MAX_RPM) {
+        r_vel *= MAX_RPM / max_rpm;
+        l_vel *= MAX_RPM / max_rpm;
     }
 
-    double r_volts = params.reverse ? drive_lut.get_value(-l_vel) : drive_lut.get_value(r_vel);
-    double l_volts = params.reverse ? drive_lut.get_value(-r_vel) : drive_lut.get_value(l_vel);
-
-    move_motors(l_volts, r_volts);
+    miku.set_velocities(l_vel, r_vel);
 
     if(drive_small_exit.get_exit() || drive_large_exit.get_exit() || timer.is_done()) {
         done = true;

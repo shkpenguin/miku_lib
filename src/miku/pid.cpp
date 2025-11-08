@@ -2,15 +2,22 @@
 #include "pid.h"
 #include "api.h"
 
-PID::PID(double kP, double kI, double kD, double windup_range, bool sign_flip_reset, bool trapezoidal)
-    : kP(kP),
-      kI(kI),
-      kD(kD),
+PID::PID(PIDGains pid_gains, double windup_range = 0, bool sign_flip_reset = true, bool trapezoidal = true)
+    : pid_gains(pid_gains),
       windup_range(windup_range),
       sign_flip_reset(sign_flip_reset),
-      trapezoidal(trapezoidal) {}
+      trapezoidal(trapezoidal),
+      use_lut(false) {};
+PID::PID()
+    : pid_gains(),
+      windup_range(0),
+      sign_flip_reset(true),
+      trapezoidal(true),
+      use_lut(false) {};
 
-double PID::update(const double error) {
+double PID::update(const double input) {
+
+    const double error = target - input;
 
     // calculate derivative
     const double derivative = error - prevError;
@@ -21,41 +28,22 @@ double PID::update(const double error) {
     }
     if (sign(error) != sign((prevError)) && sign_flip_reset) integral = 0;
     if (fabs(error) > windup_range && windup_range != 0) integral = 0;
-    
+
     prevError = error;
 
     // calculate output
-    return error * kP + integral * kI + derivative * kD;
-    
+    return error * pid_gains.kP + integral * pid_gains.kI + derivative * pid_gains.kD;
+
 }
 
 PID& PID::operator=(const PID& other) {
     if (this != &other) {
-        kP = other.kP;
-        kI = other.kI;
-        kD = other.kD;
+        use_lut = other.use_lut;
+        pid_gains = other.pid_gains;
         integral = other.integral;
         prevError = other.prevError;
     }
     return *this;
-}
-
-void PID::set_gains(Gains gains) {
-    kP = gains.kP;
-    kI = gains.kI;
-    kD = gains.kD;
-}
-
-void PID::set_kp(double p) {
-    kP = p;
-}
-
-void PID::set_ki(double i) {
-    kI = i;
-}
-
-void PID::set_kd(double d) {
-    kD = d;
 }
 
 void PID::reset() {

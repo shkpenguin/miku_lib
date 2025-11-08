@@ -1,7 +1,7 @@
 #include "motions.h"
 
-MovePose::MovePose(Pose target, double timeout, MovePoseParams params)
-    : target(target), timeout(timeout), params(params) {
+MovePose::MovePose(Point target, compass_degrees heading, double timeout, MovePoseParams params)
+    : target(target), target_heading(standard_radians(heading)), timeout(timeout), params(params) {
     if(params.k1 < 0) k1 = 1.0;
     if(params.k2 < 0) k2 = 4.0;
     if(params.k3 < 0) k3 = 1.0;
@@ -11,19 +11,18 @@ void MovePose::start() {
     done = false;
     timer.set(timeout);
     timer.reset();
-    
-    target_rad = std::fmod(90 - target.theta, 360) * M_PI / 180;
 }
 
 void MovePose::update() {
     
-    double drive_error = dist(target.x, target.y, get_pose().x, get_pose().y);
+    double drive_error = dist(target.x, target.y, get_robot_pose().x, get_robot_pose().y);
 
-    double robot_heading = std::fmod(get_pose({.standard = true}).theta, 2 * M_PI);
-    if (params.reverse) robot_heading = std::fmod(robot_heading + M_PI, 2 * M_PI);
+    standard_radians robot_heading = get_robot_pose().theta.wrap();
+    if (params.reverse) robot_heading = (robot_heading + M_PI).wrap();
 
-    double gamma = std::remainder(std::atan2(target.y - get_pose().y, target.x - get_pose().x) - robot_heading, 2 * M_PI);
-    double delta = std::remainder(std::atan2(target.y - get_pose().y, target.x - get_pose().x) - target_rad, 2 * M_PI);
+    standard_radians angle_to_target = get_robot_pose().angle_to(target);
+    double gamma = (angle_to_target - robot_heading).wrap();
+    double delta = (target_heading - angle_to_target).wrap();
 
     double v = k1 * drive_error * std::cos(gamma);
     double w;
@@ -48,13 +47,9 @@ void MovePose::update() {
     }
 
     if (params.reverse) {
-        double r_volts = drive_lut.get_value(-l_vel);
-        double l_volts = drive_lut.get_value(-r_vel);
-        move_motors(l_volts, r_volts);
+        miku.set_velocities(-r_vel, -l_vel);
     } else {
-        double r_volts = drive_lut.get_value(r_vel);
-        double l_volts = drive_lut.get_value(l_vel);
-        move_motors(l_volts, r_volts);
+        miku.set_velocities(l_vel, r_vel);
     }
 
     if(timer.is_done()) {

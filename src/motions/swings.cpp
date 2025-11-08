@@ -10,8 +10,8 @@ void SwingHeading::start() {
 }
 
 void SwingHeading::update() {
-    double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
-    double error = wrap_angle(target - current_deg, 360);      // error in degrees
+    compass_degrees current_deg = compass_degrees(get_robot_pose().theta);  // convert to degrees
+    double error = (target - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
         done = true;
@@ -49,9 +49,9 @@ void SwingPoint::start() {
 }
 
 void SwingPoint::update() {
-    double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
-    double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
-    double error = wrap_angle(target_deg - current_deg, 360);      // error in degrees
+    compass_degrees current_deg = compass_degrees(get_robot_pose().theta);  // convert to degrees
+    compass_degrees target_deg = compass_degrees(miku::atan2(target.x - get_robot_pose().x, target.y - get_robot_pose().y));
+    double error = (target_deg - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
         done = true;

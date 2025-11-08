@@ -1,62 +1,83 @@
 #pragma once
 
 #include "pros/motors.h"
+#include "miku-api.h"
+#include <memory>
 
 namespace miku {
 
-class Motor : public pros::Motor {
+class AbstractMotor : public pros::Motor {
+      public:
+      AbstractMotor(std::int8_t port, pros::v5::MotorGears gearset = pros::v5::MotorGears::blue, 
+                    pros::v5::MotorUnits encoder_units = pros::v5::MotorUnits::degrees);
+      virtual double get_filtered_velocity();
+      virtual ~AbstractMotor() = default;
 
-int ticks_per_rev;
+      protected:
 
-double prev_ticks = 0;
-uint32_t last_time = 0;
+      int ticks_per_rev;
 
-double sma_filter_size = 2;
-double median_filter_size = 3;
-double accel_filter_size = 10;
-std::vector<double> prev_raw_velocities;
-std::vector<double> prev_filtered_velocities;
-std::vector<double> prev_accels;
-double prev_estimated_velocity = 0;
+      double prev_ticks = 0;
+      uint32_t last_time = 0;
 
-public:
-double get_estimated_velocity();
-
-Motor(std::int8_t port, pros::v5::MotorGears gearset = pros::v5::MotorGears::blue, 
-      pros::v5::MotorUnits encoder_units = pros::v5::MotorUnits::degrees) : 
-      pros::Motor(port, gearset, encoder_units) {
-        if(gearset == pros::v5::MotorGears::red) {
-            ticks_per_rev = 1800;
-        } else if(gearset == pros::v5::MotorGears::green) {
-            ticks_per_rev = 900;
-        } else if(gearset == pros::v5::MotorGears::blue) {
-            ticks_per_rev = 300;
-        } else {
-            std::cerr << "Invalid gearset for motor on port " << static_cast<int>(port) << std::endl;
-        }
-    }
+      double sma_filter_size = 2;
+      double median_filter_size = 3;
+      double accel_filter_size = 10;
+      std::vector<double> prev_raw_velocities;
+      std::vector<double> prev_filtered_velocities;
+      std::vector<double> prev_accels;
+      double prev_estimated_velocity = 0;
 
 };
 
-class MotorGroup {
-std::vector<Motor*> motors;
+class MotorController {
+protected:
+    bool velocity_control_enabled = false;
+    PID velocity_pid;
+    LookupTable voltage_lut;
+    double max_voltage = 12000;
+
 public:
-MotorGroup(const std::initializer_list<std::int8_t> ports);
+    MotorController(PIDGains pid_gains, LookupTable voltage_lookup_table);
+    virtual void move_velocity(double velocity);
+};
 
-std::int32_t move(int voltage);
+class Motor : public AbstractMotor, public MotorController {
 
-std::int32_t move_voltage(int voltage);
+public:
+Motor(std::int8_t port, pros::v5::MotorGears gearset = pros::v5::MotorGears::blue, 
+      pros::v5::MotorUnits encoder_units = pros::v5::MotorUnits::degrees,
+      LookupTable voltage_lookup_table = LookupTable(), PIDGains pid_gains = PIDGains());
 
-std::vector<double> get_estimated_velocities();
+void move_velocity(double velocity) override;
 
-// Uses get_estimated_velocity() to return the average velocity of the group
+};
+
+class MotorGroup : public MotorController {
+
+private:
+std::vector<AbstractMotor*> motors;
+
+public:
+MotorGroup() = default;
+MotorGroup(const std::initializer_list<std::int8_t> ports, 
+           const pros::v5::MotorGears gearset = pros::v5::MotorGears::blue,
+           const pros::v5::MotorUnits encoder_units = pros::v5::MotorUnits::degrees,
+           LookupTable voltage_lookup_table = LookupTable(), PIDGains pid_gains = PIDGains());
+
+void move_velocity(double velocity) override;
+
+// Uses get_filtered_velocity() to return the average velocity of the group
 double get_average_velocity();
 
 double get_average_position();
 
-std::int32_t tare_position_all(void) const;
-
-std::int32_t set_brake_mode_all(pros::motor_brake_mode_e mode);
+void move(int voltage);
+void move_voltage(int32_t voltage);
+void tare_position(void) const;
+void set_brake_mode(pros::motor_brake_mode_e mode);
+double get_average_velocity();
+std::vector<int> get_temperature_all() const;
 
 };
 

@@ -3,65 +3,23 @@
 #include "util.h"
 #include <numeric>
 
-miku::MotorGroup::MotorGroup(const std::initializer_list<std::int8_t> ports) {
-    for(auto port : ports) {
-        motors.push_back(new Motor(port));
+miku::AbstractMotor::AbstractMotor(std::int8_t port, pros::v5::MotorGears gearset = pros::v5::MotorGears::blue, 
+      pros::v5::MotorUnits encoder_units = pros::v5::MotorUnits::degrees) 
+    : pros::Motor(port, gearset, encoder_units) {
+    if(gearset == pros::v5::MotorGears::red) {
+        ticks_per_rev = 1800;
+    } else if(gearset == pros::v5::MotorGears::green) {
+        ticks_per_rev = 900;
+    } else if(gearset == pros::v5::MotorGears::blue) {
+        ticks_per_rev = 300;
+    } else {
+        std::cerr << "Invalid gearset for motor on port " << static_cast<int>(port) << std::endl;
     }
 }
 
-std::int32_t miku::MotorGroup::move(int voltage) {
-    for(auto motor : motors) {
-        motor->move(voltage);
-    }
-    return 1;
-}
+double miku::AbstractMotor::get_filtered_velocity() {
 
-std::int32_t miku::MotorGroup::move_voltage(int voltage) {
-    for(auto motor : motors) {
-        motor->move_voltage(voltage);
-    }
-    return 1;
-}
-
-std::vector<double> miku::MotorGroup::get_estimated_velocities() {
-    std::vector<double> velocities;
-    for(auto motor : motors) {
-        velocities.push_back(motor->get_estimated_velocity());
-    }
-    return velocities;
-}
-// Uses get_estimated_velocity() to return the average velocity of the group
-double miku::MotorGroup::get_average_velocity() {
-    auto velocities = get_estimated_velocities();
-    double sum = std::accumulate(velocities.begin(), velocities.end(), 0.0);
-    return sum / velocities.size();
-}
-
-double miku::MotorGroup::get_average_position() {
-    double sum = 0;
-    for(auto motor : motors) {
-        sum += motor->get_position();
-    }
-    return sum / motors.size();
-}
-
-std::int32_t miku::MotorGroup::tare_position_all(void) const {
-    for(auto motor : motors) {
-        motor->tare_position();
-    }
-    return 1;
-}
-
-std::int32_t miku::MotorGroup::set_brake_mode_all(pros::motor_brake_mode_e mode) {
-    for(auto motor : motors) {
-        motor->set_brake_mode(mode);
-    }
-    return 1;
-}
-
-double miku::Motor::get_estimated_velocity() {
-
-    u_int32_t current_time;
+    uint32_t current_time;
     double current_ticks = this->get_raw_position(&current_time);
 
     double delta_ticks = current_ticks - prev_ticks;
@@ -125,4 +83,88 @@ double miku::Motor::get_estimated_velocity() {
 
     return ema_velocity;
 
+}
+
+miku::MotorController::MotorController(PIDGains pid_gains, LookupTable voltage_lookup_table) 
+    : velocity_pid(pid_gains), voltage_lut(voltage_lookup_table) {}
+
+miku::Motor::Motor(std::int8_t port, pros::v5::MotorGears gearset, 
+      pros::v5::MotorUnits encoder_units,
+      LookupTable voltage_lookup_table,
+      PIDGains pid_gains) 
+    : AbstractMotor(port, gearset, encoder_units),
+      MotorController(pid_gains, voltage_lookup_table) {}
+
+void miku::Motor::move_velocity(double velocity) {
+    velocity_control_enabled = true;
+
+    double ff = voltage_lut.get_value(velocity);
+    double error = velocity - get_filtered_velocity();
+    double pid_output = velocity_pid.update(error);
+
+    double total_voltage = ff + pid_output;
+    clamp(total_voltage, -max_voltage, max_voltage);
+    this->move_voltage(static_cast<int>(total_voltage));
+}
+
+miku::MotorGroup::MotorGroup(const std::initializer_list<std::int8_t> ports,
+           const pros::v5::MotorGears gearset,
+           const pros::v5::MotorUnits encoder_units,
+           LookupTable voltage_lookup_table,
+           PIDGains pid_gains) : MotorController(pid_gains, voltage_lookup_table) {
+    for(auto port : ports) {
+        motors.push_back(new AbstractMotor(port, gearset, encoder_units));
+    }
+}
+
+void miku::MotorGroup::move_velocity(double velocity) {
+    velocity_control_enabled = true;
+
+    double ff = voltage_lut.get_value(velocity);
+    double error = velocity - get_average_velocity();
+    double pid_output = velocity_pid.update(error);
+
+    double total_voltage = ff + pid_output;
+    clamp(total_voltage, -max_voltage, max_voltage);
+    this->move_voltage(total_voltage);
+}
+
+void miku::MotorGroup::move(int voltage) {
+    for(auto motor : motors) {
+        motor->move(voltage);
+    }
+}
+
+void miku::MotorGroup::move_voltage(int32_t voltage) {
+    for(auto motor : motors) {
+        motor->move_voltage(voltage);
+    }
+}
+
+double miku::MotorGroup::get_average_velocity() {
+    double sum = 0;
+    for(auto motor : motors) {
+        sum += motor->get_filtered_velocity();
+    }
+    return sum / motors.size();
+}
+    
+void miku::MotorGroup::tare_position(void) const {
+    for(auto motor : motors) {
+        motor->tare_position();
+    }
+}
+
+void miku::MotorGroup::set_brake_mode(pros::motor_brake_mode_e mode) {
+    for(auto motor : motors) {
+        motor->set_brake_mode(mode);
+    }
+}
+
+std::vector<int> miku::MotorGroup::get_temperature_all() const {
+    std::vector<int> temperatures;
+    for(auto motor : motors) {
+        temperatures.push_back(motor->get_temperature());
+    }
+    return temperatures;
 }

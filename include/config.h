@@ -1,11 +1,7 @@
 #pragma once
 
 #include "api.h"
-#include "miku/motor.h"
-#include "miku/optical.h"
-#include "miku/pneumatic.h"
-#include "miku/distance.h"
-#include "exit.h"
+#include "miku-api.h"
 
 #define WHEEL_DIAMETER 3.25
 #define GEAR_RATIO 0.75
@@ -19,6 +15,7 @@ extern pros::Controller master;
 
 extern miku::MotorGroup left_motors;
 extern miku::MotorGroup right_motors;
+extern miku::Chassis miku;
 
 extern miku::Motor left_front;
 extern miku::Motor left_middle;
@@ -55,3 +52,6 @@ extern RangeExit drive_small_exit;
 extern RangeExit drive_large_exit;
 extern RangeExit turn_small_exit;
 extern RangeExit turn_large_exit;
+
+extern PatienceExit turn_patience_exit;
+extern PatienceExit drive_patience_exit;

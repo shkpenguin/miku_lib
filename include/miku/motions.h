@@ -33,13 +33,10 @@ struct MotionPrimitive {
     virtual ~MotionPrimitive() {}
 
     std::vector<ConditionalEvent> events;
+    void add_event(const ConditionalEvent& event) {
+        events.push_back(event);
+    }
 };
-
-void move_motors(double l, double r);
-
-void stop_motors();
-
-void set_drive_brake(pros::motor_brake_mode_e mode);
 
 // Motion control functions
 void wait_until_done();
@@ -110,7 +107,7 @@ struct RamseteParams {
 };
 
 struct TurnHeading : MotionPrimitive {
-    double target;
+    compass_degrees target;
     double timeout;
     TurnParams params;
 
@@ -119,7 +116,7 @@ struct TurnHeading : MotionPrimitive {
 
     bool done = false;
 
-    TurnHeading::TurnHeading(double target, double timeout, TurnParams params);
+    TurnHeading(compass_degrees target, double timeout, TurnParams params);
 
     void start() override;
     void update() override;
@@ -136,7 +133,7 @@ struct TurnPoint : MotionPrimitive {
 
     bool done = false;
 
-    TurnPoint::TurnPoint(Point target, double timeout, TurnParams params);
+    TurnPoint(Point target, double timeout, TurnParams params);
   
     void start() override;
     void update() override;
@@ -144,7 +141,7 @@ struct TurnPoint : MotionPrimitive {
 };
 
 struct SwingHeading : MotionPrimitive {
-    double target;
+    compass_degrees target;
     double timeout;
     SwingParams params;
 
@@ -153,8 +150,7 @@ struct SwingHeading : MotionPrimitive {
 
     bool done = false;
 
-    SwingHeading::SwingHeading(double target, double timeout, SwingParams params);
-
+    SwingHeading(compass_degrees target, double timeout, SwingParams params);
     void start() override;
     void update() override;
     bool is_done() override;
@@ -197,17 +193,17 @@ struct MovePoint : MotionPrimitive {
 };
 
 struct MovePose : MotionPrimitive {
-    Pose target;
+    Point target;
+    standard_radians target_heading;
     double timeout;
     double k1, k2, k3;
-    double target_rad;
     MovePoseParams params;
 
     Timer timer;
 
     bool done = false;
 
-    MovePose::MovePose(Pose target, double timeout, MovePoseParams params);
+    MovePose(Point target, compass_degrees heading, double timeout, MovePoseParams params);
 
     void start() override;
     void update() override;
@@ -229,7 +225,6 @@ struct MoveTime : MotionPrimitive {
         done = false;
         timer.set(duration);
         timer.reset();
-        move_motors(left_speed, right_speed);
     }
 
     void update() override {

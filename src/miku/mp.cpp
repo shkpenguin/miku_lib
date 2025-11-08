@@ -129,22 +129,9 @@ void BezierPath::calculate_waypoints() {
             if (derivatives[2] != 0 || derivatives[3] != 0) {
                 curvature = (derivatives[2] * derivatives[5] - derivatives[3] * derivatives[4]) /
                             std::pow(derivatives[2]*derivatives[2] + derivatives[3]*derivatives[3], 1.5);
-                rad_per_sec = linvel * curvature;
+                rad_per_sec = in_per_sec * curvature;
             }
-
-            double angvel = rad_per_sec * TRACK_WIDTH / (0.01 * MAX_RPM / 60 * GEAR_RATIO * CIRC);
-
-            double r_vel = linvel + angvel / 2;
-            double l_vel = linvel - angvel / 2;
-            double max_val = std::max(std::abs(r_vel), std::abs(l_vel));
-
-            if (max_val > 100) {
-                double scale = 100 / max_val;
-                r_vel *= scale; l_vel *= scale;
-                linvel *= scale; angvel *= scale;
-                in_per_sec *= scale; rad_per_sec *= scale;
-            }
-
+            
             point.linvel = in_per_sec;
             point.angvel = rad_per_sec;
 

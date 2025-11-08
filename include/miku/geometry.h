@@ -1,0 +1,166 @@
+#pragma once
+
+#include <cmath>
+#include <vector>
+
+enum AngleType {
+    COMPASS,
+    STANDARD
+};
+
+enum AngleUnit {
+    DEGREES,
+    RADIANS
+};
+
+template<AngleUnit U = RADIANS, AngleType T = STANDARD>
+struct AngleTemplate {
+    double value = 0.0;
+
+    AngleTemplate(double value = 0.0) : value(value) {}
+    template<AngleUnit OtherU, AngleType OtherT>
+    AngleTemplate(const AngleTemplate<OtherU, OtherT>& other) {
+        if constexpr (OtherT == COMPASS) {
+            *this = other.standard();
+        } else {
+            value = other.value;
+        }
+        if constexpr (U == DEGREES && OtherU == RADIANS) {
+            value = value * 180.0 / M_PI;
+        } else if constexpr (U == RADIANS && OtherU == DEGREES) {
+            value = value * M_PI / 180.0;
+        }
+    }
+    operator double() const { return value; }
+    AngleTemplate operator+(const AngleTemplate& other) const {
+        return AngleTemplate(value + other.value);
+    }
+    AngleTemplate operator+(const double& other) const {
+        return AngleTemplate(value + other);
+    }
+    AngleTemplate& operator+=(const AngleTemplate& other) {
+        value += other.value;
+        return *this;
+    }
+    AngleTemplate& operator+=(const double& other) {
+        value += other;
+        return *this;
+    }
+    AngleTemplate operator-(const AngleTemplate& other) const {
+        return AngleTemplate(value - other.value);
+    }
+    AngleTemplate operator-(const double& other) const {
+        return AngleTemplate(value - other);
+    }
+    AngleTemplate& operator-=(const AngleTemplate& other) {
+        value -= other.value;
+        return *this;
+    }
+    AngleTemplate& operator-=(const double& other) {
+        value -= other;
+        return *this;
+    }
+    AngleTemplate operator*(double scalar) const {
+        return AngleTemplate(value * scalar);
+    }
+    AngleTemplate& operator*=(double scalar) {
+        value *= scalar;
+        return *this;
+    }
+    AngleTemplate operator/(double scalar) const {
+        return AngleTemplate(value / scalar);
+    }
+    AngleTemplate& operator/=(double scalar) {
+        value /= scalar;
+        return *this;
+    }
+    ~AngleTemplate() = default;
+    template<AngleType K = T>
+    inline constexpr std::enable_if_t<K == COMPASS, AngleTemplate<U, STANDARD>> standard() const {
+        if constexpr (U == DEGREES) return AngleTemplate<DEGREES, STANDARD>(90.0 - value);
+        return AngleTemplate<RADIANS, STANDARD>(M_PI / 2.0 - value);
+    };
+    template<AngleType K = T>
+    inline constexpr std::enable_if_t<K == STANDARD, AngleTemplate<U, COMPASS>> compass() const {
+        if constexpr (U == DEGREES) return AngleTemplate<DEGREES, COMPASS>(90.0 - value);
+        return AngleTemplate<RADIANS, COMPASS>(M_PI / 2.0 - value);
+    };
+    template<AngleUnit V = U>
+    inline constexpr std::enable_if_t<V == DEGREES, AngleTemplate<RADIANS, T>> radians() const {
+        return AngleTemplate<RADIANS, T>(norm(value * M_PI / 180.0));
+    };
+    template<AngleUnit V = U>
+    inline constexpr std::enable_if_t<V == RADIANS, AngleTemplate<DEGREES, T>> degrees() const {
+        return AngleTemplate<DEGREES, T>(norm(value * 180.0 / M_PI));
+    };
+    // wrap to [-180, 180) for degrees or [-pi, pi) for radians
+    inline double wrap() const {
+        if constexpr (U == DEGREES) {
+            double mod = std::fmod(value + 180.0, 360.0);
+            if(mod < 0) mod += 360.0;
+            return mod - 180.0;
+        } else {
+            double mod = std::fmod(value + M_PI, 2.0 * M_PI);
+            if(mod < 0) mod += 2.0 * M_PI;
+            return mod - M_PI;
+        }
+    };
+    // wrap to [0, 360) for degrees or [0, 2pi) for radians
+    inline double norm() const {
+        if constexpr (U == DEGREES) {
+            double mod = std::fmod(value, 360.0);
+            if(mod < 0) mod += 360.0;
+            return mod;
+        } else {
+            double mod = std::fmod(value, 2.0 * M_PI);
+            if(mod < 0) mod += 2.0 * M_PI;
+            return mod;
+        }
+    };
+};
+
+using standard_radians = AngleTemplate<RADIANS, STANDARD>;
+using standard_degrees = AngleTemplate<DEGREES, STANDARD>;
+using compass_radians = AngleTemplate<RADIANS, COMPASS>;
+using compass_degrees = AngleTemplate<DEGREES, COMPASS>;
+
+struct Point {
+    double x;
+    double y;
+
+    Point(double x = 0.0, double y = 0.0) 
+        : x(x), y(y) {}
+
+    double magnitude() const {
+        return std::hypot(x, y);
+    }
+    standard_radians angle_to(const Point& other) const {
+        return standard_radians(atan2(other.y - y, other.x - x));
+    }
+    double distance_to(const Point& other) const {
+        return std::hypot(other.x - x, other.y - y);
+    }
+};
+
+struct Pose {
+    double x; 
+    double y;
+    standard_radians theta;
+
+    Pose(double x = 0.0, double y = 0.0, double theta = 0.0)
+        : x(x), y(y), theta(theta) {}
+
+    double magnitude() const {
+        return std::hypot(x, y);
+    }
+    standard_radians angle_to(const Point& other) const {
+        return standard_radians(atan2(other.y - y, other.x - x));
+    }
+    double distance_to(const Point& other) const {
+        return std::hypot(other.x - x, other.y - y);
+    }
+};
+
+struct Polygon {
+    std::vector<Point> ccw_vertices;
+};

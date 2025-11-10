@@ -46,6 +46,15 @@ inline int find_quadrant(Pose robot_pose) {
     return 4;
 }
 
+// bound value between 0 and mod-1
+inline void increment_mod(int& value, int mod) {
+    value = (value + 1) % mod;
+}
+
+inline void decrement_mod(int& value, int mod) {
+    value = (value - 1 + mod) % mod;
+}
+
 template<typename T>
 class List {
     std::vector<T> values;

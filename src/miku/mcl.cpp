@@ -1,7 +1,7 @@
 #define NUM_PARTICLES 500
 
 #include "api.h"
-#include "miku-api.h"
+#include "Miku-api.h"
 
 enum DistanceError {
     NOT_IN_FIELD = -1,
@@ -101,7 +101,7 @@ std::ostringstream log_buffer;
 
 void log_mcl() {
 
-    Pose robot_pose = miku.get_pose();
+    Pose robot_pose = Miku.get_pose();
 
     log_buffer << NUM_PARTICLES << "," << robot_pose.x << "," << robot_pose.y << "," << robot_pose.theta << ",";
     log_buffer << left_distance.get_distance() / 25.4 << "," 
@@ -151,7 +151,7 @@ Point get_position_estimate() {
 
 void initialize_pose(Pose robot_pose) {
 
-    miku.reset(robot_pose);
+    Miku.reset(robot_pose);
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
         particles[i].position = Point(robot_pose.x, robot_pose.y);
@@ -195,12 +195,12 @@ static std::normal_distribution<double> odom_noise;
 
 void update_particles() {
 
-    double velocity = miku.get_pose_delta().magnitude();
+    double velocity = Miku.get_pose_delta().magnitude();
     double odom_stdev = std::max(velocity / 4, min_odom_noise);
     odom_noise = std::normal_distribution<double>(0, odom_stdev);
 
-    Pose robot_speed = miku.get_pose_delta();
-    standard_radians robot_theta = miku.get_heading();
+    Pose robot_speed = Miku.get_pose_delta();
+    standard_radians robot_theta = Miku.get_heading();
     double sin_theta = sin(robot_theta);
     double cos_theta = cos(robot_theta);
 
@@ -209,7 +209,7 @@ void update_particles() {
     // max error check
     for(size_t i = 0; i < sensors.size(); ++i) {
         double expected = get_expected_reading(
-            Point(miku.get_pose().x, miku.get_pose().y), 
+            Point(Miku.get_pose().x, Miku.get_pose().y), 
             sensors[i].get().offset_x, 
             sensors[i].get().offset_y, 
             cos_theta, 

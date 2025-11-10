@@ -1,6 +1,4 @@
-#include "mcl.h"
-#include "chassis.h"
-#include "config.h"
+#include "miku/miku-api.h"
 
 #define IMU_CW_DRIFT 1.0
 #define IMU_CCW_DRIFT 1.0
@@ -9,7 +7,7 @@ double prev_left_raw = 0;
 double prev_right_raw = 0;
 compass_degrees prev_theta_raw = 0;
 
-inline void miku::Chassis::reset(Pose initial_pose) {
+void miku::Chassis::reset(Pose initial_pose) {
     set_pose(initial_pose);
     pose_delta = Pose(0, 0, 0);
     prev_left_raw = left_motors->get_average_position();   
@@ -39,7 +37,7 @@ void miku::Chassis::update_odometry() {
     // }
 
     double heading = pose.theta + theta_delta;
-    double avg_heading = pose.theta + theta_delta / 2;
+    double avg_heading = pose.theta + theta_delta / 2.0;
 
     double left_delta_in = left_delta * WHEEL_DIAMETER * GEAR_RATIO * M_PI / 360.0;
     double right_delta_in = right_delta * WHEEL_DIAMETER * GEAR_RATIO * M_PI / 360.0;

@@ -32,15 +32,12 @@ class PID {
         PID(PIDGains pid_gains, double windup_range = 0, bool sign_flip_reset = true, bool trapezoidal = true);
         PID();
 
-        double target = 0;
         double update(double error);
 
         void reset();
 
         PID& operator=(const PID& other);
     protected:
-        bool use_lut;
-
         // gains 
         PIDGains pid_gains;
 

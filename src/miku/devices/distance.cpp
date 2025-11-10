@@ -1,4 +1,4 @@
-#include "miku/distance.h"
+#include "miku/devices/distance.h"
 
 void miku::Distance::update_reading() {
 

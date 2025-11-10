@@ -1,4 +1,7 @@
-#include "motions.h"
+#include "miku/motions.h"
+#include "miku/devices/chassis.h"
+#include "config.h"
+#include "miku/util.h"
 
 void SwingHeading::start() {
     done = false;
@@ -10,7 +13,7 @@ void SwingHeading::start() {
 }
 
 void SwingHeading::update() {
-    compass_degrees current_deg = compass_degrees(get_robot_pose().theta);  // convert to degrees
+    compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
     double error = (target - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
@@ -49,8 +52,8 @@ void SwingPoint::start() {
 }
 
 void SwingPoint::update() {
-    compass_degrees current_deg = compass_degrees(get_robot_pose().theta);  // convert to degrees
-    compass_degrees target_deg = compass_degrees(miku::atan2(target.x - get_robot_pose().x, target.y - get_robot_pose().y));
+    compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
+    compass_degrees target_deg = compass_degrees(miku::atan2(target.x - Miku.get_pose().x, target.y - Miku.get_pose().y));
     double error = (target_deg - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {

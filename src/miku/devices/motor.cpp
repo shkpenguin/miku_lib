@@ -1,10 +1,9 @@
 #include "main.h"
-#include "miku/motor.h"
-#include "util.h"
+#include "miku/devices/motor.h"
+#include "miku/util.h"
 #include <numeric>
 
-miku::AbstractMotor::AbstractMotor(std::int8_t port, pros::v5::MotorGears gearset = pros::v5::MotorGears::blue, 
-      pros::v5::MotorUnits encoder_units = pros::v5::MotorUnits::degrees) 
+miku::AbstractMotor::AbstractMotor(std::int8_t port, pros::v5::MotorGears gearset, pros::v5::MotorUnits encoder_units) 
     : pros::Motor(port, gearset, encoder_units) {
     if(gearset == pros::v5::MotorGears::red) {
         ticks_per_rev = 1800;
@@ -103,7 +102,7 @@ void miku::Motor::move_velocity(double velocity) {
     double pid_output = velocity_pid.update(error);
 
     double total_voltage = ff + pid_output;
-    clamp(total_voltage, -max_voltage, max_voltage);
+    total_voltage = clamp(total_voltage, -max_voltage, max_voltage);
     this->move_voltage(static_cast<int>(total_voltage));
 }
 
@@ -147,6 +146,25 @@ double miku::MotorGroup::get_average_velocity() {
         sum += motor->get_filtered_velocity();
     }
     return sum / motors.size();
+}
+
+double miku::MotorGroup::get_average_position() {
+    double sum = 0;
+    for(auto motor : motors) {
+        sum += motor->get_position();
+    }
+    return sum / motors.size();
+}
+
+int miku::MotorGroup::get_highest_temperature() const {
+    int highest_temp = 0;
+    for(auto motor : motors) {
+        int temp = motor->get_temperature();
+        if(temp > highest_temp) {
+            highest_temp = temp;
+        }
+    }
+    return highest_temp;
 }
     
 void miku::MotorGroup::tare_position(void) const {

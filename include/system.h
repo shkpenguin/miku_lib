@@ -1,6 +1,6 @@
 #pragma once
 
-#include "motions.h"
+#include "miku/motions.h"
 
 void queue_motion(MotionPrimitive* motion);
 

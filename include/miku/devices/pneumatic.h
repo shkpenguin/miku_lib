@@ -1,3 +1,5 @@
+#pragma once
+
 #include "pros/adi.hpp"
 
 namespace miku {

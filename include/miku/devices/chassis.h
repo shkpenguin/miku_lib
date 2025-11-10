@@ -1,7 +1,11 @@
 #pragma once
 
-#include "miku-api.h"
+#include "pros/motors.hpp"
+#include "miku/devices/motor.h"
+#include "miku/geometry.h"
 #include <memory>
+
+inline pros::Mutex pose_mutex;
 
 namespace miku {
 
@@ -27,16 +31,20 @@ public:
         left_motors->set_brake_mode(mode);
         right_motors->set_brake_mode(mode);
     }
+ 
+    inline Pose get_pose() { return pose; };
+    inline Pose get_pose_delta() { return pose_delta; };
+    inline Point get_position() { return Point(pose.x, pose.y); };
+    inline Point get_position_delta() { return Point(pose_delta.x, pose_delta.y); };
+    inline standard_radians get_heading() { return pose.theta; };
+    inline standard_radians get_heading_delta() { return pose_delta.theta; };
+    inline void set_pose(Pose new_pose) { 
+        pose_mutex.take();
+        pose = new_pose; 
+        pose_mutex.give();
+    };
 
-    inline Pose get_pose();
-    inline Pose get_pose_delta();
-    inline Point get_position();
-    inline Point get_position_delta();
-    inline standard_radians get_heading();
-    inline standard_radians get_heading_delta();
-    inline void set_pose(Pose new_pose);
-    inline void reset(Pose initial_pose);
-
+    void reset(Pose initial_pose); // declared in odom.cpp
     void update_odometry();
 
 private:

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pros/motors.h"
-#include "miku-api.h"
+#include "miku/pid.h"
+#include "miku/lut.h"
 #include <memory>
 
 namespace miku {
@@ -20,9 +20,9 @@ class AbstractMotor : public pros::Motor {
       double prev_ticks = 0;
       uint32_t last_time = 0;
 
-      double sma_filter_size = 2;
-      double median_filter_size = 3;
-      double accel_filter_size = 10;
+      double sma_filter_size = 3;
+      double median_filter_size = 1;
+      double accel_filter_size = 1;
       std::vector<double> prev_raw_velocities;
       std::vector<double> prev_filtered_velocities;
       std::vector<double> prev_accels;
@@ -39,7 +39,7 @@ protected:
 
 public:
     MotorController(PIDGains pid_gains, LookupTable voltage_lookup_table);
-    virtual void move_velocity(double velocity);
+    virtual void move_velocity(double velocity) = 0;
 };
 
 class Motor : public AbstractMotor, public MotorController {
@@ -76,7 +76,7 @@ void move(int voltage);
 void move_voltage(int32_t voltage);
 void tare_position(void) const;
 void set_brake_mode(pros::motor_brake_mode_e mode);
-double get_average_velocity();
+int get_highest_temperature() const;
 std::vector<int> get_temperature_all() const;
 
 };

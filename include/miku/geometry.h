@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <vector>
+#include <string>
+#include "fmt/core.h"
 
 enum AngleType {
     COMPASS,
@@ -158,6 +160,9 @@ struct Pose {
     }
     double distance_to(const Point& other) const {
         return std::hypot(other.x - x, other.y - y);
+    }
+    std::string to_string() const {
+        return fmt::format("x: {:.2f} y: {:.2f} θ: {:.2f}", x, y, (double)theta);
     }
 };
 

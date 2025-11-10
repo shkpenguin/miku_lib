@@ -10,11 +10,12 @@
 
 #include "api.h"
 
-#include "motor.h"
-#include "optical.h"
-#include "pneumatic.h"
-#include "distance.h"
-#include "chassis.h"
+#include "devices/chassis.h"
+#include "devices/controller.h"
+#include "devices/motor.h"
+#include "devices/pneumatic.h"
+#include "devices/distance.h"
+#include "devices/optical.h"
 
 #include "gif-pros/gifclass.hpp"
 #include "util.h"
@@ -22,7 +23,6 @@
 #include "system.h"
 
 #include "auton.h"
-#include "controller.h"
 #include "geometry.h"
 #include "lut.h"
 #include "main.h"

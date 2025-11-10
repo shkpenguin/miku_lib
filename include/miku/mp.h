@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <cmath>
-#include "config.h"
 
 #define MAX_RPM 600
 #define CIRC (WHEEL_DIAMETER * M_PI)

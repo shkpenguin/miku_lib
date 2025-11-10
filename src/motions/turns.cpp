@@ -1,8 +1,11 @@
-#include "motions.h"
+#include "miku/motions.h"
+#include "miku/devices/chassis.h"
+#include "config.h"
+#include "miku/util.h"
 
-TurnHeading::TurnHeading(double target, double timeout, TurnParams params)
+TurnHeading::TurnHeading(compass_degrees target, double timeout, TurnParams params)
     : target(target), timeout(timeout), params(params) {
-    Gains gains;
+    PIDGains gains;
     gains.kP = (params.kP > 0) ? params.kP : turn_gains.kP;
     gains.kI = (params.kI > 0) ? params.kI : turn_gains.kI;
     gains.kD = (params.kD > 0) ? params.kD : turn_gains.kD;
@@ -19,8 +22,8 @@ void TurnHeading::start() {
 }
 
 void TurnHeading::update() {
-    double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
-    double error = wrap_angle(target - current_deg, 360);      // error in degrees
+    compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
+    compass_degrees error = (target - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
         done = true;
@@ -29,7 +32,7 @@ void TurnHeading::update() {
 
     double output = turn_pid.update(error);
 
-    move_motors(output, -output);
+    Miku.set_voltages(output, -output);
 
     turn_small_exit.update(error);
     turn_large_exit.update(error);
@@ -54,9 +57,9 @@ void TurnPoint::start() {
 }
 
 void TurnPoint::update() {
-    double current_deg = get_pose({.degrees = true}).theta;  // convert to degrees
-    double target_deg = atan2(target.x - get_pose().x, target.y - get_pose().y) * (180 / M_PI);
-    double error = wrap_angle(target_deg - current_deg, 360);      // error in degrees
+    compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
+    compass_degrees target_deg = compass_degrees(atan2(target.x - Miku.get_pose().x, target.y - Miku.get_pose().y) * (180 / M_PI));
+    compass_degrees error = (target_deg - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
         done = true;
@@ -65,7 +68,7 @@ void TurnPoint::update() {
 
     double output = turn_pid.update(error);
 
-    move_motors(output, -output);
+    Miku.set_voltages(output, -output);
 
     turn_small_exit.update(error);
     turn_large_exit.update(error);

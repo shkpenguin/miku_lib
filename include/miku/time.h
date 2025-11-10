@@ -211,7 +211,7 @@ class Stopwatch {
          * Stopwatch stopwatch;
          * @endcode
          */
-        Stopwatch() = default;
+        Stopwatch();
         /**
          * @brief Get the time passed since the stopwatch was created or last reset
          *

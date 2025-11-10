@@ -1,4 +1,8 @@
-#include "motions.h"
+#include "miku/motions.h"
+#include "miku/util.h"
+#include "miku/devices/chassis.h"
+#include "system.h"
+#include "config.h"
 
 MovePose::MovePose(Point target, compass_degrees heading, double timeout, MovePoseParams params)
     : target(target), target_heading(standard_radians(heading)), timeout(timeout), params(params) {
@@ -15,12 +19,12 @@ void MovePose::start() {
 
 void MovePose::update() {
     
-    double drive_error = dist(target.x, target.y, get_robot_pose().x, get_robot_pose().y);
+    double drive_error = Miku.get_pose().distance_to(target);
 
-    standard_radians robot_heading = get_robot_pose().theta.wrap();
+    standard_radians robot_heading = Miku.get_pose().theta.wrap();
     if (params.reverse) robot_heading = (robot_heading + M_PI).wrap();
 
-    standard_radians angle_to_target = get_robot_pose().angle_to(target);
+    standard_radians angle_to_target = Miku.get_pose().angle_to(target);
     double gamma = (angle_to_target - robot_heading).wrap();
     double delta = (target_heading - angle_to_target).wrap();
 
@@ -47,9 +51,9 @@ void MovePose::update() {
     }
 
     if (params.reverse) {
-        miku.set_velocities(-r_vel, -l_vel);
+        Miku.set_velocities(-r_vel, -l_vel);
     } else {
-        miku.set_velocities(l_vel, r_vel);
+        Miku.set_velocities(l_vel, r_vel);
     }
 
     if(timer.is_done()) {
@@ -60,7 +64,7 @@ void MovePose::update() {
     if(drive_error < params.cutoff || drive_error < params.end_cutoff) {
         done = true;
 
-        auto settle_motion = std::make_shared<MovePoint>(
+        auto settle_motion = MovePoint(
             Point(target.x, target.y), 
             timer.get_time_left(),
             MovePointParams(
@@ -72,7 +76,7 @@ void MovePose::update() {
             )
         );
 
-        queue_after_current(settle_motion);
+        queue_after_current(&settle_motion);
 
         return;
     }

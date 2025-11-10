@@ -1,59 +1,48 @@
 #include "main.h"
 #include "auton.h"
-#include "miku-api.h"
-#include "system.h"
+#include "miku/miku-api.h"
+#include "fmt/core.h"
+#include <deque>
 #include <vector>
 
-pros::Task* autonomous_task = nullptr;
-pros::Task* intake_task = nullptr;
-pros::Task* controller_task = nullptr;
+std::deque<MotionPrimitive*> motion_queue;
+pros::Mutex queue_mutex;
+MotionPrimitive* current_motion = nullptr;
 
-std::vector<Auton> autons;
+void queue_motion(MotionPrimitive* motion) {
+    queue_mutex.take();
+    motion_queue.push_back(motion);
+    queue_mutex.give();
+}
 
-void init_autons() {
-    autons = {
-        Auton("Test", pre_test, test, Pose(0, 0, 0), test_paths),
-        Auton("Right Sawp", pre_right_sawp, right_sawp, Pose(6, -48, 90), right_sawp_paths),
-        Auton("Right 9 Ball", pre_right_9ball, right_9ball, Pose(8, -48, 30), right_9ball_paths),
-        Auton("Skills", pre_skills, skills, Pose(6, -48, 90), skills_paths)
-    };
+void queue_after_current(MotionPrimitive* motion) {
+    queue_mutex.take();
+    if (current_motion == nullptr) {
+        motion_queue.push_front(motion);
+    } else {
+        auto it = motion_queue.begin();
+        ++it; // skip current motion
+        motion_queue.insert(it, motion);
+    }
+    queue_mutex.give();
 }
 
 void initialize() {
 
     left_motors.tare_position();
     right_motors.tare_position();
-    intake.tare_position();
+    intake_top.tare_position();
+    intake_bottom.tare_position();
 
     optical.set_led_pwm(100);
     optical.set_integration_time(10);
-
-    master.set_text(0, 0, "IMU Calibrating");
 
     imu.reset();
 	while(imu.is_calibrating()) {
 		pros::delay(10);
 	}
 
-    init_autons();
-
-    master.set_text(0, 0, "              ");
-
-    selected_index = 1;
-
-    if (autons.empty()) return;
-    // display_selector();
-
-    Auton& selected_auton = autons[selected_index];
-    selected_auton.pre_auton();
-    miku.set_brake_mode(DEFAULT_AUTONOMOUS_BRAKE_MODE);
-    for(auto& path : selected_auton.paths) {
-        path.get().calculate_waypoints();
-    }
-
-    initialize_pose(selected_auton.start_pose);
-
-    controller_task = new pros::Task(display_controller);
+    master.clear();
 
 }
 
@@ -63,16 +52,45 @@ void autonomous() {
     #endif
     // intake_task = new pros::Task(intake_control);
 
-    pros::Task system_task(system_task);
+    while(true) {
 
-    #if LOGGING_ENABLED
-    pros::Task log_task = pros::Task([]() {
+        uint32_t prev_time = pros::millis();
+
         while (true) {
-            flush_logs();
-            pros::delay(1000);
+
+            Miku.update_odometry();
+
+            if (!current_motion) {
+                queue_mutex.take();
+                if (!motion_queue.empty()) {
+                    current_motion = motion_queue.front();
+                    motion_queue.pop_front();
+                    current_motion->start();
+                }
+                queue_mutex.give();
+            }
+
+            if (current_motion) {
+                bool done = current_motion->is_done();
+
+                for (auto& e : current_motion->events) {
+                    if (!e.triggered && e.condition()) {
+                        e.action();
+                        e.triggered = true;
+                    }
+                }
+
+                if (done) {
+                    current_motion = nullptr; // move to next motion next loop
+                } else {
+                    current_motion->update();
+                }
+            }
+
+            pros::Task::delay_until(&prev_time, DELTA_TIME); // 10 ms loop
         }
-    });
-    #endif
+
+    }
 
 }
 
@@ -129,14 +147,68 @@ void opcontrol() {
 
     // rumble_timer.resume();
     // if(autonomous_task != nullptr) autonomous_task->remove();
-    miku.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+    Miku.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
     static Gif gif("/usd/jiachenma.gif", lv_scr_act());
 
+    // display motor temps
+    master.display(0, []() {
+        return "top: " + std::to_string(int(intake_top.get_temperature())) + "C";
+    });
+    master.display(1, []() {
+        return "bottom: " + std::to_string(int(intake_bottom.get_temperature())) + "C";
+    });
+    master.display(2, []() {
+        int temp = std::max(left_motors.get_highest_temperature(), right_motors.get_highest_temperature());
+        return "drive: " + std::to_string(temp) + "C";
+    });
+
+    int intake_vel = 0;
+    bool l2_pressed = false;
+
     while (true) {
 
-        if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
+        master.update_display();
+
+        if(master.get_digital_new_press(DIGITAL_UP)) {
+            master.display(0, []() {
+                return "top: " + std::to_string(int(intake_top.get_temperature())) + "C";
+            });
+            master.display(1, []() {
+                return "bottom: " + std::to_string(int(intake_bottom.get_temperature())) + "C";
+            });
+            master.display(2, []() {
+                int temp = std::max(left_motors.get_highest_temperature(), right_motors.get_highest_temperature());
+                return "drive: " + std::to_string(temp) + "C";
+            });
+        }
+
+        if(master.get_digital_new_press(DIGITAL_DOWN)) {
+            master.display(0, []() {
+                return "top: " + std::to_string(int(intake_top.get_filtered_velocity())) + "rpm";
+            });
+            master.display(1, []() {
+                return "bottom: " + std::to_string(int(intake_bottom.get_filtered_velocity())) + "rpm";
+            });
+            master.display(2, [&]() {
+                return "target: " + std::to_string(intake_vel) + "rpm";
+            });
+        }
+
+        if(master.get_digital(DIGITAL_A)) intake_bottom.move_velocity(intake_vel);
+        else if(!master.get_digital(DIGITAL_R2)) intake_bottom.move_voltage(0);
+
+        if(master.get_digital(DIGITAL_LEFT) && master.get_digital_new_press(DIGITAL_RIGHT)) {
             driveModes.cycle_forward();
+            master.rumble("-");
+        }
+
+        if(master.get_digital_new_press(DIGITAL_LEFT)) {
+            intake_vel = clamp(intake_vel - 50, -700, 700);
+        }
+
+        if(master.get_digital_new_press(DIGITAL_RIGHT)) {
+            intake_vel = clamp(intake_vel + 50, -700, 700);
         }
 
         if(driveModes.get_value() == DriveMode::TANK) {
@@ -155,42 +227,39 @@ void opcontrol() {
             funny_tank(left_x, left_y, right_x, right_y);
         }
 
-        bool shift1 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
-        bool shift2 = master.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
+        bool shift1 = master.get_digital(DIGITAL_L1);
+        bool new_l2_pressed = master.get_digital(DIGITAL_L2);
 
-        if(!shift1 && !shift2) {
-            if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-                intake.move_voltage(12000);
-            }
-            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+        if(shift1) {
+            if(master.get_digital_new_press(DIGITAL_R1)) loader_piston.toggle();
+            if(master.get_digital_new_press(DIGITAL_L2)) descore_piston.toggle();
+        } else {
+            if(master.get_digital_new_press(DIGITAL_R1)) {
                 lock_piston.toggle();
+                if(lock_piston.get_value() == true) {
+                    master.set_rumble(true);
+                } else {
+                    master.set_rumble(false);
+                }
             }
-        }
-
-        else if(shift1) {
-            if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-                intake.move_voltage(-12000);
+            if(master.get_digital_new_press(DIGITAL_R2)) {
+                intake_bottom.move_voltage(12000);
+                if(!lock_piston.get_value() && !middle_piston.get_value()) intake_top.move_voltage(4000);
+                else intake_top.move_voltage(12000);
+            };
+            if(master.get_digital_new_press(DIGITAL_R2)) {
+                intake_top.move_voltage(-12000);
+                intake_bottom.move_voltage(-12000);
             }
-            if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
-                descore_piston.toggle();
-            }
+            if(new_l2_pressed != l2_pressed) middle_piston.toggle();
         }
 
-        if(shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
-            loader_piston.toggle();
+        if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_A)) {
+            intake_top.move_voltage(0);
+            intake_bottom.move_voltage(0);
         }
 
-        bool hood_toggle_pressed =
-        (shift2 && master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) ||
-        (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2) && master.get_digital(pros::E_CONTROLLER_DIGITAL_R2));
-
-        if((!loader_piston.get_value() || !hood_piston.get_value()) && (hood_toggle_pressed)) {
-            hood_piston.toggle();
-        }
-
-        if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-            intake.move_voltage(0);
-        }
+        l2_pressed = new_l2_pressed;
 
         pros::delay(10);
     }

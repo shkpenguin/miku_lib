@@ -2,22 +2,18 @@
 #include "pid.h"
 #include "api.h"
 
-PID::PID(PIDGains pid_gains, double windup_range = 0, bool sign_flip_reset = true, bool trapezoidal = true)
+PID::PID(PIDGains pid_gains, double windup_range, bool sign_flip_reset, bool trapezoidal)
     : pid_gains(pid_gains),
       windup_range(windup_range),
       sign_flip_reset(sign_flip_reset),
-      trapezoidal(trapezoidal),
-      use_lut(false) {};
+      trapezoidal(trapezoidal) {};
 PID::PID()
     : pid_gains(),
       windup_range(0),
       sign_flip_reset(true),
-      trapezoidal(true),
-      use_lut(false) {};
+      trapezoidal(true) {};
 
-double PID::update(const double input) {
-
-    const double error = target - input;
+double PID::update(const double error) {
 
     // calculate derivative
     const double derivative = error - prevError;
@@ -38,7 +34,6 @@ double PID::update(const double input) {
 
 PID& PID::operator=(const PID& other) {
     if (this != &other) {
-        use_lut = other.use_lut;
         pid_gains = other.pid_gains;
         integral = other.integral;
         prevError = other.prevError;

@@ -1,4 +1,5 @@
 #include "mp.h"
+#include "config.h"
 #include <cmath>
 #include <algorithm>
 

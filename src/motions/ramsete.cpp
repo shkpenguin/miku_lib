@@ -1,4 +1,7 @@
-#include "motions.h"
+#include "miku/motions.h"
+#include "system.h"
+#include "miku/devices/chassis.h"
+#include "config.h"
 
 Ramsete::Ramsete(std::vector<Waypoint> wps, double timeout, RamseteParams p)
 : waypoints(wps), timeout(timeout), params(p) {
@@ -21,7 +24,7 @@ void Ramsete::start() {
 }
 
 void Ramsete::update() {
-    Pose current = get_robot_pose();
+    Pose current = Miku.get_pose();
 
     double end_x = waypoints.back().x;
     double end_y = waypoints.back().y;
@@ -33,17 +36,17 @@ void Ramsete::update() {
     if (params.reverse) robot_h = fmod(robot_h + M_PI, 2 * M_PI);
 
     // Distance to end
-    double distance_to_end = dist(end_x, end_y, robot_x, robot_y);
+    double distance_to_end = current.distance_to(Point(end_x, end_y));
     if (distance_to_end < params.cutoff || distance_to_end < params.end_cutoff) {
         done = true;
         return;
     }
 
     // Update closest waypoint
-    double cutoff_dist = dist(robot_x, robot_y, waypoints[closest_waypoint].x, waypoints[closest_waypoint].y);
+    double cutoff_dist = current.distance_to(Point(waypoints[closest_waypoint].x, waypoints[closest_waypoint].y));
     while (closest_waypoint < (int)waypoints.size() - 2) {
-        double search_dist = dist(robot_x, robot_y, waypoints[closest_waypoint + 1].x,
-                                    waypoints[closest_waypoint + 1].y);
+        double search_dist = current.distance_to(Point(waypoints[closest_waypoint + 1].x,
+                                    waypoints[closest_waypoint + 1].y));
         if (search_dist >= cutoff_dist) break;
         closest_waypoint++;
         cutoff_dist = search_dist;
@@ -88,18 +91,18 @@ void Ramsete::update() {
         l_vel *= MAX_RPM / max_rpm;
     }
 
-    miku.set_velocities(l_vel, r_vel);
+    Miku.set_velocities(l_vel, r_vel);
 
     if(drive_small_exit.get_exit() || drive_large_exit.get_exit() || timer.is_done()) {
         done = true;
 
         // Schedule a MovePoint after finishing
-        auto next_motion = std::make_shared<MovePoint>(
+        auto next_motion = MovePoint(
             Point{end_x, end_y},
             timer.get_time_left(),
             MovePointParams(params.reverse, params.cutoff, params.max_vel * 120, params.min_vel * 120)
         );
-        queue_after_current(next_motion);
+        queue_after_current(&next_motion);
     }
 }
 

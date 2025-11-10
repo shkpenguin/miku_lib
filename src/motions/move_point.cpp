@@ -1,4 +1,5 @@
-#include "motions.h"
+#include "miku/motions.h"
+#include "miku/util.h"
 #include "config.h"
 
 MovePoint::MovePoint(Point target, double timeout, MovePointParams params)
@@ -26,7 +27,7 @@ void MovePoint::start() {
 }
 
 void MovePoint::update() {
-    Point current = miku.get_position();
+    Point current = Miku.get_position();
 
     // Calculate angle error in compass frame (0 = +Y)
     double dx = target.x - current.x;
@@ -34,7 +35,7 @@ void MovePoint::update() {
     compass_degrees angle_to_point = compass_degrees(miku::atan2(dx, dy));
     if (params.reverse) angle_to_point = (angle_to_point + 180.0).wrap();
 
-    double current_deg = compass_degrees(miku.get_heading()).wrap();
+    double current_deg = compass_degrees(Miku.get_heading()).wrap();
     double turn_error = (angle_to_point - current_deg).wrap();
     // Distance error
     double drive_error = current.distance_to(target);
@@ -44,7 +45,7 @@ void MovePoint::update() {
     }
 
     standard_radians angle_to_target = miku::atan2(dy, dx);
-    standard_radians angle_error = (angle_to_target - miku.get_pose().theta).wrap();
+    standard_radians angle_error = (angle_to_target - Miku.get_pose().theta).wrap();
 
     drive_error *= std::cos(angle_error);  // Scale error by heading alignment
 
@@ -64,7 +65,7 @@ void MovePoint::update() {
     double right_out = drive_out - turn_out;
 
     // Final motor outputs
-    miku.set_velocities(left_out, right_out);
+    Miku.set_velocities(left_out, right_out);
 
     if(drive_patience_exit.get_exit() || timer.is_done()) {
         done = true;

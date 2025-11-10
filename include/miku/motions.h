@@ -1,7 +1,10 @@
 #pragma once
 
 #include <vector>
-#include "miku-api.h"
+#include "miku/time.h"
+#include "miku/geometry.h"
+#include "miku/pid.h"
+#include "miku/mp.h"
 
 enum MotionType {
     TURN_HEADING,
@@ -37,17 +40,6 @@ struct MotionPrimitive {
         events.push_back(event);
     }
 };
-
-// Motion control functions
-void wait_until_done();
-void wait_until_within(Point target, double threshold);
-void wait_until_within(double target_angle, double threshold);
-
-void request_motion_start();
-void end_motion();
-void cancel_motion();
-void cancel_all_motions();
-bool get_motion_running();
 
 struct TurnParams {
     bool reverse = false;
@@ -167,7 +159,7 @@ struct SwingPoint : MotionPrimitive {
 
     bool done = false;
 
-    SwingPoint::SwingPoint(Point target, double timeout, SwingParams params);
+    SwingPoint(Point target, double timeout, SwingParams params);
 
     void start() override;
     void update() override;
@@ -185,7 +177,7 @@ struct MovePoint : MotionPrimitive {
 
     bool done = false;
 
-    MovePoint::MovePoint(Point target, double timeout, MovePointParams params);
+    MovePoint(Point target, double timeout, MovePointParams params);
 
     void start() override;
     void update() override;
@@ -243,7 +235,6 @@ struct Ramsete : MotionPrimitive {
     std::vector<Waypoint> waypoints;
     double timeout;
     RamseteParams params;
-    double zeta, b, time_multi;
 
     Timer timer;
     bool done = false;

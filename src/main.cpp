@@ -149,7 +149,7 @@ void opcontrol() {
     // if(autonomous_task != nullptr) autonomous_task->remove();
     Miku.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
-    static Gif gif("/usd/jiachenma.gif", lv_scr_act());
+    // static Gif gif("/usd/jiachenma.gif", lv_scr_act());
 
     // display motor temps
     master.display(0, []() {
@@ -232,7 +232,11 @@ void opcontrol() {
 
         if(shift1) {
             if(master.get_digital_new_press(DIGITAL_R1)) loader_piston.toggle();
-            if(master.get_digital_new_press(DIGITAL_L2)) descore_piston.toggle();
+            if(new_l2_pressed != l2_pressed) middle_piston.toggle();
+            if(master.get_digital_new_press(DIGITAL_R2)) {
+                intake_top.move_voltage(-12000);
+                intake_bottom.move_voltage(-12000);
+            }
         } else {
             if(master.get_digital_new_press(DIGITAL_R1)) {
                 lock_piston.toggle();
@@ -246,12 +250,8 @@ void opcontrol() {
                 intake_bottom.move_voltage(12000);
                 if(!lock_piston.get_value() && !middle_piston.get_value()) intake_top.move_voltage(4000);
                 else intake_top.move_voltage(12000);
-            };
-            if(master.get_digital_new_press(DIGITAL_R2)) {
-                intake_top.move_voltage(-12000);
-                intake_bottom.move_voltage(-12000);
             }
-            if(new_l2_pressed != l2_pressed) middle_piston.toggle();
+            if(master.get_digital_new_press(DIGITAL_L2)) descore_piston.toggle();            
         }
 
         if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_A)) {

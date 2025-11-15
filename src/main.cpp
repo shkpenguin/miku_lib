@@ -133,7 +133,7 @@ void arcade(int throttle, int turn) {
 }
 
 List<DriveMode> driveModes = {
-    DriveMode::TANK,
+    DriveMode::FUNNY_TANK,
     DriveMode::ARCADE,
 };
 

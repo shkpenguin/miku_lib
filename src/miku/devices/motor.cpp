@@ -95,8 +95,6 @@ miku::Motor::Motor(std::int8_t port, pros::v5::MotorGears gearset,
       MotorController(pid_gains, voltage_lookup_table) {}
 
 void miku::Motor::move_velocity(double velocity) {
-    velocity_control_enabled = true;
-
     double ff = voltage_lut.get_value(velocity);
     double error = velocity - get_filtered_velocity();
     double pid_output = velocity_pid.update(error);
@@ -117,8 +115,6 @@ miku::MotorGroup::MotorGroup(const std::initializer_list<std::int8_t> ports,
 }
 
 void miku::MotorGroup::move_velocity(double velocity) {
-    velocity_control_enabled = true;
-
     double ff = voltage_lut.get_value(velocity);
     double error = velocity - get_average_velocity();
     double pid_output = velocity_pid.update(error);

@@ -1,5 +1,5 @@
 #include "main.h"
-#include "auton.h"
+#include "routes.h"
 #include "miku/miku-api.h"
 #include "fmt/core.h"
 #include <deque>
@@ -46,50 +46,66 @@ void initialize() {
 
 }
 
-void autonomous() { 
-    #if LOGGING_ENABLED
-    file.open("log.txt");
-    #endif
-    // intake_task = new pros::Task(intake_control);
+int selected_idx = 0;
+std::vector<Route> routes = {
+    Route("test route", test)
+};
+
+void autonomous() {
+
+    Miku.reset({24, -48, M_PI_2});
+    initialize_particles_point({24, -48});
+
+    routes[selected_idx].queue();
+    master.set_text(0, "queuelen: " + std::to_string(motion_queue.size()));
+    master.display(1, []() {
+        Point current = Miku.get_position();
+        Point target = {24, -24};
+        double dx = target.x - current.x;
+        double dy = target.y - current.y;
+        return fmt::format("scale: {:.2f}", (miku::atan2(dy, dx) - Miku.get_pose().theta).wrap());
+    });
+    master.display(2, []() {
+        return Miku.get_pose().to_string();
+    });
 
     while(true) {
 
         uint32_t prev_time = pros::millis();
 
-        while (true) {
+        master.update_display();
 
-            Miku.update_odometry();
+        Miku.update_odometry();
 
-            if (!current_motion) {
-                queue_mutex.take();
-                if (!motion_queue.empty()) {
-                    current_motion = motion_queue.front();
-                    motion_queue.pop_front();
-                    current_motion->start();
-                }
-                queue_mutex.give();
+        if (!current_motion) {
+            queue_mutex.take();
+            if (!motion_queue.empty()) {
+                current_motion = motion_queue.front();
+                motion_queue.pop_front();
+                current_motion->start();
             }
-
-            if (current_motion) {
-                bool done = current_motion->is_done();
-
-                for (auto& e : current_motion->events) {
-                    if (!e.triggered && e.condition()) {
-                        e.action();
-                        e.triggered = true;
-                    }
-                }
-
-                if (done) {
-                    current_motion = nullptr; // move to next motion next loop
-                } else {
-                    current_motion->update();
-                }
-            }
-
-            pros::Task::delay_until(&prev_time, DELTA_TIME); // 10 ms loop
+            queue_mutex.give();
         }
 
+        if (current_motion) {
+            bool done = current_motion->is_done();
+
+            for (auto& e : current_motion->events) {
+                if (!e.triggered && e.condition()) {
+                    e.action();
+                    e.triggered = true;
+                }
+            }
+
+            if (done) {
+                current_motion = nullptr; // move to next motion next loop
+                master.rumble(".");
+            } else {
+                current_motion->update();
+            }
+        }
+
+        pros::Task::delay_until(&prev_time, DELTA_TIME); // 10 ms loop
     }
 
 }
@@ -106,8 +122,7 @@ int curve(int pos) {
 }
 
 void tank(int left, int right) {
-    left_motors.move(left);
-    right_motors.move(right);
+    Miku.move(left, right);
 }
 
 void funny_tank(int left_x, int left_y, int right_x, int right_y) {
@@ -116,11 +131,9 @@ void funny_tank(int left_x, int left_y, int right_x, int right_y) {
         left_x = (fabs(left_x) - 50) * 127 / 77;
         right_x = (fabs(right_x) - 50) * 127 / 77;
         double speed = (fabs(left_x) + fabs(right_x)) / 2.0 * sign;
-        left_motors.move(speed);
-        right_motors.move(speed);
+        Miku.move(speed, speed);
     } else {
-        left_motors.move(left_y);
-        right_motors.move(right_y);
+        Miku.move(left_y, right_y);
     }
 }
 
@@ -128,8 +141,7 @@ void arcade(int throttle, int turn) {
     int left = throttle + turn;
     int right = throttle - turn;
 
-    left_motors.move(left);
-    right_motors.move(right);
+    Miku.move(left, right);
 }
 
 List<DriveMode> driveModes = {
@@ -163,7 +175,7 @@ void opcontrol() {
         return "drive: " + std::to_string(temp) + "C";
     });
 
-    int intake_vel = 0;
+    int drive_vel = 0;
     bool l2_pressed = false;
 
     while (true) {
@@ -185,18 +197,15 @@ void opcontrol() {
 
         if(master.get_digital_new_press(DIGITAL_DOWN)) {
             master.display(0, []() {
-                return "top: " + std::to_string(int(intake_top.get_filtered_velocity())) + "rpm";
+                return "lvel: " + std::to_string(int(left_motors.get_average_velocity())) + "rpm";
             });
             master.display(1, []() {
-                return "bottom: " + std::to_string(int(intake_bottom.get_filtered_velocity())) + "rpm";
+                return "rvel: " + std::to_string(int(right_motors.get_average_velocity())) + "rpm";
             });
             master.display(2, [&]() {
-                return "target: " + std::to_string(intake_vel) + "rpm";
+                return "target: " + std::to_string(drive_vel) + "rpm";
             });
         }
-
-        if(master.get_digital(DIGITAL_A)) intake_bottom.move_velocity(intake_vel);
-        else if(!master.get_digital(DIGITAL_R2)) intake_bottom.move_voltage(0);
 
         if(master.get_digital(DIGITAL_LEFT) && master.get_digital_new_press(DIGITAL_RIGHT)) {
             driveModes.cycle_forward();
@@ -204,11 +213,11 @@ void opcontrol() {
         }
 
         if(master.get_digital_new_press(DIGITAL_LEFT)) {
-            intake_vel = clamp(intake_vel - 50, -700, 700);
+            drive_vel = clamp(drive_vel - 50, -700, 700);
         }
 
         if(master.get_digital_new_press(DIGITAL_RIGHT)) {
-            intake_vel = clamp(intake_vel + 50, -700, 700);
+            drive_vel = clamp(drive_vel + 50, -700, 700);
         }
 
         if(driveModes.get_value() == DriveMode::TANK) {

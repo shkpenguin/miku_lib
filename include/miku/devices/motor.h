@@ -32,7 +32,6 @@ class AbstractMotor : public pros::Motor {
 
 class MotorController {
 protected:
-    bool velocity_control_enabled = false;
     PID velocity_pid;
     LookupTable voltage_lut;
     double max_voltage = 12000;

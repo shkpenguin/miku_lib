@@ -5,9 +5,9 @@
 
 Ramsete::Ramsete(std::vector<Waypoint> wps, double timeout, RamseteParams p)
 : waypoints(wps), timeout(timeout), params(p) {
-if(p.zeta < 0) zeta = 0.7;
-if(p.b < 0) b = 0.003;
-if(p.time_multi < 0) time_multi = 1.2;
+    if(p.zeta < 0) zeta = 0.7;
+    if(p.b < 0) b = 0.003;
+    if(p.time_multi < 0) time_multi = 1.2;
 }
     
 void Ramsete::start() {
@@ -91,7 +91,7 @@ void Ramsete::update() {
         l_vel *= MAX_RPM / max_rpm;
     }
 
-    Miku.set_velocities(l_vel, r_vel);
+    Miku.move_velocity(l_vel, r_vel);
 
     if(drive_small_exit.get_exit() || drive_large_exit.get_exit() || timer.is_done()) {
         done = true;

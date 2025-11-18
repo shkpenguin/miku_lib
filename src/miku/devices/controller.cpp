@@ -60,7 +60,7 @@ void miku::Controller::update_display() {
         auto it = active_lines.begin();
         std::advance(it, display_update_count);
         int line = *it;
-        if(display_functions[line] != nullptr) {
+        if(display_functions[line]) {
             std::string text = display_functions[line]() + "          ";
             pros::Controller::set_text(line, 0, text.c_str());
         }

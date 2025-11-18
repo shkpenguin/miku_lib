@@ -5,6 +5,7 @@
 #include "miku/geometry.h"
 #include "miku/pid.h"
 #include "miku/mp.h"
+#include "config.h"
 
 enum MotionType {
     TURN_HEADING,
@@ -108,7 +109,7 @@ struct TurnHeading : MotionPrimitive {
 
     bool done = false;
 
-    TurnHeading(compass_degrees target, double timeout, TurnParams params);
+    TurnHeading(compass_degrees target, double timeout, TurnParams params = TurnParams());
 
     void start() override;
     void update() override;
@@ -125,7 +126,7 @@ struct TurnPoint : MotionPrimitive {
 
     bool done = false;
 
-    TurnPoint(Point target, double timeout, TurnParams params);
+    TurnPoint(Point target, double timeout, TurnParams params = TurnParams());
   
     void start() override;
     void update() override;
@@ -142,7 +143,7 @@ struct SwingHeading : MotionPrimitive {
 
     bool done = false;
 
-    SwingHeading(compass_degrees target, double timeout, SwingParams params);
+    SwingHeading(compass_degrees target, double timeout, SwingParams params = SwingParams());
     void start() override;
     void update() override;
     bool is_done() override;
@@ -159,7 +160,7 @@ struct SwingPoint : MotionPrimitive {
 
     bool done = false;
 
-    SwingPoint(Point target, double timeout, SwingParams params);
+    SwingPoint(Point target, double timeout, SwingParams params = SwingParams());
 
     void start() override;
     void update() override;
@@ -177,7 +178,7 @@ struct MovePoint : MotionPrimitive {
 
     bool done = false;
 
-    MovePoint(Point target, double timeout, MovePointParams params);
+    MovePoint(Point target, double timeout, MovePointParams params = MovePointParams());
 
     void start() override;
     void update() override;
@@ -195,7 +196,7 @@ struct MovePose : MotionPrimitive {
 
     bool done = false;
 
-    MovePose(Point target, compass_degrees heading, double timeout, MovePoseParams params);
+    MovePose(Point target, compass_degrees heading, double timeout, MovePoseParams params = MovePoseParams());
 
     void start() override;
     void update() override;
@@ -217,6 +218,7 @@ struct MoveTime : MotionPrimitive {
         done = false;
         timer.set(duration);
         timer.reset();
+        Miku.move_voltage(left_speed, right_speed);
     }
 
     void update() override {
@@ -256,7 +258,7 @@ struct Ramsete : MotionPrimitive {
     double time_passed = 0;
     double time_ahead = 0;
 
-    Ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams params);
+    Ramsete(std::vector<Waypoint> waypoints, double timeout, RamseteParams params = RamseteParams());
 
     void start() override;
     void update() override;

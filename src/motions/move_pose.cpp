@@ -51,9 +51,9 @@ void MovePose::update() {
     }
 
     if (params.reverse) {
-        Miku.set_velocities(-r_vel, -l_vel);
+        Miku.move_velocity(-r_vel, -l_vel);
     } else {
-        Miku.set_velocities(l_vel, r_vel);
+        Miku.move_velocity(l_vel, r_vel);
     }
 
     if(timer.is_done()) {

@@ -22,7 +22,7 @@
 #include "config.h"
 #include "system.h"
 
-#include "auton.h"
+#include "routes.h"
 #include "geometry.h"
 #include "lut.h"
 #include "main.h"

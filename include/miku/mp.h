@@ -3,7 +3,7 @@
 #include <vector>
 #include <cmath>
 
-#define MAX_RPM 600
+#define MAX_RPM 660
 #define CIRC (WHEEL_DIAMETER * M_PI)
 
 struct Waypoint {

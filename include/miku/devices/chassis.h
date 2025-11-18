@@ -15,11 +15,15 @@ public:
     Chassis(std::shared_ptr<MotorGroup> left, std::shared_ptr<MotorGroup> right)
         : left_motors(left), right_motors(right) {}
 
-    void set_voltages(double left_speed, double right_speed) {
+    void move(double left_speed, double right_speed) {
+        left_motors->move(left_speed);
+        right_motors->move(right_speed);
+    }
+    void move_voltage(double left_speed, double right_speed) {
         left_motors->move_voltage(left_speed);
         right_motors->move_voltage(right_speed);
     }
-    void set_velocities(double left_velocity, double right_velocity) {
+    void move_velocity(double left_velocity, double right_velocity) {
         left_motors->move_velocity(left_velocity);
         right_motors->move_velocity(right_velocity);
     }
@@ -41,6 +45,17 @@ public:
     inline void set_pose(Pose new_pose) { 
         pose_mutex.take();
         pose = new_pose; 
+        pose_mutex.give();
+    };
+    inline void set_position(Point new_position) { 
+        pose_mutex.take();
+        pose.x = new_position.x; 
+        pose.y = new_position.y; 
+        pose_mutex.give();
+    };
+    inline void set_heading(standard_radians new_heading) { 
+        pose_mutex.take();
+        pose.theta = new_heading; 
         pose_mutex.give();
     };
 

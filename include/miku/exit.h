@@ -26,29 +26,53 @@ struct RangeExit {
 };
 
 struct PatienceExit {
-    double total_deviation = 0;
-    double max_deviation = 0;
-    double patience = 0;
-    double max_patience = 0;
+    double stored_value = 0;          // last reference value
+    double absolute_min_delta = 0;    // minimum improvement to reset patience
+    int patience = 0;                 // current patience count
+    int max_patience = 0;             // max patience before exit
+    bool positive_improvement = true; // whether improvement means increasing or decreasing value
+    int min_threshold = 0;            // minimum absolute value to consider for patience
     bool done = false;
-    PatienceExit(double max_deviation, double max_patience)
-        : max_deviation(max_deviation), max_patience(max_patience) {};
 
-    bool get_exit() { return done; }
-    bool update(const double input) {
-        total_deviation += input;
-        if (total_deviation >= max_deviation) {
-            total_deviation = 0;
-            patience += 1;
-        }
-        if (patience >= max_patience) done = true;
-        return done;
-    };
+    // constructor
+    PatienceExit(int max_patience, double min_delta, bool positive_improvement = true, int min_threshold = 0)
+        : max_patience(max_patience),
+          absolute_min_delta(std::abs(min_delta)),
+          positive_improvement(positive_improvement),
+          min_threshold(min_threshold) {
+        reset();
+    }
+
+    // reset state
     void reset() {
-        total_deviation = 0;
-        max_deviation = 0;
         patience = 0;
         done = false;
+        if (positive_improvement) {
+            stored_value = -1e9;
+        } else {
+            stored_value = 1e9;
+        }
     }
+
+    // call every loop with current measurement
+    void update(double value) {
+        if (done) return;
+        if(fabs(value) > min_threshold) return;
+
+        double delta = value - stored_value;
+        bool improved = (positive_improvement && delta > absolute_min_delta)
+                        || (!positive_improvement && delta < -absolute_min_delta);
+
+        if (improved) {
+            patience = 0;
+            stored_value = value;
+        } else {
+            patience++;
+        }
+
+        if (patience >= max_patience) done = true;
+    }
+
+    bool get_exit() const { return done; }
 
 };

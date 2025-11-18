@@ -1,14 +1,14 @@
 #define NUM_PARTICLES 500
 
 #include "api.h"
-#include "Miku-api.h"
+#include "miku/miku-api.h"
 
 enum DistanceError {
     NOT_IN_FIELD = -1,
     BAD_INTERSECT = -2
 };
 
-std::vector<std::reference_wrapper<miku::Distance>> sensors = {std::ref(front_distance), std::ref(back_distance), std::ref(left_distance), std::ref(right_distance)};
+std::vector<std::reference_wrapper<miku::Distance>> sensors = {std::ref(back_distance), std::ref(left_distance), std::ref(right_distance)};
 
 inline void set_all_sensors(bool enabled) {
     for(auto sensor : sensors) {
@@ -149,18 +149,12 @@ Point get_position_estimate() {
     return Point(x, y);
 }
 
-void initialize_pose(Pose robot_pose) {
-
-    Miku.reset(robot_pose);
+void initialize_particles_point(Point center) {
 
     for(int i = 0; i < NUM_PARTICLES; ++i) {
-        particles[i].position = Point(robot_pose.x, robot_pose.y);
+        particles[i].position = center;
         particles[i].weight = 1.0 / NUM_PARTICLES;
     }
-
-    #if LOGGING_ENABLED
-    log_mcl();
-    #endif
 
 }
 
@@ -209,7 +203,7 @@ void update_particles() {
     // max error check
     for(size_t i = 0; i < sensors.size(); ++i) {
         double expected = get_expected_reading(
-            Point(Miku.get_pose().x, Miku.get_pose().y), 
+            Miku.get_position(), 
             sensors[i].get().offset_x, 
             sensors[i].get().offset_y, 
             cos_theta, 
@@ -285,10 +279,6 @@ void update_particles() {
         }
     }
 
-    #if LOGGING_ENABLED
-    log_mcl();
-    #endif
-
 }
 
 static std::uniform_real_distribution<double> sampling_dist;
@@ -315,9 +305,5 @@ void resample_particles() {
         p.weight = 1.0 / NUM_PARTICLES;
     }
     particles = newParticles;
-
-    #if LOGGING_ENABLED
-    log_mcl();
-    #endif
 
 }

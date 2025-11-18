@@ -3,6 +3,7 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#define FMT_HEADER_ONLY
 #include "fmt/core.h"
 
 enum AngleType {
@@ -20,18 +21,19 @@ struct AngleTemplate {
     double value = 0.0;
 
     AngleTemplate(double value = 0.0) : value(value) {}
+
     template<AngleUnit OtherU, AngleType OtherT>
     AngleTemplate(const AngleTemplate<OtherU, OtherT>& other) {
-        if constexpr (OtherT == COMPASS) {
-            *this = other.standard();
-        } else {
-            value = other.value;
-        }
-        if constexpr (U == DEGREES && OtherU == RADIANS) {
-            value = value * 180.0 / M_PI;
-        } else if constexpr (U == RADIANS && OtherU == DEGREES) {
-            value = value * M_PI / 180.0;
-        }
+        double tmp = other.value;
+
+        if constexpr (OtherU == DEGREES) tmp = tmp * M_PI / 180.0;
+        if constexpr (OtherT == COMPASS) tmp = M_PI / 2.0 - tmp;  // compass → standard
+
+        if constexpr (T == COMPASS) tmp = M_PI / 2.0 - tmp;        // standard → compass
+
+        if constexpr (U == DEGREES) tmp = tmp * 180.0 / M_PI;
+
+        value = tmp;
     }
     operator double() const { return value; }
     AngleTemplate operator+(const AngleTemplate& other) const {
@@ -89,11 +91,11 @@ struct AngleTemplate {
     };
     template<AngleUnit V = U>
     inline constexpr std::enable_if_t<V == DEGREES, AngleTemplate<RADIANS, T>> radians() const {
-        return AngleTemplate<RADIANS, T>(norm(value * M_PI / 180.0));
+        return AngleTemplate<RADIANS, T>(value * M_PI / 180.0);
     };
     template<AngleUnit V = U>
     inline constexpr std::enable_if_t<V == RADIANS, AngleTemplate<DEGREES, T>> degrees() const {
-        return AngleTemplate<DEGREES, T>(norm(value * 180.0 / M_PI));
+        return AngleTemplate<DEGREES, T>(value * 180.0 / M_PI);
     };
     // wrap to [-180, 180) for degrees or [-pi, pi) for radians
     inline double wrap() const {
@@ -162,7 +164,7 @@ struct Pose {
         return std::hypot(other.x - x, other.y - y);
     }
     std::string to_string() const {
-        return fmt::format("x: {:.2f} y: {:.2f} θ: {:.2f}", x, y, (double)theta);
+        return fmt::format("{:.2f} {:.2f} @{:.2f}", x, y, double(compass_degrees(theta).wrap()));
     }
 };
 

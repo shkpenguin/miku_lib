@@ -47,8 +47,8 @@ void miku::Chassis::update_odometry() {
     prev_right_raw = right_raw;
     prev_theta_raw = theta_raw;
 
-    pose_delta.x = local_y * sin(double(avg_heading));
-    pose_delta.y = local_y * cos(double(avg_heading));
+    pose_delta.x = local_y * cos(double(avg_heading));
+    pose_delta.y = local_y * sin(double(avg_heading));
     pose_delta.theta = theta_delta;
 
     pose.x += pose_delta.x;

@@ -124,7 +124,7 @@ void BezierPath::calculate_waypoints() {
             point.theta = std::atan2(derivatives[3], derivatives[2]);
 
             double linvel = (1 - t / (M_PI / 2)) * P[1].velocity + (t / (M_PI / 2)) * P[2].velocity;
-            double in_per_sec = linvel * 0.01 * MAX_RPM / 60 * GEAR_RATIO * CIRC;
+            double in_per_sec = linvel * 0.01 * MAX_VEL;
 
             double curvature = 0, rad_per_sec = 0;
             if (derivatives[2] != 0 || derivatives[3] != 0) {
@@ -168,5 +168,5 @@ void BezierPath::calculate_waypoints() {
         }
     }
 
-    waypoints = {_waypoints};
+    waypoints = _waypoints;
 }

@@ -65,15 +65,12 @@ miku::Pneumatic descore_piston('D');
 miku::Optical optical(16);
 
 PIDGains turn_gains(320.0, 0.0, 3000.0);
-PIDGains drive_gains(200.0, 0.0, 0.0);
+PIDGains drive_gains(500.0, 0.0, 0.0);
 
-miku::Distance back_distance(9, -4.5, -5.0, Orientation::BACK);
-miku::Distance left_distance(4, -5.0, -4.75, Orientation::LEFT);
-miku::Distance right_distance(8, 5.0, -4.75, Orientation::RIGHT);
+miku::Distance back_distance(20, -4.5, -5.0, Orientation::BACK);
+miku::Distance left_distance(19, -5.0, -4.75, Orientation::LEFT);
+miku::Distance right_distance(5, 5.0, -4.75, Orientation::RIGHT);
 // miku::Distance front_distance(6, -6.5, 8.25, Orientation::FRONT);
 
 PatienceExit drive_patience_exit(5, 1, false, 5.0);
 PatienceExit turn_patience_exit(5, 1, false, 5.0);
-
-RangeExit turn_small_exit(1.0, 100);
-RangeExit turn_large_exit(3.0, 500);

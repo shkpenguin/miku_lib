@@ -14,8 +14,6 @@ void Ramsete::start() {
     done = false;
     timer.set(timeout);
     timer.reset();
-    drive_small_exit.reset();
-    drive_large_exit.reset();
 
     current_waypoint = 0;
     closest_waypoint = 0;
@@ -82,27 +80,33 @@ void Ramsete::update() {
     double l_vel = v - w * TRACK_WIDTH / 2; // in/s
     double r_vel = v + w * TRACK_WIDTH / 2; // in/s
 
-    double l_rpm = (l_vel / CIRC) * 60.0 * GEAR_RATIO;
-    double r_rpm = (r_vel / CIRC) * 60.0 * GEAR_RATIO;
-    
-    double max_rpm = std::max(std::abs(r_rpm), std::abs(l_rpm));
-    if (max_rpm > MAX_RPM) {
-        r_vel *= MAX_RPM / max_rpm;
-        l_vel *= MAX_RPM / max_rpm;
-    }
+    double l_rpm = (l_vel * 60.0) / (CIRC * GEAR_RATIO);
+    double r_rpm = (r_vel * 60.0) / (CIRC * GEAR_RATIO);
 
-    Miku.move_velocity(l_vel, r_vel);
+    Miku.move_velocity(l_rpm, r_rpm);
 
-    if(drive_small_exit.get_exit() || drive_large_exit.get_exit() || timer.is_done()) {
+    if(timer.is_done() || time_passed >= end_time) {
+        auto settle_motion = new MovePoint(
+            Point(end_x, end_y),
+            timer.get_time_left(),
+            MovePointParams{
+                params.reverse,
+                -1.0,
+                12000.0,
+                1000.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0,
+                -1.0
+            }
+        );
+
+        if(!done) queue_after_current(settle_motion);
+        Miku.stop();
         done = true;
 
-        // Schedule a MovePoint after finishing
-        auto next_motion = MovePoint(
-            Point{end_x, end_y},
-            timer.get_time_left(),
-            MovePointParams(params.reverse, params.cutoff, params.max_vel * 120, params.min_vel * 120)
-        );
-        queue_after_current(&next_motion);
     }
 }
 

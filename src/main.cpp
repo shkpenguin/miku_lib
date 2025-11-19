@@ -5,6 +5,8 @@
 #include <deque>
 #include <vector>
 
+pros::Task* autonomous_system_task = nullptr;
+
 std::deque<MotionPrimitive*> motion_queue;
 pros::Mutex queue_mutex;
 MotionPrimitive* current_motion = nullptr;
@@ -18,14 +20,17 @@ void queue_motion(MotionPrimitive* motion) {
 void queue_after_current(MotionPrimitive* motion) {
     queue_mutex.take();
     if (current_motion == nullptr) {
-        motion_queue.push_front(motion);
+        motion_queue.push_back(motion);
     } else {
-        auto it = motion_queue.begin();
-        ++it; // skip current motion
-        motion_queue.insert(it, motion);
+        motion_queue.insert(motion_queue.begin(), motion);
     }
     queue_mutex.give();
 }
+
+int selected_idx = 0;
+std::vector<Route> routes = {
+    Route("test route", test, test_paths)
+};
 
 void initialize() {
 
@@ -37,6 +42,10 @@ void initialize() {
     optical.set_led_pwm(100);
     optical.set_integration_time(10);
 
+    for(auto& path : routes[selected_idx].paths) {
+        path.get().calculate_waypoints();
+    }
+
     imu.reset();
 	while(imu.is_calibrating()) {
 		pros::delay(10);
@@ -45,11 +54,6 @@ void initialize() {
     master.clear();
 
 }
-
-int selected_idx = 0;
-std::vector<Route> routes = {
-    Route("test route", test)
-};
 
 void autonomous() {
 
@@ -63,33 +67,38 @@ void autonomous() {
         Point target = {24, -24};
         double dx = target.x - current.x;
         double dy = target.y - current.y;
-        return fmt::format("scale: {:.2f}", (miku::atan2(dy, dx) - Miku.get_pose().theta).wrap());
+        return fmt::format("angle: {:.2f}", (compass_degrees(miku::atan2(dy, dx)) - compass_degrees(Miku.get_heading())).wrap());
     });
     master.display(2, []() {
         return Miku.get_pose().to_string();
     });
-
-    while(true) {
-
+    autonomous_system_task = new pros::Task([]() {
+    while (true) {
         uint32_t prev_time = pros::millis();
 
         master.update_display();
-
         Miku.update_odometry();
 
-        if (!current_motion) {
+        // If no motion is running, start the next one
+        if (current_motion == nullptr) {
             queue_mutex.take();
             if (!motion_queue.empty()) {
                 current_motion = motion_queue.front();
                 motion_queue.pop_front();
+                queue_mutex.give();
+
                 current_motion->start();
             }
-            queue_mutex.give();
+            else {
+                queue_mutex.give();
+            }
         }
 
+        // Update running motion
         if (current_motion) {
             bool done = current_motion->is_done();
 
+            // Trigger motion events
             for (auto& e : current_motion->events) {
                 if (!e.triggered && e.condition()) {
                     e.action();
@@ -98,15 +107,17 @@ void autonomous() {
             }
 
             if (done) {
-                current_motion = nullptr; // move to next motion next loop
+                current_motion = nullptr;
                 master.rumble(".");
-            } else {
+            }
+            else {
                 current_motion->update();
             }
         }
 
-        pros::Task::delay_until(&prev_time, DELTA_TIME); // 10 ms loop
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
     }
+    });
 
 }
 
@@ -151,14 +162,11 @@ List<DriveMode> driveModes = {
 
 void opcontrol() {
 
-    // autonomous();
-
     // /*
 
     optical.set_led_pwm(0);
 
-    // rumble_timer.resume();
-    // if(autonomous_task != nullptr) autonomous_task->remove();
+    if(autonomous_system_task != nullptr) autonomous_system_task->remove();
     Miku.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
     // static Gif gif("/usd/jiachenma.gif", lv_scr_act());

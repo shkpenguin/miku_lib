@@ -17,8 +17,7 @@ void TurnHeading::start() {
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
-    turn_small_exit.reset();
-    turn_large_exit.reset();
+    turn_patience_exit.reset();
 }
 
 void TurnHeading::update() {
@@ -61,8 +60,7 @@ void TurnPoint::start() {
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
-    turn_small_exit.reset();
-    turn_large_exit.reset();
+    turn_patience_exit.reset();
 }
 
 void TurnPoint::update() {
@@ -79,11 +77,10 @@ void TurnPoint::update() {
 
     Miku.move_voltage(output, -output);
 
-    turn_small_exit.update(error);
-    turn_large_exit.update(error);
-
-    if(timer.is_done() || turn_small_exit.get_exit() || turn_large_exit.get_exit()) {
+    turn_patience_exit.update(error);
+    if(timer.is_done() || turn_patience_exit.get_exit()) {
         done = true;
+        Miku.stop();
         return;
     }
 }

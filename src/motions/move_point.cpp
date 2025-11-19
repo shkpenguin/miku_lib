@@ -36,6 +36,7 @@ void MovePoint::update() {
     if (params.reverse) angle_to_point = (angle_to_point + 180.0).wrap();
 
     double current_deg = compass_degrees(Miku.get_heading()).wrap();
+
     double turn_error = (angle_to_point - current_deg).wrap();
     // Distance error
     double drive_error = current.distance_to(target);
@@ -46,13 +47,12 @@ void MovePoint::update() {
 
     standard_radians angle_error = (miku::atan2(dy, dx) - Miku.get_heading()).wrap();
 
-    drive_error *= std::cos(angle_error);  // Scale error by heading alignment
-
-    // drive_patience_exit.update(drive_error);
+    drive_patience_exit.update(drive_error);
 
     // PID outputs
     double drive_out = std::clamp(drive_pid.update(drive_error), -params.max_speed, params.max_speed);
-    double turn_out = std::clamp(turn_pid.update(turn_error), -params.max_speed, params.max_speed);
+    double turn_out = std::clamp(turn_pid.update(turn_error), -6000.0, 6000.0);
+    drive_out *= std::cos(angle_error);
     if(fabs(drive_error) < 6.0) {
         turn_out *= pow((drive_error / 6.0), 3);
     }
@@ -68,6 +68,7 @@ void MovePoint::update() {
 
     if(drive_patience_exit.get_exit() || timer.is_done()) {
         done = true;
+        Miku.stop();
         return;
     }
 }

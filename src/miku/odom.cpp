@@ -56,6 +56,8 @@ void miku::Chassis::update_odometry() {
     pose.theta = heading_new;
 
     update_particles();
+    log_mcl();
+
     Miku.set_position(get_position_estimate());
     resample_particles();
 

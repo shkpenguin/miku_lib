@@ -18,7 +18,6 @@ std::vector<std::reference_wrapper<BezierPath>> test_paths = {std::ref(test_path
 void test() {
     queue_motion(new TurnHeading(90, 10000));
     queue_motion(new MovePose({24, -24}, 0, 10000));
-    test_path.calculate_waypoints();
     queue_motion(new Ramsete(test_path.get_waypoints(), 10000));
     // queue_motion(new TurnHeading(90, 10000));
 }

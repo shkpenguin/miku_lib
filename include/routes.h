@@ -14,3 +14,6 @@ struct Route {
 
 void test();
 extern std::vector<std::reference_wrapper<BezierPath>> test_paths;
+
+void skills();
+extern std::vector<std::reference_wrapper<BezierPath>> skills_paths;

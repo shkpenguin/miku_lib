@@ -27,10 +27,16 @@ void queue_after_current(MotionPrimitive* motion) {
     queue_mutex.give();
 }
 
-int selected_idx = 0;
-std::vector<Route> routes = {
-    Route("test route", test, test_paths)
-};
+int selected_idx = 1;
+std::vector<Route> routes;
+
+void precalculate_paths() {
+    routes.push_back(Route("test route", test, test_paths));
+    routes.push_back(Route("skills", skills, skills_paths));
+    for(auto& path : routes[selected_idx].paths) {
+        path.get().calculate_waypoints();
+    }
+}
 
 void initialize() {
 
@@ -39,12 +45,12 @@ void initialize() {
     intake_top.tare_position();
     intake_bottom.tare_position();
 
+    Miku.set_brake_mode(DEFAULT_AUTONOMOUS_BRAKE_MODE);
+
     optical.set_led_pwm(100);
     optical.set_integration_time(10);
 
-    for(auto& path : routes[selected_idx].paths) {
-        path.get().calculate_waypoints();
-    }
+    precalculate_paths();
 
     imu.reset();
 	while(imu.is_calibrating()) {
@@ -57,11 +63,16 @@ void initialize() {
 
 void autonomous() {
 
-    Miku.reset({24, -48, M_PI_2});
-    initialize_particles_point({24, -48});
+    Timer flush_timer(1000);
+    file.open("log.txt");
+
+    Miku.reset({14, -48, M_PI});
+    initialize_particles_point(Miku.get_position());
 
     routes[selected_idx].queue();
-    master.set_text(0, "queuelen: " + std::to_string(motion_queue.size()));
+    master.display(0, []() {
+        return "queuelen: " + std::to_string(motion_queue.size());
+    });
     master.display(1, []() {
         Point current = Miku.get_position();
         Point target = {24, -24};
@@ -72,9 +83,14 @@ void autonomous() {
     master.display(2, []() {
         return Miku.get_pose().to_string();
     });
-    autonomous_system_task = new pros::Task([]() {
+    autonomous_system_task = new pros::Task([&flush_timer]() {
     while (true) {
         uint32_t prev_time = pros::millis();
+
+        if(flush_timer.is_done()) {
+            flush_logs();
+            flush_timer.set(1000);
+        }
 
         master.update_display();
         Miku.update_odometry();

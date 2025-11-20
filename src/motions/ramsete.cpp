@@ -6,7 +6,7 @@
 Ramsete::Ramsete(std::vector<Waypoint> wps, double timeout, RamseteParams p)
 : waypoints(wps), timeout(timeout), params(p) {
     if(p.zeta < 0) zeta = 0.7;
-    if(p.b < 0) b = 0.003;
+    if(p.b < 0) b = 0.01;
     if(p.time_multi < 0) time_multi = 1.2;
 }
     

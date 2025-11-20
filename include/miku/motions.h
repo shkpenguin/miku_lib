@@ -68,7 +68,7 @@ struct MovePointParams {
     bool reverse = false;
     double cutoff = -1.0;
     double max_speed = 12000;
-    double min_speed = 1000;
+    double min_speed = 0;
     double drive_kP = -1.0;
     double drive_kI = -1.0;
     double drive_kD = -1.0;
@@ -97,6 +97,31 @@ struct RamseteParams {
     double zeta = -1.0;
     double time_multi = -1.0;
     double end_cutoff = 6.0;
+};
+
+struct Delay : MotionPrimitive {
+    double duration;
+    Timer timer;
+    bool done = false;
+
+    Delay(double duration) :  duration(duration) {}
+
+    void start() override {
+        done = false;
+        timer.set(duration);
+        timer.reset();
+    }
+
+    void update() override {
+        if (timer.is_done()) {
+            done = true;
+            return;
+        }
+    }
+
+    bool is_done() override {
+        return done;
+    }
 };
 
 struct TurnHeading : MotionPrimitive {
@@ -172,6 +197,8 @@ struct MovePoint : MotionPrimitive {
     double timeout;
     MovePointParams params;
 
+    int start_side;
+
     PID drive_pid;
     PID turn_pid;
     Timer timer;
@@ -224,6 +251,7 @@ struct MoveTime : MotionPrimitive {
     void update() override {
         if (timer.is_done()) {
             done = true;
+            Miku.stop();
             return;
         }
     }

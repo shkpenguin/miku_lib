@@ -8,7 +8,7 @@ MovePose::MovePose(Point target, compass_degrees heading, double timeout, MovePo
     : target(target), target_heading(standard_radians(heading)), timeout(timeout), params(params) {
     if(params.k1 < 0) k1 = 4.0;
     if(params.k2 < 0) k2 = 6.0;
-    if(params.k3 < 0) k3 = 0.0;
+    if(params.k3 < 0) k3 = 0.5;
 }
 
 void MovePose::start() {
@@ -66,6 +66,7 @@ void MovePose::update() {
     }
 
     if(drive_error < params.end_cutoff) {
+        
         auto settle_motion = new MovePoint(
             Point(target.x, target.y), 
             timer.get_time_left(),

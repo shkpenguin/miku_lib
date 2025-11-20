@@ -106,11 +106,9 @@ void log_mcl() {
     log_buffer << NUM_PARTICLES << "," << robot_pose.x << "," << robot_pose.y << "," << robot_pose.theta << ",";
     log_buffer << left_distance.get_distance() / 25.4 << "," 
                << right_distance.get_distance() / 25.4 << "," 
-               << front_distance.get_distance() / 25.4 << ","
                << back_distance.get_distance() / 25.4 << ",";
     log_buffer << left_distance.get_object_size() << "," 
                << right_distance.get_object_size() << "," 
-               << front_distance.get_object_size() << ","
                << back_distance.get_object_size() << ",";
 
     for(size_t i = 0; i < particles.size(); ++i) {

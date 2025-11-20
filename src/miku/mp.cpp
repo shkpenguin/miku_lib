@@ -1,5 +1,6 @@
 #include "mp.h"
 #include "config.h"
+#include "miku/util.h"
 #include <cmath>
 #include <algorithm>
 
@@ -22,6 +23,10 @@ double get_t_param(std::vector<ControlPoint> P) {
         estimate += (value < 0 ? 1 : -1) * bucket_size / 2;
         bucket_size /= 2;
     }
+    if (!std::isfinite(estimate) || estimate <= 1e-6 || estimate >= 1.0 - 1e-6) {
+        estimate = 0.5;
+    }
+    estimate = std::min(std::max(estimate, 1e-3), 1.0 - 1e-3);
     return estimate;
 }
 
@@ -97,7 +102,7 @@ void BezierPath::calculate_waypoints() {
             P.push_back(control_points[i + j]);
         }
 
-        int n = std::hypot(P[2].x - P[1].x, P[2].y - P[1].y) / spacing;
+        int n = std::max(2, int(std::hypot(P[2].x - P[1].x, P[2].y - P[1].y) / spacing));
 
         std::vector<ControlPoint> MCP(2, {0, 0});
         ControlPoint TP;
@@ -121,23 +126,43 @@ void BezierPath::calculate_waypoints() {
             Waypoint point;
             point.x = derivatives[0];
             point.y = derivatives[1];
-            point.theta = std::atan2(derivatives[3], derivatives[2]);
+            if (std::hypot(derivatives[2], derivatives[3]) < 1e-6) {
+                // keep previous heading
+                if (_waypoints.size() > 0) point.theta = _waypoints.back().theta;
+                else point.theta = 0.0;
+            } else {
+                point.theta = std::atan2(derivatives[3], derivatives[2]);
+            }
 
             double linvel = (1 - t / (M_PI / 2)) * P[1].velocity + (t / (M_PI / 2)) * P[2].velocity;
             double in_per_sec = linvel * 0.01 * MAX_VEL;
 
-            double curvature = 0, rad_per_sec = 0;
-            if (derivatives[2] != 0 || derivatives[3] != 0) {
-                curvature = (derivatives[2] * derivatives[5] - derivatives[3] * derivatives[4]) /
-                            std::pow(derivatives[2]*derivatives[2] + derivatives[3]*derivatives[3], 1.5);
+            double curvature = 0.0;
+            double rad_per_sec = 0.0;
+            double denom = derivatives[2]*derivatives[2] + derivatives[3]*derivatives[3];
+            if (denom > 1e-8) {
+                double num = (derivatives[2] * derivatives[5] - derivatives[3] * derivatives[4]);
+                curvature = num / std::pow(denom, 1.5);
+                // clamp curvature to prevent insane angular velocity
+                const double MAX_CURVATURE = 10.0; // tune to your robot
+                if (std::abs(curvature) > MAX_CURVATURE) curvature = (curvature > 0 ? MAX_CURVATURE : -MAX_CURVATURE);
                 rad_per_sec = in_per_sec * curvature;
+            } else {
+                // keep curvature zero if velocity vector is almost zero
+                curvature = 0.0;
+                rad_per_sec = 0.0;
             }
             
             point.linvel = in_per_sec;
             point.angvel = rad_per_sec;
 
-            if(in_per_sec > 0) current_time += std::hypot(prev_x - point.x, prev_y - point.y) / in_per_sec * 1000;
-            else current_time = 0;
+            const double time_eps = 1e-6;
+            if (in_per_sec <= 1e-6) {
+                // do not reset the global time. treat speed as tiny positive so time marches forward smoothly
+                in_per_sec = 1e-6;
+            }
+            double ds = std::hypot(prev_x - point.x, prev_y - point.y);
+            current_time += (ds / in_per_sec) * 1000.0;
             point.t = current_time;
 
             point.dx = point.linvel * std::cos(point.theta);

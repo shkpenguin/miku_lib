@@ -24,6 +24,11 @@ void MovePoint::start() {
     timer.set(timeout);
     timer.reset();
     drive_patience_exit.reset();
+
+    Point current = Miku.get_position();
+    double dx = target.x - current.x;
+    double dy = target.y - current.y;
+    start_side = sign(dx * cos(Miku.get_heading()) + dy * sin(Miku.get_heading()));
 }
 
 void MovePoint::update() {
@@ -34,6 +39,13 @@ void MovePoint::update() {
     double dy = target.y - current.y;
     compass_degrees angle_to_point = compass_degrees(miku::atan2(dy, dx));
     if (params.reverse) angle_to_point = (angle_to_point + 180.0).wrap();
+
+    int side = sign(dx * cos(Miku.get_heading()) + dy * sin(Miku.get_heading()));
+    if(side != start_side) {
+        done = true;
+        Miku.stop();
+        return;
+    }
 
     double current_deg = compass_degrees(Miku.get_heading()).wrap();
 

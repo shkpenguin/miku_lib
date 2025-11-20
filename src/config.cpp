@@ -40,8 +40,8 @@ LookupTable right_drive_lut({
     {485, 9000}, {537, 10000}, {575, 11000}, {617, 12000}
 });
 
-PIDGains left_drive_gains(20.0, 0.0, 0.0);
-PIDGains right_drive_gains(20.0, 0.0, 0.0);
+PIDGains left_drive_gains(0.0, 0.0, 0.0);
+PIDGains right_drive_gains(0.0, 0.0, 0.0);
 
 miku::MotorGroup left_motors({-8, -9, -16},
                              pros::v5::MotorGears::blue,
@@ -65,10 +65,10 @@ miku::Pneumatic descore_piston('D');
 miku::Optical optical(16);
 
 PIDGains turn_gains(320.0, 0.0, 3000.0);
-PIDGains drive_gains(500.0, 0.0, 0.0);
+PIDGains drive_gains(500.0, 0.0, 3000.0);
 
-miku::Distance back_distance(20, -4.5, -5.0, Orientation::BACK);
-miku::Distance left_distance(19, -5.0, -4.75, Orientation::LEFT);
+miku::Distance back_distance(21, -4.5, -5.0, Orientation::BACK);
+miku::Distance left_distance(20, -5.0, -4.75, Orientation::LEFT);
 miku::Distance right_distance(5, 5.0, -4.75, Orientation::RIGHT);
 // miku::Distance front_distance(6, -6.5, 8.25, Orientation::FRONT);
 

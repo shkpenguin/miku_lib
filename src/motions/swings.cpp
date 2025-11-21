@@ -3,13 +3,21 @@
 #include "config.h"
 #include "miku/util.h"
 
+SwingHeading::SwingHeading(compass_degrees target, double timeout, SwingParams params)
+    : target(target), timeout(timeout), params(params) {
+    PIDGains gains;
+    gains.kP = (params.kP > 0) ? params.kP : turn_gains.kP;
+    gains.kI = (params.kI > 0) ? params.kI : turn_gains.kI;
+    gains.kD = (params.kD > 0) ? params.kD : turn_gains.kD;
+    turn_pid = PID(gains);
+}
+
 void SwingHeading::start() {
     done = false;
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
-    turn_small_exit.reset();
-    turn_large_exit.reset();
+    turn_patience_exit.reset();
 }
 
 void SwingHeading::update() {
@@ -29,10 +37,9 @@ void SwingHeading::update() {
         left_motors.move_voltage(output);
     }
 
-    turn_small_exit.update(error);
-    turn_large_exit.update(error);
+    turn_patience_exit.update(error);
 
-    if(timer.is_done() || turn_small_exit.get_exit() || turn_large_exit.get_exit()) {
+    if(timer.is_done() || turn_patience_exit.get_exit()) {
         done = true;
         return;
     }
@@ -42,13 +49,21 @@ bool SwingHeading::is_done() {
     return done;
 }
 
+SwingPoint::SwingPoint(Point target, double timeout, SwingParams params)
+    : target(target), timeout(timeout), params(params) {
+    PIDGains gains;
+    gains.kP = (params.kP > 0) ? params.kP : turn_gains.kP;
+    gains.kI = (params.kI > 0) ? params.kI : turn_gains.kI;
+    gains.kD = (params.kD > 0) ? params.kD : turn_gains.kD;
+    turn_pid = PID(gains);
+}
+
 void SwingPoint::start() {
     done = false;
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
-    turn_small_exit.reset();
-    turn_large_exit.reset();
+    turn_patience_exit.reset();
 }
 
 void SwingPoint::update() {
@@ -69,10 +84,9 @@ void SwingPoint::update() {
         left_motors.move_voltage(output);
     }
 
-    turn_small_exit.update(error);
-    turn_large_exit.update(error);
+    turn_patience_exit.update(error);
 
-    if(timer.is_done() || turn_small_exit.get_exit() || turn_large_exit.get_exit()) {
+    if(timer.is_done() || turn_patience_exit.get_exit()) {
         done = true;
         return;
     }

@@ -27,12 +27,14 @@ void queue_after_current(MotionPrimitive* motion) {
     queue_mutex.give();
 }
 
-int selected_idx = 1;
+int selected_idx = 2;
 std::vector<Route> routes;
 
 void precalculate_paths() {
-    routes.push_back(Route("test route", test, test_paths));
-    routes.push_back(Route("skills", skills, skills_paths));
+    routes.push_back(Route("test route", {24, -48, M_PI_2}, test, test_paths));
+    routes.push_back(Route("skills", {14, -48, M_PI}, skills, skills_paths));
+    routes.push_back(Route("sawp", {0, -48, M_PI}, sawp, sawp_paths));
+    routes.push_back(Route("right rush", {14, -46, M_PI_2}, right_rush, rush_paths));
     for(auto& path : routes[selected_idx].paths) {
         path.get().calculate_waypoints();
     }
@@ -66,7 +68,7 @@ void autonomous() {
     Timer flush_timer(1000);
     file.open("log.txt");
 
-    Miku.reset({14, -48, M_PI});
+    Miku.reset(routes[selected_idx].start_pose);
     initialize_particles_point(Miku.get_position());
 
     routes[selected_idx].queue();
@@ -74,13 +76,6 @@ void autonomous() {
         return "queuelen: " + std::to_string(motion_queue.size());
     });
     master.display(1, []() {
-        Point current = Miku.get_position();
-        Point target = {24, -24};
-        double dx = target.x - current.x;
-        double dy = target.y - current.y;
-        return fmt::format("angle: {:.2f}", (compass_degrees(miku::atan2(dy, dx)) - compass_degrees(Miku.get_heading())).wrap());
-    });
-    master.display(2, []() {
         return Miku.get_pose().to_string();
     });
     autonomous_system_task = new pros::Task([&flush_timer]() {
@@ -172,7 +167,7 @@ void arcade(int throttle, int turn) {
 }
 
 List<DriveMode> driveModes = {
-    DriveMode::FUNNY_TANK,
+    DriveMode::TANK,
     DriveMode::ARCADE,
 };
 
@@ -261,11 +256,13 @@ void opcontrol() {
         }
 
         bool shift1 = master.get_digital(DIGITAL_L1);
-        bool new_l2_pressed = master.get_digital(DIGITAL_L2);
 
         if(shift1) {
             if(master.get_digital_new_press(DIGITAL_R1)) loader_piston.toggle();
-            if(new_l2_pressed != l2_pressed) middle_piston.toggle();
+            if(master.get_digital(DIGITAL_L2)) {
+                intake_top.move_voltage(8000);
+                intake_bottom.move_voltage(12000);
+            }
             if(master.get_digital_new_press(DIGITAL_R2)) {
                 intake_top.move_voltage(-12000);
                 intake_bottom.move_voltage(-12000);
@@ -287,12 +284,10 @@ void opcontrol() {
             if(master.get_digital_new_press(DIGITAL_L2)) descore_piston.toggle();            
         }
 
-        if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_A)) {
+        if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_L2) && !master.get_digital(DIGITAL_A)) {
             intake_top.move_voltage(0);
             intake_bottom.move_voltage(0);
         }
-
-        l2_pressed = new_l2_pressed;
 
         pros::delay(10);
     }

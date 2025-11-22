@@ -19,7 +19,7 @@ void sawp() {
         []() { loader_piston.set_value(true); }
     });
     queue_motion(turn_to_loader_1);
-    queue_motion(new MovePoint({48, -63}, 800, {.max_speed = 6000}));
+    queue_motion(new MovePoint({47, -64}, 1000, {.max_speed = 5000}));
     queue_motion(new Delay(300));
     auto score_loader_1 = new MovePoint({48, -20}, 1500, {.reverse = true, .max_speed = 6000});
     score_loader_1->add_event(ConditionalEvent{
@@ -69,7 +69,7 @@ void sawp() {
     });
     queue_motion(move_loader_2);
     queue_motion(new TurnHeading(180, 700));
-    queue_motion(new MovePoint({-48, -63}, 1000, {.max_speed = 6000}));
+    queue_motion(new MovePoint({-47, -64}, 1000, {.max_speed = 5000}));
     queue_motion(new Delay(300));
     auto score_loader_2 = new MovePoint({-48, -20}, 1500, {.reverse = true, .max_speed = 6000});
     score_loader_2->add_event(ConditionalEvent{

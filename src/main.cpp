@@ -201,58 +201,33 @@ void opcontrol() {
 
         master.update_display();
 
-        if(master.get_digital_new_press(DIGITAL_UP)) {
-            master.display(0, []() {
-                return "top: " + std::to_string(int(intake_top.get_temperature())) + "C";
-            });
-            master.display(1, []() {
-                return "bottom: " + std::to_string(int(intake_bottom.get_temperature())) + "C";
-            });
-            master.display(2, []() {
-                int temp = std::max(left_motors.get_highest_temperature(), right_motors.get_highest_temperature());
-                return "drive: " + std::to_string(temp) + "C";
-            });
-        }
-
-        if(master.get_digital_new_press(DIGITAL_DOWN)) {
-            master.display(0, []() {
-                return "lvel: " + std::to_string(int(left_motors.get_average_velocity())) + "rpm";
-            });
-            master.display(1, []() {
-                return "rvel: " + std::to_string(int(right_motors.get_average_velocity())) + "rpm";
-            });
-            master.display(2, [&]() {
-                return "target: " + std::to_string(drive_vel) + "rpm";
-            });
-        }
-
         if(master.get_digital(DIGITAL_LEFT) && master.get_digital_new_press(DIGITAL_RIGHT)) {
             driveModes.cycle_forward();
             master.rumble("-");
         }
 
-        if(master.get_digital_new_press(DIGITAL_LEFT)) {
-            drive_vel = clamp(drive_vel - 50, -700, 700);
-        }
-
-        if(master.get_digital_new_press(DIGITAL_RIGHT)) {
-            drive_vel = clamp(drive_vel + 50, -700, 700);
-        }
-
-        if(driveModes.get_value() == DriveMode::TANK) {
-            int left = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-            int right = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
-            tank(left, right);
-        } else if(driveModes.get_value() == DriveMode::ARCADE) {
-            int throttle = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+        if(master.get_digital(DIGITAL_UP)) {
             int turn = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-            arcade(throttle, turn);
-        } else if(driveModes.get_value() == DriveMode::FUNNY_TANK) {
-            int left_x = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
-            int left_y = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-            int right_x = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-            int right_y = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
-            funny_tank(left_x, left_y, right_x, right_y);
+            arcade(50, turn / 3);
+        } else if(master.get_digital(DIGITAL_DOWN)) {
+            int turn = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+            arcade(-50, turn / 3);
+        } else {
+            if(driveModes.get_value() == DriveMode::TANK) {
+                int left = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+                int right = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
+                tank(left, right);
+            } else if(driveModes.get_value() == DriveMode::ARCADE) {
+                int throttle = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+                int turn = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+                arcade(throttle, turn);
+            } else if(driveModes.get_value() == DriveMode::FUNNY_TANK) {
+                int left_x = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
+                int left_y = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+                int right_x = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+                int right_y = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
+                funny_tank(left_x, left_y, right_x, right_y);
+            }
         }
 
         bool shift1 = master.get_digital(DIGITAL_L1);
@@ -276,15 +251,16 @@ void opcontrol() {
                     master.set_rumble(false);
                 }
             }
-            if(master.get_digital_new_press(DIGITAL_R2)) {
+            if(master.get_digital(DIGITAL_R2)) {
                 intake_bottom.move_voltage(12000);
-                if(!lock_piston.get_value() && !middle_piston.get_value()) intake_top.move_voltage(4000);
+                if(!lock_piston.get_value()) intake_top.move_voltage(4000);
                 else intake_top.move_voltage(12000);
             }
             if(master.get_digital_new_press(DIGITAL_L2)) descore_piston.toggle();            
         }
 
-        if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_L2) && !master.get_digital(DIGITAL_A)) {
+        if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_L2) && !master.get_digital(DIGITAL_A)
+            && !master.get_digital(DIGITAL_UP) && !master.get_digital(DIGITAL_DOWN)) {
             intake_top.move_voltage(0);
             intake_bottom.move_voltage(0);
         }

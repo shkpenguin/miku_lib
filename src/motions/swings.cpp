@@ -32,7 +32,7 @@ void SwingHeading::update() {
     double output = turn_pid.update(error);
 
     if(params.locked_side == Side::LEFT) {
-        right_motors.move_voltage(output);
+        right_motors.move_voltage(-output);
     } else {
         left_motors.move_voltage(output);
     }

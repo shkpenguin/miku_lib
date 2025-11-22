@@ -40,8 +40,25 @@ public:
     inline Pose get_pose_delta() { return pose_delta; };
     inline Point get_position() { return Point(pose.x, pose.y); };
     inline Point get_position_delta() { return Point(pose_delta.x, pose_delta.y); };
+    inline double get_x() { return pose.x; };
+    inline double get_y() { return pose.y; };
     inline standard_radians get_heading() { return pose.theta; };
     inline standard_radians get_heading_delta() { return pose_delta.theta; };
+    inline void set_x(double x) {
+        pose_mutex.take();
+        pose.x = x;
+        pose_mutex.give();
+    };
+    inline void set_y(double y) {
+        pose_mutex.take();
+        pose.y = y;
+        pose_mutex.give();
+    };
+    inline void set_heading(AngleTemplate<> heading) {
+        pose_mutex.take();
+        pose.theta = standard_radians(heading);
+        pose_mutex.give();
+    }
     inline void set_pose(Pose new_pose) { 
         pose_mutex.take();
         pose = new_pose; 
@@ -53,12 +70,6 @@ public:
         pose.y = new_position.y; 
         pose_mutex.give();
     };
-    inline void set_heading(standard_radians new_heading) { 
-        pose_mutex.take();
-        pose.theta = new_heading; 
-        pose_mutex.give();
-    };
-
     void reset(Pose initial_pose); // declared in odom.cpp
     void update_odometry();
 

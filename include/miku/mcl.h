@@ -1,33 +1,54 @@
 #pragma once
 
-#include "miku-api.h"
+#define NUM_PARTICLES 500
+
+#include "miku/devices/distance.h"
+#include "miku/geometry.h"
 #include <fstream>
 
 extern std::ofstream file;
 
-extern std::vector<std::reference_wrapper<miku::Distance>> sensors;
+enum WallID {
+    LEFT_WALL,
+    RIGHT_WALL,
+    TOP_WALL,
+    BOTTOM_WALL,
+    NOT_IN_FIELD,
+    BAD_INTERSECT
+};
+
+struct WallEstimate {
+    WallID wall_id;
+    float distance;
+};
 
 struct Particle {
     Point position; 
-    double weight; 
-    std::vector<double> sensor_readings;
+    float weight; 
+    std::vector<WallEstimate> sensor_readings;
 
-    Particle() : position(0,0), weight(1.0) { sensor_readings.resize(sensors.size(), 0.0); }
+    Particle() : position(0,0), weight(1.0) {}
 };
 
-void set_all_sensors(bool enabled);
-void set_max_distance_error(double error);
-void set_min_odom_noise(double noise);
-void set_max_sensor_stdev(double stdev);
+class ParticleFilter {
+private:
+    float max_error = 12.0; // inches
+    float min_odom_noise = 0.1; // inches
+    float max_sensor_stdev = 2.0; // inches
+    std::vector<Particle> particles = std::vector<Particle>(NUM_PARTICLES);
 
-void initialize_particles_point(Point center);
-void initialize_particles_uniform(Point center, double length);
+public:
+    ParticleFilter(std::vector<std::shared_ptr<miku::Distance>> sensors);
+    void set_max_distance_error(float error);
+    void set_min_odom_noise(float noise);
+    void set_max_sensor_stdev(float stdev);
+    void set_particles_point(Point center);
+    void set_particles_uniform(Point center, float length);
+    void update_previous_belief(Pose robot_speed);
+    void update_particle_weights();
+    Point get_current_belief();
+    void resample_particles();
 
-void log_mcl();
-void flush_logs();
+    std::vector<std::shared_ptr<miku::Distance>> distance_sensors;
 
-double get_expected_reading(Point particle_position, double offset_x, double offset_y, 
-    double cos_theta, double sin_theta, Orientation orientation);
-Point get_position_estimate();
-void update_particles();
-void resample_particles();
+};

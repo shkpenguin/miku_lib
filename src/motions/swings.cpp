@@ -3,7 +3,7 @@
 #include "config.h"
 #include "miku/util.h"
 
-SwingHeading::SwingHeading(compass_degrees target, double timeout, SwingParams params)
+SwingHeading::SwingHeading(compass_degrees target, float timeout, SwingParams params)
     : target(target), timeout(timeout), params(params) {
     PIDGains gains;
     gains.kP = (params.kP > 0) ? params.kP : turn_gains.kP;
@@ -14,6 +14,7 @@ SwingHeading::SwingHeading(compass_degrees target, double timeout, SwingParams p
 
 void SwingHeading::start() {
     done = false;
+    start_time = pros::millis();
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
@@ -22,14 +23,19 @@ void SwingHeading::start() {
 
 void SwingHeading::update() {
     compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
-    double error = (target - current_deg).wrap();      // error in degrees
+    float error = (target - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
         done = true;
         return;
     }
 
-    double output = turn_pid.update(error);
+    float output = turn_pid.update(error);
+    output = std::clamp(output, -params.max_volt_pct / 100.0f * 12000, params.max_volt_pct / 100.0f * 12000);
+    if(params.min_volt_pct > 0) {
+        if(output > 0 && output < fabs(params.min_volt_pct / 100.0f * 12000)) output = params.min_volt_pct / 100.0f * 12000;
+        if(output < 0 && output > -fabs(params.min_volt_pct / 100.0f * 12000)) output = -params.min_volt_pct / 100.0f * 12000;
+    }
 
     if(params.locked_side == Side::LEFT) {
         right_motors.move_voltage(-output);
@@ -49,7 +55,7 @@ bool SwingHeading::is_done() {
     return done;
 }
 
-SwingPoint::SwingPoint(Point target, double timeout, SwingParams params)
+SwingPoint::SwingPoint(Point target, float timeout, SwingParams params)
     : target(target), timeout(timeout), params(params) {
     PIDGains gains;
     gains.kP = (params.kP > 0) ? params.kP : turn_gains.kP;
@@ -60,6 +66,7 @@ SwingPoint::SwingPoint(Point target, double timeout, SwingParams params)
 
 void SwingPoint::start() {
     done = false;
+    start_time = pros::millis();
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
@@ -69,14 +76,19 @@ void SwingPoint::start() {
 void SwingPoint::update() {
     compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
     compass_degrees target_deg = compass_degrees(miku::atan2(target.x - Miku.get_pose().x, target.y - Miku.get_pose().y));
-    double error = (target_deg - current_deg).wrap();      // error in degrees
+    float error = (target_deg - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
         done = true;
         return;
     }
 
-    double output = turn_pid.update(error);
+    float output = turn_pid.update(error);
+    output = std::clamp(output, -params.max_volt_pct / 100.0f * 12000, params.max_volt_pct / 100.0f * 12000);
+    if(params.min_volt_pct > 0) {
+        if(output > 0 && output < fabs(params.min_volt_pct / 100.0f * 12000)) output = params.min_volt_pct / 100.0f * 12000;
+        if(output < 0 && output > -fabs(params.min_volt_pct / 100.0f * 12000)) output = -params.min_volt_pct / 100.0f * 12000;
+    }
 
     if(params.locked_side == Side::LEFT) {
         right_motors.move_voltage(output);

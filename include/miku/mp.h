@@ -3,38 +3,32 @@
 #include <vector>
 #include <cmath>
 
-#define MAX_RPM 660.0
-#define MAX_VEL 76.6
-#define CIRC (WHEEL_DIAMETER * M_PI)
-
 struct Waypoint {
-    double x;
-    double y;
-    double dx;
-    double dy;
-    double ddx;
-    double ddy;
-    double theta;
-    double linvel;
-    double angvel;
-    double t;
+    float x;
+    float y;
+    float dx;
+    float dy;
+    float ddx;
+    float ddy;
+    float theta;
+    float linvel;
+    float angvel;
+    float t;
 
     Waypoint() : x(0), y(0), dx(0), dy(0), ddx(0), ddy(0), theta(0), linvel(0), angvel(0), t(0) {}
 };
 
 struct ControlPoint {
-    double x;
-    double y;
-    double velocity;
+    float x;
+    float y;
+    float velocity;
 
-    ControlPoint(double x, double y, double velocity)
+    ControlPoint(float x, float y, float velocity)
         : x(x), y(y), velocity(velocity) {}
-    ControlPoint(double x, double y)
+    ControlPoint(float x, float y)
         : x(x), y(y), velocity(0) {}
     ControlPoint() : x(0), y(0), velocity(0) {}
 };
-
-double get_t_param(const std::vector<std::vector<double>> P);
 
 struct BezierPath {
     std::vector<ControlPoint> control_points;

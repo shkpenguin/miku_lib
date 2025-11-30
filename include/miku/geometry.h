@@ -18,13 +18,13 @@ enum AngleUnit {
 
 template<AngleUnit U = RADIANS, AngleType T = STANDARD>
 struct AngleTemplate {
-    double value = 0.0;
+    float value = 0.0;
 
-    AngleTemplate(double value = 0.0) : value(value) {}
+    AngleTemplate(float value = 0.0) : value(value) {}
 
     template<AngleUnit OtherU, AngleType OtherT>
     AngleTemplate(const AngleTemplate<OtherU, OtherT>& other) {
-        double tmp = other.value;
+        float tmp = other.value;
 
         if constexpr (OtherU == DEGREES) tmp = tmp * M_PI / 180.0;
         if constexpr (OtherT == COMPASS) tmp = M_PI / 2.0 - tmp;  // compass → standard
@@ -35,46 +35,46 @@ struct AngleTemplate {
 
         value = tmp;
     }
-    operator double() const { return value; }
+    operator float() const { return value; }
     AngleTemplate operator+(const AngleTemplate& other) const {
         return AngleTemplate(value + other.value);
     }
-    AngleTemplate operator+(const double& other) const {
+    AngleTemplate operator+(const float& other) const {
         return AngleTemplate(value + other);
     }
     AngleTemplate& operator+=(const AngleTemplate& other) {
         value += other.value;
         return *this;
     }
-    AngleTemplate& operator+=(const double& other) {
+    AngleTemplate& operator+=(const float& other) {
         value += other;
         return *this;
     }
     AngleTemplate operator-(const AngleTemplate& other) const {
         return AngleTemplate(value - other.value);
     }
-    AngleTemplate operator-(const double& other) const {
+    AngleTemplate operator-(const float& other) const {
         return AngleTemplate(value - other);
     }
     AngleTemplate& operator-=(const AngleTemplate& other) {
         value -= other.value;
         return *this;
     }
-    AngleTemplate& operator-=(const double& other) {
+    AngleTemplate& operator-=(const float& other) {
         value -= other;
         return *this;
     }
-    AngleTemplate operator*(double scalar) const {
+    AngleTemplate operator*(float scalar) const {
         return AngleTemplate(value * scalar);
     }
-    AngleTemplate& operator*=(double scalar) {
+    AngleTemplate& operator*=(float scalar) {
         value *= scalar;
         return *this;
     }
-    AngleTemplate operator/(double scalar) const {
+    AngleTemplate operator/(float scalar) const {
         return AngleTemplate(value / scalar);
     }
-    AngleTemplate& operator/=(double scalar) {
+    AngleTemplate& operator/=(float scalar) {
         value /= scalar;
         return *this;
     }
@@ -98,25 +98,25 @@ struct AngleTemplate {
         return AngleTemplate<DEGREES, T>(value * 180.0 / M_PI);
     };
     // wrap to [-180, 180) for degrees or [-pi, pi) for radians
-    inline double wrap() const {
+    inline float wrap() const {
         if constexpr (U == DEGREES) {
-            double mod = std::fmod(value + 180.0, 360.0);
+            float mod = std::fmod(value + 180.0, 360.0);
             if(mod < 0) mod += 360.0;
             return mod - 180.0;
         } else {
-            double mod = std::fmod(value + M_PI, 2.0 * M_PI);
+            float mod = std::fmod(value + M_PI, 2.0 * M_PI);
             if(mod < 0) mod += 2.0 * M_PI;
             return mod - M_PI;
         }
     };
     // wrap to [0, 360) for degrees or [0, 2pi) for radians
-    inline double norm() const {
+    inline float norm() const {
         if constexpr (U == DEGREES) {
-            double mod = std::fmod(value, 360.0);
+            float mod = std::fmod(value, 360.0);
             if(mod < 0) mod += 360.0;
             return mod;
         } else {
-            double mod = std::fmod(value, 2.0 * M_PI);
+            float mod = std::fmod(value, 2.0 * M_PI);
             if(mod < 0) mod += 2.0 * M_PI;
             return mod;
         }
@@ -129,42 +129,42 @@ using compass_radians = AngleTemplate<RADIANS, COMPASS>;
 using compass_degrees = AngleTemplate<DEGREES, COMPASS>;
 
 struct Point {
-    double x;
-    double y;
+    float x;
+    float y;
 
-    Point(double x = 0.0, double y = 0.0) 
+    Point(float x = 0.0, float y = 0.0) 
         : x(x), y(y) {}
 
-    double magnitude() const {
+    float magnitude() const {
         return std::hypot(x, y);
     }
     standard_radians angle_to(const Point& other) const {
         return standard_radians(atan2(other.y - y, other.x - x));
     }
-    double distance_to(const Point& other) const {
+    float distance_to(const Point& other) const {
         return std::hypot(other.x - x, other.y - y);
     }
 };
 
 struct Pose {
-    double x; 
-    double y;
+    float x; 
+    float y;
     standard_radians theta;
 
-    Pose(double x = 0.0, double y = 0.0, double theta = 0.0)
+    Pose(float x = 0.0, float y = 0.0, float theta = 0.0)
         : x(x), y(y), theta(theta) {}
 
-    double magnitude() const {
+    float magnitude() const {
         return std::hypot(x, y);
     }
     standard_radians angle_to(const Point& other) const {
         return standard_radians(atan2(other.y - y, other.x - x));
     }
-    double distance_to(const Point& other) const {
+    float distance_to(const Point& other) const {
         return std::hypot(other.x - x, other.y - y);
     }
     std::string to_string() const {
-        return fmt::format("{:.2f} {:.2f} @{:.2f}", x, y, double(compass_degrees(theta).wrap()));
+        return fmt::format("{:.1f} {:.1f} @{:.1f}", x, y, float(compass_degrees(theta).wrap()));
     }
 };
 

@@ -2,7 +2,7 @@
 #include "config.h"
 #include <numeric>
 
-double LookupTable::get_value(double key) {
+float LookupTable::get_value(float key) {
     // use binary search to find least voltage below desired velocity
     int low = 0;
     int high = table.size() - 1;
@@ -18,9 +18,9 @@ double LookupTable::get_value(double key) {
     if (low == table.size() - 1) {
         return table[low].second;
     }
-    double x0 = table[low].first;
-    double y0 = table[low].second;
-    double x1 = table[low + 1].first;
-    double y1 = table[low + 1].second;
+    float x0 = table[low].first;
+    float y0 = table[low].second;
+    float x1 = table[low + 1].first;
+    float y1 = table[low + 1].second;
     return y0 + (y1 - y0) * (key - x0) / (x1 - x0);
 }

@@ -2,9 +2,7 @@
 #include "liblvgl/lvgl.h"
 #include "gif-pros/gifclass.hpp"
 
-pros::Distance left_sensor(2);
-pros::Distance right_sensor(9);
-pros::Distance back_sensor(10);
+// todo: make new selector
 
 std::vector<lv_obj_t*> auton_list;
 
@@ -34,9 +32,9 @@ void update_sensors() {
     new_back = false;
     new_both = false;
 
-    bool get_left = (left_sensor.get_distance() < 10);
-    bool get_right = (right_sensor.get_distance() < 10);
-    bool get_back = (back_sensor.get_distance() < 10);
+    bool get_left = (left_distance.get_distance() < 10);
+    bool get_right = (right_distance.get_distance() < 10);
+    bool get_back = (back_distance.get_distance() < 10);
 
     // --- both-hands gesture ---
     if (get_left && get_right && !both_detected) {

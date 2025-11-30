@@ -7,29 +7,35 @@
 #include "miku/devices/pneumatic.h"
 #include "miku/devices/distance.h"
 #include "miku/devices/optical.h"
+#include "miku/mcl.h"
 
 #include "miku/exit.h"
 
-#define WHEEL_DIAMETER 3.25
-#define GEAR_RATIO 0.75
-#define TRACK_WIDTH 10.0
+#define WHEEL_DIAMETER 3.25f
+#define WHEEL_CIRC (WHEEL_DIAMETER * M_PI)
+#define GEAR_RATIO 0.75f
+#define TRACK_WIDTH 10.0f
+#define MAX_RPM 660.0f
+#define MAX_VEL 84.233953f // in/s (WHEEL_CIRC * MAX_RPM * GEAR_RATIO / 60)
+#define MAX_ANG_VEL 16.8467906f // rad/s (2 * MAX_VEL / TRACK_WIDTH)
 #define DELTA_TIME 10
 #define DEFAULT_AUTONOMOUS_BRAKE_MODE pros::E_MOTOR_BRAKE_BRAKE
-
-#define LOGGING_ENABLED 1
 
 extern miku::Controller master;
 
 extern miku::MotorGroup left_motors;
 extern miku::MotorGroup right_motors;
-extern miku::Chassis Miku;
 
-extern miku::Motor left_front;
-extern miku::Motor left_middle;
-extern miku::Motor left_back;
-extern miku::Motor right_front;
-extern miku::Motor right_middle;
-extern miku::Motor right_back;
+extern pros::Imu imu;
+
+extern miku::Distance front_distance;
+extern miku::Distance back_distance;
+extern miku::Distance left_distance;
+extern miku::Distance right_distance;
+
+extern ParticleFilter mcl;
+
+extern miku::Chassis Miku;
 
 extern miku::Motor intake_bottom;
 extern miku::Motor intake_top;
@@ -39,14 +45,8 @@ extern miku::Pneumatic lock_piston;
 extern miku::Pneumatic middle_piston;
 extern miku::Pneumatic descore_piston;
 
-extern miku::Distance front_distance;
-extern miku::Distance back_distance;
-extern miku::Distance left_distance;
-extern miku::Distance right_distance;
-
-extern pros::Imu imu;
-
-extern miku::Optical optical;
+extern miku::Optical intake_optical;
+extern miku::Optical floor_optical;
 
 extern PIDGains turn_gains;
 extern PIDGains drive_gains;

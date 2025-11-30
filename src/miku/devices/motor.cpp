@@ -16,22 +16,22 @@ miku::AbstractMotor::AbstractMotor(std::int8_t port, pros::v5::MotorGears gearse
     }
 }
 
-double miku::AbstractMotor::get_filtered_velocity() {
+float miku::AbstractMotor::get_filtered_velocity() {
 
     uint32_t current_time;
-    double current_ticks = this->get_raw_position(&current_time);
+    float current_ticks = this->get_raw_position(&current_time);
 
-    double delta_ticks = current_ticks - prev_ticks;
-    double delta_time = 5 * std::round((current_time - last_time) / 5.0); 
+    float delta_ticks = current_ticks - prev_ticks;
+    float delta_time = 5 * std::round((current_time - last_time) / 5.0); 
 
-    double prev_raw_velocity = prev_raw_velocities.back();
-    double prev_filtered_velocity = prev_filtered_velocities.back();
+    float prev_raw_velocity = prev_raw_velocities.back();
+    float prev_filtered_velocity = prev_filtered_velocities.back();
 
     if(delta_time <= 0) {
         return prev_raw_velocity;
     }
 
-    double raw_velocity = (delta_ticks / ticks_per_rev) / (delta_time / 60000.0);
+    float raw_velocity = (delta_ticks / ticks_per_rev) / (delta_time / 60000.0);
     if(std::fabs(raw_velocity) > 1000) {
         return prev_raw_velocity;
     }
@@ -41,40 +41,40 @@ double miku::AbstractMotor::get_filtered_velocity() {
         prev_raw_velocities.erase(prev_raw_velocities.begin());
     }
 
-    double sum = std::accumulate(prev_raw_velocities.begin(), prev_raw_velocities.end(), 0.0);
-    double sma_velocity = sum / prev_raw_velocities.size();
+    float sum = std::accumulate(prev_raw_velocities.begin(), prev_raw_velocities.end(), 0.0);
+    float sma_velocity = sum / prev_raw_velocities.size();
 
     prev_filtered_velocities.push_back(sma_velocity);
     if(prev_filtered_velocities.size() > median_filter_size) {
         prev_filtered_velocities.erase(prev_filtered_velocities.begin());
     }
 
-    double median_velocity = 0;
+    float median_velocity = 0;
     if(prev_filtered_velocities.size() & 1) {
         median_velocity = prev_filtered_velocities[prev_filtered_velocities.size() / 2];
     } else {
         median_velocity = (prev_filtered_velocities[prev_filtered_velocities.size() / 2 - 1] + prev_filtered_velocities[prev_filtered_velocities.size() / 2]) / 2.0;
     }
 
-    double accel = (sma_velocity - prev_filtered_velocity) / (delta_time / 1000.0);
+    float accel = (sma_velocity - prev_filtered_velocity) / (delta_time / 1000.0);
     prev_accels.push_back(accel);
     if(prev_accels.size() > accel_filter_size) {
         prev_accels.erase(prev_accels.begin());
     }
 
-    double filtered_accel;
+    float filtered_accel;
     if(accel > 0) filtered_accel = *std::max_element(prev_accels.begin(), prev_accels.end());
     else filtered_accel = *std::min_element(prev_accels.begin(), prev_accels.end());
     filtered_accel = fabs(filtered_accel);
 
-    double min_kA = 0.60;
-    double max_kA = 1.00;
-    double max_expected_accel = 12.0;
+    float min_kA = 0.60;
+    float max_kA = 1.00;
+    float max_expected_accel = 12.0;
 
     if(fabs(filtered_accel) > max_expected_accel) filtered_accel *= max_expected_accel / fabs(filtered_accel);
 
-    double kA = min_kA + (max_kA - min_kA) * (fabs(filtered_accel) / max_expected_accel);
-    double ema_velocity = ema(median_velocity, prev_estimated_velocity, kA);
+    float kA = min_kA + (max_kA - min_kA) * (fabs(filtered_accel) / max_expected_accel);
+    float ema_velocity = ema(median_velocity, prev_estimated_velocity, kA);
 
     prev_estimated_velocity = ema_velocity;
     prev_ticks = current_ticks;
@@ -94,12 +94,12 @@ miku::Motor::Motor(std::int8_t port, pros::v5::MotorGears gearset,
     : AbstractMotor(port, gearset, encoder_units),
       MotorController(pid_gains, voltage_lookup_table) {}
 
-void miku::Motor::move_velocity(double velocity) {
-    double ff = voltage_lut.get_value(velocity);
-    double error = velocity - get_filtered_velocity();
-    double pid_output = velocity_pid.update(error);
+void miku::Motor::move_velocity(float velocity) {
+    float ff = voltage_lut.get_value(velocity);
+    float error = velocity - get_filtered_velocity();
+    float pid_output = velocity_pid.update(error);
 
-    double total_voltage = ff + pid_output;
+    float total_voltage = ff + pid_output;
     total_voltage = clamp(total_voltage, -max_voltage, max_voltage);
     this->move_voltage(static_cast<int>(total_voltage));
 }
@@ -114,12 +114,20 @@ miku::MotorGroup::MotorGroup(const std::initializer_list<std::int8_t> ports,
     }
 }
 
-void miku::MotorGroup::move_velocity(double velocity) {
-    double ff = voltage_lut.get_value(velocity);
-    double error = velocity - get_average_velocity();
-    double pid_output = velocity_pid.update(error);
+void miku::Motor::stop() {
+    if(hold) {
+        this->move_velocity(0);
+    } else {
+        this->move_voltage(0);
+    }
+}
 
-    double total_voltage = ff + pid_output;
+void miku::MotorGroup::move_velocity(float velocity) {
+    float ff = voltage_lut.get_value(velocity);
+    float error = velocity - get_average_velocity();
+    float pid_output = velocity_pid.update(error);
+
+    float total_voltage = ff + pid_output;
     clamp(total_voltage, -max_voltage, max_voltage);
     this->move_voltage(total_voltage);
 }
@@ -136,16 +144,26 @@ void miku::MotorGroup::move_voltage(int32_t voltage) {
     }
 }
 
-double miku::MotorGroup::get_average_velocity() {
-    double sum = 0;
+void miku::MotorGroup::stop() {
+    for(auto motor : motors) {
+        if(hold) {
+            motor->move_velocity(0);
+        } else {
+            motor->move_voltage(0);
+        }
+    }
+}
+
+float miku::MotorGroup::get_average_velocity() {
+    float sum = 0;
     for(auto motor : motors) {
         sum += motor->get_filtered_velocity();
     }
     return sum / motors.size();
 }
 
-double miku::MotorGroup::get_average_position() {
-    double sum = 0;
+float miku::MotorGroup::get_average_position() {
+    float sum = 0;
     for(auto motor : motors) {
         sum += motor->get_position();
     }

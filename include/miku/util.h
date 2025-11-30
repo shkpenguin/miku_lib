@@ -5,37 +5,37 @@
 
 #define HALF_FIELD 71.0
 
-inline double clamp(double value, double min, double max) {
+inline float clamp(float value, float min, float max) {
     if(value < min) return min;
     if(value > max) return max;
     return value;
 }
 
-inline double clamp_field(double value) {
+inline float clamp_field(float value) {
     return clamp(value, -HALF_FIELD, HALF_FIELD);
 }
 
-inline double sign(double value) {
+inline float sign(float value) {
     return (value > 0) - (value < 0);
 }
 
 namespace miku {
-    inline standard_radians atan2(double y, double x) {
+    inline standard_radians atan2(float y, float x) {
         return standard_radians(std::atan2(y, x));
     }
 }
 
-inline double project(double px, double py, double ox, double oy, double heading) {
-    double dx = px - ox;
-    double dy = py - oy;
+inline float project(float px, float py, float ox, float oy, float heading) {
+    float dx = px - ox;
+    float dy = py - oy;
     return dx * cos(heading) + dy * sin(heading);
 }
 
-inline double dist(double x1, double y1, double x2, double y2) {
+inline float dist(float x1, float y1, float x2, float y2) {
     return std::hypot(x2 - x1, y2 - y1);
 }
 
-inline double ema(double current, double previous, double alpha) {
+inline float ema(float current, float previous, float alpha) {
     return alpha * current + (1 - alpha) * previous;
 }
 

@@ -7,15 +7,15 @@
  * @param time The time duration to check for the exit condition(ms)
  */
 struct RangeExit {
-    double range;
+    float range;
     int time;
     int start_time = -1;
     bool done = false;
 
-    RangeExit(const double range, const int time) : range(range), time(time) {}
+    RangeExit(const float range, const int time) : range(range), time(time) {}
 
     bool get_exit() { return done; }
-    bool update(const double input) {
+    bool update(const float input) {
         const int curr_time = pros::millis();
         if (std::fabs(input) > range) start_time = -1;
         else if (start_time == -1) start_time = curr_time;
@@ -26,8 +26,8 @@ struct RangeExit {
 };
 
 struct PatienceExit {
-    double stored_value = 0;          // last reference value
-    double absolute_min_delta = 0;    // minimum improvement to reset patience
+    float stored_value = 0;          // last reference value
+    float absolute_min_delta = 0;    // minimum improvement to reset patience
     int patience = 0;                 // current patience count
     int max_patience = 0;             // max patience before exit
     bool positive_improvement = true; // whether improvement means increasing or decreasing value
@@ -35,7 +35,7 @@ struct PatienceExit {
     bool done = false;
 
     // constructor
-    PatienceExit(int max_patience, double min_delta, bool positive_improvement = true, int min_threshold = 0)
+    PatienceExit(int max_patience, float min_delta, bool positive_improvement = true, int min_threshold = 0)
         : max_patience(max_patience),
           absolute_min_delta(std::abs(min_delta)),
           positive_improvement(positive_improvement),
@@ -55,11 +55,11 @@ struct PatienceExit {
     }
 
     // call every loop with current measurement
-    void update(double value) {
+    void update(float value) {
         if (done) return;
         if(fabs(value) > min_threshold) return;
 
-        double delta = value - stored_value;
+        float delta = value - stored_value;
         bool improved = (positive_improvement && delta > absolute_min_delta)
                         || (!positive_improvement && delta < -absolute_min_delta);
 

@@ -2,7 +2,7 @@
 #include "pid.h"
 #include "api.h"
 
-PID::PID(PIDGains pid_gains, double windup_range, bool sign_flip_reset, bool trapezoidal)
+PID::PID(PIDGains pid_gains, float windup_range, bool sign_flip_reset, bool trapezoidal)
     : pid_gains(pid_gains),
       windup_range(windup_range),
       sign_flip_reset(sign_flip_reset),
@@ -13,10 +13,10 @@ PID::PID()
       sign_flip_reset(true),
       trapezoidal(true) {};
 
-double PID::update(const double error) {
+float PID::update(const float error) {
 
     // calculate derivative
-    const double derivative = error - prevError;
+    const float derivative = error - prevError;
 
     // calculate integral
     if (trapezoidal) {

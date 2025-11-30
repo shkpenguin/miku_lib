@@ -4,7 +4,7 @@
 #include "system.h"
 #include "config.h"
 
-MovePose::MovePose(Point target, compass_degrees heading, double timeout, MovePoseParams params)
+MovePose::MovePose(Point target, compass_degrees heading, float timeout, MovePoseParams params)
     : target(target), target_heading(standard_radians(heading)), timeout(timeout), params(params) {
     if(params.k1 < 0) k1 = 4.0;
     if(params.k2 < 0) k2 = 6.0;
@@ -13,40 +13,39 @@ MovePose::MovePose(Point target, compass_degrees heading, double timeout, MovePo
 
 void MovePose::start() {
     done = false;
+    start_time = pros::millis();
     timer.set(timeout);
     timer.reset();
 }
 
 void MovePose::update() {
     
-    double drive_error = Miku.get_pose().distance_to(target);
+    float drive_error = Miku.get_pose().distance_to(target);
 
     standard_radians robot_heading = Miku.get_heading().wrap();
     if (params.reverse) robot_heading = (robot_heading + M_PI).wrap();
 
     standard_radians angle_to_target = Miku.get_pose().angle_to(target);
-    double gamma = (angle_to_target - robot_heading).wrap();
-    double delta = (target_heading - angle_to_target).wrap();
+    float gamma = (angle_to_target - robot_heading).wrap();
+    float delta = (target_heading - angle_to_target).wrap();
 
-    double v = k1 * drive_error * std::cos(gamma);
-    double w;
+    float v = k1 * drive_error * std::cos(gamma);
+    float w;
     if (std::abs(gamma) <= 0.01) {
         w = k2 * gamma + k1 * std::cos(gamma) * (gamma + k3 * delta);
     } else {
         w = k2 * gamma + k1 * std::sin(gamma) * std::cos(gamma) / gamma * (gamma + k3 * delta);
     }
 
-    v = std::clamp(v, -params.max_vel, params.max_vel);
-    w = std::clamp(w, -params.max_vel, params.max_vel);
+    v = std::clamp(v, -params.max_vel_pct / 100.0f * MAX_VEL, params.max_vel_pct / 100.0f * MAX_VEL);
+    w = std::clamp(w, -params.max_vel_pct / 100.0f * MAX_ANG_VEL, params.max_vel_pct / 100.0f * MAX_ANG_VEL);
 
-    if(!params.reverse && std::abs(v) < params.min_vel && std::abs(v) > 0) v = params.min_vel;
-    if(params.reverse && std::abs(v) < params.min_vel && std::abs(v) > 0) v = -params.min_vel;
+    if(params.min_vel_pct > 0 && v > 0 && v < fabs(params.min_vel_pct / 100.0f * MAX_VEL)) v = params.min_vel_pct / 100.0f * MAX_VEL;
+    float r_vel = v + TRACK_WIDTH * w / 2;
+    float l_vel = v - TRACK_WIDTH * w / 2;
 
-    double r_vel = v + TRACK_WIDTH * w / 2;
-    double l_vel = v - TRACK_WIDTH * w / 2;
-
-    double l_rpm = (l_vel * 60) / (CIRC * GEAR_RATIO);
-    double r_rpm = (r_vel * 60) / (CIRC * GEAR_RATIO);
+    float l_rpm = (l_vel * 60) / (WHEEL_CIRC * GEAR_RATIO);
+    float r_rpm = (r_vel * 60) / (WHEEL_CIRC * GEAR_RATIO);
 
     if (params.reverse) {
         Miku.move_velocity(-r_rpm, -l_rpm);
@@ -66,7 +65,7 @@ void MovePose::update() {
     }
 
     if(drive_error < params.end_cutoff) {
-        
+
         auto settle_motion = new MovePoint(
             Point(target.x, target.y), 
             timer.get_time_left(),

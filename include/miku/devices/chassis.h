@@ -3,6 +3,7 @@
 #include "pros/motors.hpp"
 #include "miku/devices/motor.h"
 #include "miku/geometry.h"
+#include "miku/mcl.h"
 #include <memory>
 
 inline pros::Mutex pose_mutex;
@@ -12,18 +13,18 @@ namespace miku {
 class Chassis {
 public:
     Chassis();
-    Chassis(std::shared_ptr<MotorGroup> left, std::shared_ptr<MotorGroup> right)
-        : left_motors(left), right_motors(right) {}
+    Chassis(std::shared_ptr<MotorGroup> left, std::shared_ptr<MotorGroup> right, std::shared_ptr<pros::Imu> imu, std::shared_ptr<ParticleFilter> pf)
+        : left_motors(left), right_motors(right), imu(imu), pf(pf) {}
 
-    void move(double left_speed, double right_speed) {
+    void move(float left_speed, float right_speed) {
         left_motors->move(left_speed);
         right_motors->move(right_speed);
     }
-    void move_voltage(double left_speed, double right_speed) {
+    void move_voltage(float left_speed, float right_speed) {
         left_motors->move_voltage(left_speed);
         right_motors->move_voltage(right_speed);
     }
-    void move_velocity(double left_velocity, double right_velocity) {
+    void move_velocity(float left_velocity, float right_velocity) {
         left_motors->move_velocity(left_velocity);
         right_motors->move_velocity(right_velocity);
     }
@@ -37,19 +38,16 @@ public:
     }
  
     inline Pose get_pose() { return pose; };
-    inline Pose get_pose_delta() { return pose_delta; };
     inline Point get_position() { return Point(pose.x, pose.y); };
-    inline Point get_position_delta() { return Point(pose_delta.x, pose_delta.y); };
-    inline double get_x() { return pose.x; };
-    inline double get_y() { return pose.y; };
+    inline float get_x() { return pose.x; };
+    inline float get_y() { return pose.y; };
     inline standard_radians get_heading() { return pose.theta; };
-    inline standard_radians get_heading_delta() { return pose_delta.theta; };
-    inline void set_x(double x) {
+    inline void set_x(float x) {
         pose_mutex.take();
         pose.x = x;
         pose_mutex.give();
     };
-    inline void set_y(double y) {
+    inline void set_y(float y) {
         pose_mutex.take();
         pose.y = y;
         pose_mutex.give();
@@ -61,23 +59,40 @@ public:
     }
     inline void set_pose(Pose new_pose) { 
         pose_mutex.take();
-        pose = new_pose; 
+        pose = new_pose;
         pose_mutex.give();
     };
     inline void set_position(Point new_position) { 
         pose_mutex.take();
-        pose.x = new_position.x; 
-        pose.y = new_position.y; 
+        pose.x = new_position.x;
+        pose.y = new_position.y;
         pose_mutex.give();
     };
-    void reset(Pose initial_pose); // declared in odom.cpp
-    void update_odometry();
+    inline void set(Pose new_pose) {
+        pose_mutex.take();
+        pose = new_pose;
+        pose_mutex.give();
+        pf->set_particles_point(Point(new_pose.x, new_pose.y));
+    };
+    inline void set(Point new_position) {
+        pose_mutex.take();
+        pose.x = new_position.x;
+        pose.y = new_position.y;
+        pose_mutex.give();
+        pf->set_particles_point(new_position);
+    };
+    
+    void distance_reset(Pose estimate, float particle_spread = 0.0f);
+    Pose compute_odometry_delta();
+    void update_position();
+    void calibrate();
 
 private:
     std::shared_ptr<MotorGroup> left_motors;
     std::shared_ptr<MotorGroup> right_motors;
+    std::shared_ptr<pros::Imu> imu;
+    std::shared_ptr<ParticleFilter> pf;
     Pose pose;
-    Pose pose_delta;
 };
 
 } // namespace miku

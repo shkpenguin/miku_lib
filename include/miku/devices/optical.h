@@ -3,8 +3,8 @@
 #include "api.h"
 
 struct Color {
-    double min_hue;
-    double max_hue;
+    float min_hue;
+    float max_hue;
 };
 
 #define TILE Color{40.0, 50.0} // Color of VEX field tiles
@@ -16,7 +16,7 @@ namespace miku {
         public:
         Optical(const std::uint8_t port) : pros::Optical(port) {}
         bool get_color(const Color& color) {
-            double hue = get_hue();
+            float hue = get_hue();
             return (hue >= color.min_hue && hue <= color.max_hue);
         }
         void initialize() {

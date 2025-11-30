@@ -17,23 +17,25 @@ void right_rush() {
     queue_motion(new TurnHeading(135, 400));
     queue_motion(new MovePoint({48, -48}, 800));
     queue_motion(new TurnHeading(180, 300));
-    queue_motion(new MovePoint({47, -63}, 1000, {.max_speed = 6000}));
+    queue_motion(new MovePoint({47, -64}, 1000, {.drive_max_volt_pct = 50}));
     queue_motion(new Delay(300));
-    auto score_loader_rush = new MovePoint({48, -20}, 1500, {.reverse = true, .max_speed = 6000});
+    auto score_loader_rush = new MovePoint({48, -20}, 1500, {.reverse = true, .drive_max_volt_pct = 50});
     score_loader_rush->add_event(ConditionalEvent{
         []() { return Miku.get_pose().distance_to(Point(48, -24)) < 5.0; },
         []() { lock_piston.set_value(true); intake_top.move_voltage(12000); intake_bottom.move_voltage(12000); }
     });
     queue_motion(score_loader_rush);
-    queue_motion(new Delay(500));
-    auto move_from_goal = new MovePoint({48, -40}, 500);
-    move_from_goal->add_event(ConditionalEvent{
-        []() { return true; },
-        []() { lock_piston.set_value(false); loader_piston.set_value(false); }
-    });
-    queue_motion(move_from_goal);
-    queue_motion(new TurnHeading(-135, 300));
-    queue_motion(new MovePoint({58, -30}, 700, {.reverse = true}));
-    queue_motion(new TurnHeading(180, 300));
-    queue_motion(new MovePoint({58, -12}, 1500, {.reverse = true, .min_speed = 6000}));
+    queue_motion(new Delay(500));   
+
+    // illegal wing push
+    // auto move_from_goal = new MovePoint({48, -40}, 500);
+    // move_from_goal->add_event(ConditionalEvent{
+    //     []() { return true; },
+    //     []() { lock_piston.set_value(false); loader_piston.set_value(false); }
+    // });
+    // queue_motion(move_from_goal);
+    // queue_motion(new TurnHeading(-135, 300));
+    // queue_motion(new MovePoint({58, -30}, 700, {.reverse = true}));
+    // queue_motion(new TurnHeading(180, 300));
+    // queue_motion(new MovePoint({58, -12}, 1500, {.reverse = true, .min_speed = 6000}));
 }

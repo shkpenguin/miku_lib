@@ -53,24 +53,38 @@ miku::MotorGroup right_motors({15, 2, 3},
                              pros::v5::MotorUnits::degrees,
                              right_drive_lut,
                              right_drive_gains);
-miku::Chassis Miku(std::make_shared<miku::MotorGroup>(left_motors), std::make_shared<miku::MotorGroup>(right_motors));
 
 pros::Imu imu(4);
+
+miku::Distance back_distance(21, -4.5, -5.0, Orientation::BACK);
+miku::Distance left_distance(20, -5.0, -4.75, Orientation::LEFT);
+miku::Distance right_distance(5, 5.0, -4.75, Orientation::RIGHT);
+// miku::Distance front_distance(6, -6.5, 8.25, Orientation::FRONT);
+
+ParticleFilter mcl({
+    // std::make_shared<miku::Distance>(front_distance),
+    std::make_shared<miku::Distance>(back_distance),
+    std::make_shared<miku::Distance>(left_distance),
+    std::make_shared<miku::Distance>(right_distance)
+});
+
+miku::Chassis Miku(
+    std::make_shared<miku::MotorGroup>(left_motors), 
+    std::make_shared<miku::MotorGroup>(right_motors),
+    std::make_shared<pros::Imu>(imu),
+    std::make_shared<ParticleFilter>(mcl)
+);
 
 miku::Pneumatic loader_piston('C');
 miku::Pneumatic lock_piston('A');
 miku::Pneumatic middle_piston('B');
 miku::Pneumatic descore_piston('D');
 
-miku::Optical optical(16);
+miku::Optical intake_optical(14);
+miku::Optical floor_optical(6);
 
 PIDGains turn_gains(320.0, 0.0, 3000.0);
 PIDGains drive_gains(500.0, 0.0, 3000.0);
-
-miku::Distance back_distance(21, -4.5, -5.0, Orientation::BACK);
-miku::Distance left_distance(20, -5.0, -4.75, Orientation::LEFT);
-miku::Distance right_distance(5, 5.0, -4.75, Orientation::RIGHT);
-// miku::Distance front_distance(6, -6.5, 8.25, Orientation::FRONT);
 
 PatienceExit drive_patience_exit(5, 1, false, 5.0);
 PatienceExit turn_patience_exit(5, 1, false, 5.0);

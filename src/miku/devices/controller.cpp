@@ -43,6 +43,7 @@ void miku::Controller::set_rumble_interval(int interval_ms) {
 void miku::Controller::update_display() {
     int32_t current_time = pros::millis();
     if(current_time - prev_update_time < CONTROLLER_UPDATE_RATE_MS) return;
+    if(current_time - prev_rumble_time < CONTROLLER_UPDATE_RATE_MS) return;
     if(rumble_on && current_time - prev_rumble_time >= interval_ms) {
         prev_rumble_time = current_time;
         pros::Controller::rumble("-");

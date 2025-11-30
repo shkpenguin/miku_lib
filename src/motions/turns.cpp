@@ -3,7 +3,7 @@
 #include "config.h"
 #include "miku/util.h"
 
-TurnHeading::TurnHeading(compass_degrees target, double timeout, TurnParams params)
+TurnHeading::TurnHeading(compass_degrees target, float timeout, TurnParams params)
     : target(target), timeout(timeout), params(params) {
     PIDGains gains;
     gains.kP = (params.kP > 0) ? params.kP : turn_gains.kP;
@@ -14,6 +14,7 @@ TurnHeading::TurnHeading(compass_degrees target, double timeout, TurnParams para
 
 void TurnHeading::start() {
     done = false;
+    start_time = pros::millis();
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
@@ -22,18 +23,21 @@ void TurnHeading::start() {
 
 void TurnHeading::update() {
     compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
-    double error = (target - current_deg).wrap();      // error in degrees
+    float error = (target - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
         done = true;
         return;
     }
 
-    double output = turn_pid.update(error);
+    float output = turn_pid.update(error);
+    output = std::clamp(output, -params.max_volt_pct / 100.0f * 12000, params.max_volt_pct / 100.0f * 12000);
+    if(params.min_volt_pct > 0) {
+        if(output > 0 && output < fabs(params.min_volt_pct / 100.0f * 12000)) output = params.min_volt_pct / 100.0f * 12000;
+        if(output < 0 && output > -fabs(params.min_volt_pct / 100.0f * 12000)) output = -params.min_volt_pct / 100.0f * 12000;
+    }
 
     Miku.move_voltage(output, -output);
-
-    if(fabs(error) < 5) turn_patience_exit.update(error);
 
     if(timer.is_done() || turn_patience_exit.get_exit()) {
         done = true;
@@ -46,7 +50,7 @@ bool TurnHeading::is_done() {
     return done;
 }
 
-TurnPoint::TurnPoint(Point target, double timeout, TurnParams params)
+TurnPoint::TurnPoint(Point target, float timeout, TurnParams params)
     : target(target), timeout(timeout), params(params) {
     PIDGains gains;
     gains.kP = (params.kP > 0) ? params.kP : turn_gains.kP;
@@ -57,6 +61,7 @@ TurnPoint::TurnPoint(Point target, double timeout, TurnParams params)
 
 void TurnPoint::start() {
     done = false;
+    start_time = pros::millis();
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
@@ -73,7 +78,12 @@ void TurnPoint::update() {
         return;
     }
 
-    double output = turn_pid.update(error);
+    float output = turn_pid.update(error);
+    output = std::clamp(output, -params.max_volt_pct / 100.0f * 12000, params.max_volt_pct / 100.0f * 12000);
+    if(params.min_volt_pct > 0) {
+        if(output > 0 && output < fabs(params.min_volt_pct / 100.0f * 12000)) output = params.min_volt_pct / 100.0f * 12000;
+        if(output < 0 && output > -fabs(params.min_volt_pct / 100.0f * 12000)) output = -params.min_volt_pct / 100.0f * 12000;
+    }
 
     Miku.move_voltage(output, -output);
 

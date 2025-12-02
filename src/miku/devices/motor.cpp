@@ -114,14 +114,6 @@ miku::MotorGroup::MotorGroup(const std::initializer_list<std::int8_t> ports,
     }
 }
 
-void miku::Motor::stop() {
-    if(hold) {
-        this->move_velocity(0);
-    } else {
-        this->move_voltage(0);
-    }
-}
-
 void miku::MotorGroup::move_velocity(float velocity) {
     float ff = voltage_lut.get_value(velocity);
     float error = velocity - get_average_velocity();
@@ -141,16 +133,6 @@ void miku::MotorGroup::move(int voltage) {
 void miku::MotorGroup::move_voltage(int32_t voltage) {
     for(auto motor : motors) {
         motor->move_voltage(voltage);
-    }
-}
-
-void miku::MotorGroup::stop() {
-    for(auto motor : motors) {
-        if(hold) {
-            motor->move_velocity(0);
-        } else {
-            motor->move_voltage(0);
-        }
     }
 }
 

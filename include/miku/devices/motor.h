@@ -33,13 +33,10 @@ protected:
     PID velocity_pid;
     LookupTable voltage_lut;
     float max_voltage = 12000;
-    bool hold = false;
 
 public:
     MotorController(PIDGains pid_gains, LookupTable voltage_lookup_table);
     virtual void move_velocity(float velocity) = 0;
-    virtual void stop() = 0;
-    virtual void set_brake(bool enabled) { hold = enabled; }
 };
 
 class Motor : public AbstractMotor, public MotorController {
@@ -50,7 +47,6 @@ Motor(std::int8_t port, pros::v5::MotorGears gearset = pros::v5::MotorGears::blu
       LookupTable voltage_lookup_table = LookupTable(), PIDGains pid_gains = PIDGains());
 
 void move_velocity(float velocity) override;
-void stop() override;
 
 };
 
@@ -79,7 +75,6 @@ void tare_position(void) const;
 void set_brake_mode(pros::motor_brake_mode_e mode);
 int get_highest_temperature() const;
 std::vector<int> get_temperature_all() const;
-void stop() override;
 
 };
 

@@ -56,13 +56,13 @@ miku::MotorGroup right_motors({15, 2, 3},
 
 pros::Imu imu(4);
 
-miku::Distance back_distance(21, -4.5, -5.0, Orientation::BACK);
-miku::Distance left_distance(20, -5.0, -4.75, Orientation::LEFT);
-miku::Distance right_distance(5, 5.0, -4.75, Orientation::RIGHT);
-// miku::Distance front_distance(6, -6.5, 8.25, Orientation::FRONT);
+miku::Distance back_distance(21, -4.5, -3.5, Orientation::BACK);
+miku::Distance left_distance(20, -5.0, -3.25, Orientation::LEFT);
+miku::Distance right_distance(5, 5.0, -3.25, Orientation::RIGHT);
+miku::Distance front_distance(13, 5.25, -0.75, Orientation::FRONT);
 
 ParticleFilter mcl({
-    // std::make_shared<miku::Distance>(front_distance),
+    std::make_shared<miku::Distance>(front_distance),
     std::make_shared<miku::Distance>(back_distance),
     std::make_shared<miku::Distance>(left_distance),
     std::make_shared<miku::Distance>(right_distance)

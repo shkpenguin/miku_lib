@@ -47,8 +47,6 @@ void initialize() {
     intake_top.tare_position();
     intake_bottom.tare_position();
 
-    intake_bottom.set_brake(true);
-
     Miku.set_brake_mode(DEFAULT_AUTONOMOUS_BRAKE_MODE);
 
     intake_optical.set_led_pwm(100);
@@ -208,10 +206,10 @@ void opcontrol() {
                 intake_bottom.move_voltage(-6000);
             } else if(master.get_digital_new_press(DIGITAL_L2)) {
                 intake_top.move_voltage(-12000);
-                intake_bottom.move_voltage(12000);
-                pros::delay(400);
+                intake_bottom.move_voltage(-3000);
+                pros::delay(200);
             } else if(master.get_digital(DIGITAL_L2)) {
-                intake_top.move_velocity(300);
+                intake_top.move_velocity(250);
                 intake_bottom.move_voltage(12000);
             }
             
@@ -240,8 +238,12 @@ void opcontrol() {
             }
 
             if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_L2)) {
-                intake_top.stop();
-                intake_bottom.stop();
+                intake_top.move_voltage(0);
+                if(intake_bottom.get_filtered_velocity() < 0) {
+                    intake_bottom.move_velocity(0);
+                } else {
+                    intake_bottom.move_voltage(0);
+                }
             }
 
             pros::delay(10);

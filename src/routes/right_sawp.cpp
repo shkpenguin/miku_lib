@@ -20,7 +20,6 @@ void sawp() {
     });
     queue_motion(turn_to_loader_1);
     queue_motion(new MovePoint({47, -64}, 1000, {.drive_max_volt_pct = 50}));
-    queue_motion(new MoveTime(3000, 3000, 200));
     auto score_loader_1 = new MovePoint({48, -20}, 1500, {.reverse = true, .drive_max_volt_pct = 50});
     score_loader_1->add_event(ConditionalEvent{
         []() { return Miku.get_pose().distance_to({48, -24}) < 5.0; },
@@ -79,7 +78,6 @@ void sawp() {
     queue_motion(move_loader_2);
     queue_motion(new TurnHeading(180, 400, {.cutoff = 5.0}));
     queue_motion(new MovePoint({-47, -64}, 1000, {.drive_max_volt_pct = 75}));
-    queue_motion(new MoveTime(3000, 3000, 200));
     auto score_loader_2 = new MovePoint({-48, -20}, 1500, {.reverse = true, .drive_max_volt_pct = 50});
     score_loader_2->add_event(ConditionalEvent{
         []() { return Miku.get_pose().distance_to({-48, -24}) < 5.0; },

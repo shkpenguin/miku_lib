@@ -36,6 +36,9 @@ public:
         left_motors->set_brake_mode(mode);
         right_motors->set_brake_mode(mode);
     }
+    void set_use_particle_filtering(bool use_pf) {
+        use_particle_filtering = use_pf;
+    }
  
     inline Pose get_pose() { return pose; };
     inline Point get_position() { return Point(pose.x, pose.y); };
@@ -93,6 +96,7 @@ private:
     std::shared_ptr<pros::Imu> imu;
     std::shared_ptr<ParticleFilter> pf;
     Pose pose;
+    bool use_particle_filtering = true;
 };
 
 } // namespace miku

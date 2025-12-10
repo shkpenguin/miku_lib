@@ -22,6 +22,8 @@ PIDGains intake_bottom_gains(20.0, 5.0, 0.0);
 miku::Motor intake_top(-1, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees, intake_top_lut, intake_top_gains);
 miku::Motor intake_bottom(10, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees, intake_bottom_lut, intake_bottom_gains);
 
+miku::Intake intake(std::make_shared<miku::Motor>(intake_top), std::make_shared<miku::Motor>(intake_bottom));
+
 LookupTable left_drive_lut({
     {-635, -12000}, {-580, -11000}, {-541, -10000}, {-485, -9000}, {-437, -8000}, {-380, -7000},
     {-332, -6000}, {-293, -5500}, {-264, -5000}, {-235, -4500}, {-205, -4000}, {-177, -3500},

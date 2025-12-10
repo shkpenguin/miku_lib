@@ -48,6 +48,10 @@ Motor(std::int8_t port, pros::v5::MotorGears gearset = pros::v5::MotorGears::blu
 
 void move_velocity(float velocity) override;
 
+void move(int voltage) { pros::Motor::move(voltage); }
+void move_voltage(int32_t voltage) { pros::Motor::move_voltage(voltage); }
+float get_filtered_velocity() { return AbstractMotor::get_filtered_velocity(); }
+
 };
 
 class MotorGroup : public MotorController {

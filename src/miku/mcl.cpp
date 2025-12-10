@@ -292,7 +292,7 @@ void ParticleFilter::update_particle_weights() {
     // max error check
     for(size_t i = 0; i < distance_sensors.size(); ++i) {
         float expected = get_expected_reading(
-            Miku.get_position(), 
+            Miku.get_position(),
             distance_sensors[i],
             cos_theta, 
             sin_theta).distance;
@@ -305,7 +305,7 @@ void ParticleFilter::update_particle_weights() {
             particles[i].sensor_readings[j] = get_expected_reading(
                 particles[i].position, 
                 distance_sensors[j],
-                cos_theta, 
+                cos_theta,
                 sin_theta);
             if(particles[i].sensor_readings[j].wall_id == BAD_INTERSECT) valid_sensors[j] = false;
         }

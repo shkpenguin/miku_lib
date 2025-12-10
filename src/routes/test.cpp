@@ -2,23 +2,17 @@
 #include "miku/motions.h"
 
 BezierPath test_path({
-    {24, -24, 0},
-    {24, -24, 50},
-    {24, 0, 25},
-    {18, 18, 25},
-    {0, 24, 25},
-    {-18, 18, 25},
-    {-24, 0, 25},
-    {-24, -24, 0},
-    {-24, -24, 0}
 });
 
 std::vector<std::reference_wrapper<BezierPath>> test_paths = {std::ref(test_path)};
 
 void test() {
-    queue_motion(new TurnHeading(90, 10000));
-    queue_motion(new MovePose({24, -24}, 0, 10000));
-    queue_motion(new Ramsete(test_path.get_waypoints(), 10000));
-    // queue_motion(new TurnHeading(90, 10000));
+    auto test = new MoveTime(0, 0, 10);
+    test->add_event(ConditionalEvent{
+        []() { return true; },
+        []() { intake.set_anti_jam(true); intake.set({3000, VOLTAGE},
+                           {3000, VOLTAGE}); }
+    });
+    queue_motion(test);
 }
 

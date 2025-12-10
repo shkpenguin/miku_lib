@@ -59,6 +59,14 @@ void miku::Chassis::update_position() {
     Pose delta = compute_odometry_delta();
     set_heading(pose.theta + delta.theta);
 
+    if(!use_particle_filtering) {
+        set_position(Point(
+            pose.x + delta.x,
+            pose.y + delta.y
+        ));
+        return;
+    }
+    
     pf->update_previous_belief(delta);
     pf->update_particle_weights();
 

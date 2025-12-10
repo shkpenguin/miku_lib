@@ -27,12 +27,12 @@ void queue_after_current(MotionPrimitive* motion) {
     queue_mutex.give();
 }
 
-int selected_idx = 2;
+int selected_idx = 3;
 std::vector<Route> routes;
 
 void precalculate_paths() {
     routes.push_back(Route("test route", {24, -48, M_PI_2}, test, test_paths));
-    routes.push_back(Route("skills", {0, 0, M_PI}, skills, skills_paths));
+    routes.push_back(Route("skills", {15, -48, M_PI}, skills, skills_paths));
     routes.push_back(Route("sawp", {0, -48, M_PI}, sawp, sawp_paths));
     routes.push_back(Route("right rush", {14, -46, M_PI_2}, right_rush, rush_paths));
     for(auto& path : routes[selected_idx].paths) {
@@ -68,6 +68,7 @@ void initialize() {
 void autonomous() {
 
     Miku.set(routes[selected_idx].start_pose);
+    Miku.calibrate();
 
     routes[selected_idx].queue();
     master.display(0, []() {
@@ -83,8 +84,9 @@ void autonomous() {
 
         uint32_t prev_time = pros::millis();
 
-        master.update_display();
+        // master.update_display();
         Miku.update_position();
+        intake.update();
 
         // If no motion is running, start the next one
         if (current_motion == nullptr) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#define CONTROLLER_UPDATE_RATE_MS 50
+#define CONTROLLER_UPDATE_RATE_MS 100
 
 #include "pros/misc.hpp"
 #include "pros/rtos.hpp"

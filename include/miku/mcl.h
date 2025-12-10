@@ -32,9 +32,8 @@ struct Particle {
 
 class ParticleFilter {
 private:
-    float max_error = 12.0; // inches
-    float min_odom_noise = 0.1; // inches
-    float max_sensor_stdev = 2.0; // inches
+    float max_error = 8.0; // inches
+    float min_odom_noise = 0.05; // inches
     std::vector<Particle> particles = std::vector<Particle>(NUM_PARTICLES);
 
 public:

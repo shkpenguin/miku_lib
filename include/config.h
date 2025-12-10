@@ -7,6 +7,7 @@
 #include "miku/devices/pneumatic.h"
 #include "miku/devices/distance.h"
 #include "miku/devices/optical.h"
+#include "miku/devices/intake.h"
 #include "miku/mcl.h"
 
 #include "miku/exit.h"
@@ -39,6 +40,8 @@ extern miku::Chassis Miku;
 
 extern miku::Motor intake_bottom;
 extern miku::Motor intake_top;
+
+extern miku::Intake intake;
 
 extern miku::Pneumatic loader_piston;
 extern miku::Pneumatic lock_piston;

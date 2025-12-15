@@ -2,6 +2,7 @@
 #include "routes.h"
 #include "miku/miku-api.h"
 #include "fmt/core.h"
+#include "macro.h"
 #include <deque>
 #include <vector>
 
@@ -27,11 +28,11 @@ void queue_after_current(MotionPrimitive* motion) {
     queue_mutex.give();
 }
 
-int selected_idx = 3;
+int selected_idx = 2;
 std::vector<Route> routes;
 
 void precalculate_paths() {
-    routes.push_back(Route("test route", {24, -48, M_PI_2}, test, test_paths));
+    routes.push_back(Route("test route", {24, -48, -M_PI_2}, test, test_paths));
     routes.push_back(Route("skills", {15, -48, M_PI}, skills, skills_paths));
     routes.push_back(Route("sawp", {0, -48, M_PI}, sawp, sawp_paths));
     routes.push_back(Route("right rush", {14, -46, M_PI_2}, right_rush, rush_paths));
@@ -63,28 +64,53 @@ void initialize() {
 
     master.clear();
 
-}
-
-void autonomous() {
-
     Miku.set(routes[selected_idx].start_pose);
     Miku.calibrate();
-
     routes[selected_idx].queue();
+
+}
+
+uint32_t curr_dt = 0;
+uint32_t prev_ms = pros::millis();
+
+inline void display_motor_temps() {
+    master.display(0, []() {
+        return "top: " + std::to_string(int(intake_top.get_temperature())) + "C";
+    });
+    master.display(1, []() {
+        return "bottom: " + std::to_string(int(intake_bottom.get_temperature())) + "C";
+    });
+    master.display(2, []() {
+        int temp = std::max(left_motors.get_highest_temperature(), right_motors.get_highest_temperature());
+        return "drive: " + std::to_string(temp) + "C";
+    });
+}
+
+inline void display_pose() {
     master.display(0, []() {
         return "queuelen: " + std::to_string(motion_queue.size());
     });
     master.display(1, []() {
         return Miku.get_pose().to_string();
     });
+    master.display(2, []() {
+        return "dt: " + std::to_string(curr_dt) + "ms";
+    });
+}
+
+void autonomous() {
+
+    display_pose();
 
     autonomous_system_task = new pros::Task([]() {
 
     while (true) {
 
-        uint32_t prev_time = pros::millis();
+        uint32_t curr_ms = pros::millis();
+        curr_dt = curr_ms - prev_ms;
+        prev_ms = curr_ms;
 
-        // master.update_display();
+        master.update_display();
         Miku.update_position();
         intake.update();
 
@@ -124,7 +150,7 @@ void autonomous() {
             }
         }
 
-        pros::Task::delay_until(&prev_time, DELTA_TIME);
+        pros::Task::delay_until(&curr_ms, DELTA_TIME);
     }
     });
 
@@ -158,10 +184,10 @@ void funny_tank(int left_x, int left_y, int right_x, int right_y) {
 }
 
 void arcade(int throttle, int turn) {
-    int left = throttle + turn;
-    int right = throttle - turn;
+    int left = curve(throttle + turn);
+    int right = curve(throttle - turn);
 
-    Miku.move(left, right);
+    Miku.move_voltage(left, right);
 }
 
 List<DriveMode> driveModes = {
@@ -169,29 +195,26 @@ List<DriveMode> driveModes = {
     DriveMode::ARCADE,
 };
 
+List<std::function<void()>> displayModes = {
+    display_pose,
+    display_motor_temps,
+};
+
 void opcontrol() {
 
     // /*
+
+    motion_queue.clear();
+    current_motion = nullptr;
 
     floor_optical.set_led_pwm(0);
     intake_optical.set_led_pwm(0);
 
     if(autonomous_system_task != nullptr) autonomous_system_task->remove();
+
     Miku.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
     // static Gif gif("/usd/jiachenma.gif", lv_scr_act());
-
-    // display motor temps
-    master.display(0, []() {
-        return "top: " + std::to_string(int(intake_top.get_temperature())) + "C";
-    });
-    master.display(1, []() {
-        return "bottom: " + std::to_string(int(intake_bottom.get_temperature())) + "C";
-    });
-    master.display(2, []() {
-        int temp = std::max(left_motors.get_highest_temperature(), right_motors.get_highest_temperature());
-        return "drive: " + std::to_string(temp) + "C";
-    });
 
     pros::Task intake_task([]() {
 
@@ -211,7 +234,7 @@ void opcontrol() {
                 intake_bottom.move_voltage(-3000);
                 pros::delay(200);
             } else if(master.get_digital(DIGITAL_L2)) {
-                intake_top.move_velocity(250);
+                intake_top.move_velocity(300);
                 intake_bottom.move_voltage(12000);
             }
             
@@ -254,15 +277,46 @@ void opcontrol() {
         
     });
 
-    pros::Task drive_task([]() {
+    pros::Task teleop_system_control([]() {
 
-        while (true) {
+    Miku.set_use_particle_filtering(false);
 
-            master.update_display();
+    while (true) {
 
-            if(master.get_digital(DIGITAL_LEFT) && master.get_digital_new_press(DIGITAL_RIGHT)) {
+        uint32_t prev_time = pros::millis();
+
+        master.update_display();
+        Miku.update_position();
+
+        bool joysticks_active = 
+            (fabs(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)) > 10) ||
+            (fabs(master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)) > 10) ||
+            (fabs(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X)) > 10) ||
+            (fabs(master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X)) > 10);
+
+        if(!motion_queue.empty() || current_motion != nullptr) {
+            if(joysticks_active) {
+                // Clear motion queue and stop current motion
+                queue_mutex.take();
+                motion_queue.clear();
+                queue_mutex.give();
+                current_motion = nullptr;
+                master.rumble("-");
+            }
+        }
+
+        if(motion_queue.empty() && current_motion == nullptr) {
+            if(master.get_digital(DIGITAL_B) && master.get_digital_new_press(DIGITAL_Y)) {
                 driveModes.cycle_forward();
                 master.rumble("-");
+            }
+
+            if(master.get_digital_new_press(DIGITAL_X)) {
+                displayModes.cycle_forward()();
+            }
+
+            if(master.get_digital_new_press(DIGITAL_LEFT)) {
+                descore_align();
             }
 
             if(master.get_digital(DIGITAL_UP)) {
@@ -288,11 +342,49 @@ void opcontrol() {
                     funny_tank(left_x, left_y, right_x, right_y);
                 }
             }
+        }
 
-            pros::delay(10);
+        else {
+        
+        if (current_motion == nullptr) {
+            queue_mutex.take();
+            if (!motion_queue.empty()) {
+                current_motion = motion_queue.front();
+                motion_queue.pop_front();
+                queue_mutex.give();
+
+                current_motion->start();
+            }
+            else {
+                queue_mutex.give();
+            }
+        }
+
+        // Update running motion
+        if (current_motion) {
+            bool done = current_motion->is_done();
+
+            // Trigger motion events
+            for (auto& e : current_motion->events) {
+                if (!e.triggered && e.condition()) {
+                    e.action();
+                    e.triggered = true;
+                }
+            }
+
+            if (done) {
+                current_motion = nullptr;
+                master.rumble(".");
+            }
+            else {
+                current_motion->update();
+            }
+        }
 
         }
 
+        pros::Task::delay_until(&prev_time, DELTA_TIME);
+    }
     });
 
 }

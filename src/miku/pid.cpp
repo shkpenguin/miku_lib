@@ -32,6 +32,23 @@ float PID::update(const float error) {
 
 }
 
+
+float PID::update(const float error, const float derivative) {
+
+    // calculate integral
+    if (trapezoidal) {
+        integral += derivative / 2;
+    }
+    if (sign(error) != sign((prevError)) && sign_flip_reset) integral = 0;
+    if (fabs(error) > windup_range && windup_range != 0) integral = 0;
+
+    prevError = error;
+
+    // calculate output
+    return error * pid_gains.kP + integral * pid_gains.kI + derivative * pid_gains.kD;
+
+}
+
 PID& PID::operator=(const PID& other) {
     if (this != &other) {
         pid_gains = other.pid_gains;

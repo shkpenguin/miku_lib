@@ -157,9 +157,9 @@ struct Pose {
     float magnitude() const {
         return std::hypot(x, y);
     }
-    standard_radians angle_to(const Point& other) const {
-        return standard_radians(atan2(other.y - y, other.x - x));
-    }
+    // standard_radians angle_to(const Point& other) const { // bugged
+    //     return standard_radians(atan2(other.y - y, other.x - x));
+    // }
     float distance_to(const Point& other) const {
         return std::hypot(other.x - x, other.y - y);
     }

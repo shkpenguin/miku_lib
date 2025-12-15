@@ -61,6 +61,7 @@ TurnPoint::TurnPoint(Point target, float timeout, TurnParams params)
 
 void TurnPoint::start() {
     done = false;
+    prev_deg = compass_degrees(Miku.get_heading());
     start_time = pros::millis();
     turn_pid.reset();
     timer.set(timeout);
@@ -70,7 +71,7 @@ void TurnPoint::start() {
 
 void TurnPoint::update() {
     compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
-    compass_degrees target_deg = compass_degrees(atan2(target.y - Miku.get_pose().y, target.x - Miku.get_pose().x) * (180 / M_PI));
+    compass_degrees target_deg = compass_degrees(miku::atan2(target.y - Miku.get_y(), target.x - Miku.get_x()));
     compass_degrees error = (target_deg - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
@@ -78,7 +79,8 @@ void TurnPoint::update() {
         return;
     }
 
-    float output = turn_pid.update(error);
+    float output = turn_pid.update(error, -(current_deg - prev_deg).wrap());
+    prev_deg = current_deg;
     output = std::clamp(output, -params.max_volt_pct / 100.0f * 12000, params.max_volt_pct / 100.0f * 12000);
     if(params.min_volt_pct > 0) {
         if(output > 0 && output < fabs(params.min_volt_pct / 100.0f * 12000)) output = params.min_volt_pct / 100.0f * 12000;

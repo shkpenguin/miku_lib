@@ -33,6 +33,7 @@ class PID {
         PID();
 
         float update(float error);
+        float update(float error, float derivative);
 
         void reset();
 

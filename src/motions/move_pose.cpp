@@ -9,6 +9,7 @@ MovePose::MovePose(Point target, compass_degrees heading, float timeout, MovePos
     if(params.k1 < 0) k1 = 4.0;
     if(params.k2 < 0) k2 = 6.0;
     if(params.k3 < 0) k3 = 0.5;
+    if(params.reverse) target_heading = (target_heading + M_PI).wrap();
 }
 
 void MovePose::start() {
@@ -25,9 +26,9 @@ void MovePose::update() {
     standard_radians robot_heading = Miku.get_heading().wrap();
     if (params.reverse) robot_heading = (robot_heading + M_PI).wrap();
 
-    standard_radians angle_to_target = Miku.get_pose().angle_to(target);
+    standard_radians angle_to_target = miku::atan2(target.y - Miku.get_y(), target.x - Miku.get_x()).wrap();
     float gamma = (angle_to_target - robot_heading).wrap();
-    float delta = (target_heading - angle_to_target).wrap();
+    float delta = (angle_to_target - target_heading).wrap();
 
     float v = k1 * drive_error * std::cos(gamma);
     float w;
@@ -70,16 +71,18 @@ void MovePose::update() {
             Point(target.x, target.y), 
             timer.get_time_left(),
             MovePointParams(
-                params.reverse,
-                -1.0,
-                12000.0,
-                1000.0,
-                -1.0,
-                -1.0,
-                -1.0,
-                -1.0,
-                -1.0,
-                -1.0
+                params.reverse, // reverse
+                -1.0, // cutoff
+                100.0, // drive_max_volt_pct
+                50.0, // turn_max_volt_pct
+                0.0, // min_volt_pct
+                1.0, // cos_scale
+                -1.0, // drive_kP
+                -1.0, // drive_kI
+                -1.0, // drive_kD
+                -1.0, // turn_kP
+                -1.0, // turn_kI
+                -1.0 // turn_kD
             )
         );
 

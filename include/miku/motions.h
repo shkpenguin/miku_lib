@@ -74,6 +74,7 @@ struct MovePointParams {
     float drive_max_volt_pct = 100;
     float turn_max_volt_pct = 50;
     float min_volt_pct = 0;
+    float cos_scale = 1.0;
     float drive_kP = -1.0;
     float drive_kI = -1.0;
     float drive_kD = -1.0;
@@ -148,6 +149,7 @@ struct TurnPoint : MotionPrimitive {
     float timeout;
     TurnParams params;
 
+    float prev_deg;
     PID turn_pid;
     Timer timer;
 

@@ -34,9 +34,14 @@ protected:
     LookupTable voltage_lut;
     float max_voltage = 12000;
 
+    int last_commanded_voltage = 0;
+    int last_commanded_velocity = 0;
 public:
     MotorController(PIDGains pid_gains, LookupTable voltage_lookup_table);
+    virtual ~MotorController() = default;
     virtual void move_velocity(float velocity) = 0;
+    virtual float get_commanded_voltage() { return last_commanded_voltage; }
+    virtual float get_commanded_velocity() { return last_commanded_velocity; }
 };
 
 class Motor : public AbstractMotor, public MotorController {
@@ -49,7 +54,10 @@ Motor(std::int8_t port, pros::v5::MotorGears gearset = pros::v5::MotorGears::blu
 void move_velocity(float velocity) override;
 
 void move(int voltage) { pros::Motor::move(voltage); }
-void move_voltage(int32_t voltage) { pros::Motor::move_voltage(voltage); }
+void move_voltage(int32_t voltage) { 
+    pros::Motor::move_voltage(voltage);
+    last_commanded_voltage = voltage;
+}
 float get_filtered_velocity() { return AbstractMotor::get_filtered_velocity(); }
 
 };

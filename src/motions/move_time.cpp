@@ -19,6 +19,11 @@ void MoveTime::update() {
     }
 }
 
+void MoveTime::stop() {
+    done = true;
+    Miku.stop();
+}
+
 bool MoveTime::is_done() {
     return done;
 }

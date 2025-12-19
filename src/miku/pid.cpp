@@ -32,7 +32,6 @@ float PID::update(const float error) {
 
 }
 
-
 float PID::update(const float error, const float derivative) {
 
     // calculate integral

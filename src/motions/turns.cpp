@@ -46,6 +46,13 @@ void TurnHeading::update() {
     }
 }
 
+void TurnHeading::stop() {
+    done = true;
+    if(params.cutoff < 0) {
+        Miku.stop();
+    }
+}
+
 bool TurnHeading::is_done() {
     return done;
 }
@@ -72,6 +79,7 @@ void TurnPoint::start() {
 void TurnPoint::update() {
     compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
     compass_degrees target_deg = compass_degrees(miku::atan2(target.y - Miku.get_y(), target.x - Miku.get_x()));
+    if(params.reverse) target_deg = (target_deg + 180.0f).wrap();
     compass_degrees error = (target_deg - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
@@ -94,6 +102,13 @@ void TurnPoint::update() {
         done = true;
         Miku.stop();
         return;
+    }
+}
+
+void TurnPoint::stop() {
+    done = true;
+    if(params.cutoff < 0) {
+        Miku.stop();
     }
 }
 

@@ -1,23 +1,15 @@
 #pragma once
 
 #include <vector>
+#include <queue>
+#include <initializer_list>
+#include <utility>
 #include "miku/mp.h"
 #include "config.h"
 #include "miku/time.h"
 #include "miku/geometry.h"
 #include "miku/pid.h"
 #include "miku/devices/chassis.h"
-
-enum MotionType {
-    TURN_HEADING,
-    TURN_POINT,
-    SWING_HEADING,
-    SWING_POINT,
-    MOVE_POINT,
-    MOVE_POSE,
-    MOVE_TIME,
-    RAMSETE
-};
 
 enum class Side {
     LEFT,
@@ -31,19 +23,71 @@ struct ConditionalEvent {
     bool triggered = false;
 };
 
+inline ConditionalEvent await(std::function<bool()> condition) {
+    return {
+        condition,
+        []() {}
+    };
+}
+
+inline ConditionalEvent within(const Point& target, float distance, std::function<void()> action) {
+    return {
+        [target, distance]() { return Miku.get_position().distance_to(target) < distance; },
+        action
+    };
+}
+
+inline ConditionalEvent within(float target, float tolerance, std::function<void()> action) {
+    return {
+        [target, tolerance]() { 
+            compass_degrees current = compass_degrees(Miku.get_heading()).wrap();
+            compass_degrees diff = (compass_degrees(target) - current).wrap();
+            return diff < tolerance;
+        },
+        action
+    };
+}
+
+inline ConditionalEvent elapsed(int ms, std::function<void()> action) {
+    int start_time = pros::millis();
+    return {
+        [start_time, ms]() { return (pros::millis() - start_time) >= ms; },
+        action
+    };
+}
+
+inline ConditionalEvent start(std::function<void()> action) {
+    return {
+        []() { return true; },
+        action
+    };
+}
+
 struct MotionPrimitive {
     uint32_t start_time;
     bool done = false;
 
     virtual void start() = 0;
     virtual void update() = 0;
+    virtual void stop() = 0;
     virtual bool is_done() = 0;
     virtual ~MotionPrimitive() {}
 
-    std::vector<ConditionalEvent> events;
-    void add_event(const ConditionalEvent& event) {
-        events.push_back(event);
+    std::vector<ConditionalEvent> conditional_events;
+    std::queue<ConditionalEvent> sequential_events;
+    void add_conditional_event(const ConditionalEvent& event) {
+        conditional_events.push_back(event);
     }
+    void add_sequential_event(const ConditionalEvent& event) {
+        sequential_events.push(event);
+    }
+    void end(const ConditionalEvent& event) {
+        add_conditional_event({
+            event.condition,
+            [this]() { this->stop(); }
+        });
+    }
+
 };
 
 struct TurnParams {
@@ -124,6 +168,10 @@ struct Delay : MotionPrimitive {
         }
     }
 
+    void stop() override {
+        done = true;
+    }
+
     bool is_done() override {
         return done;
     }
@@ -141,6 +189,7 @@ struct TurnHeading : MotionPrimitive {
 
     void start() override;
     void update() override;
+    void stop() override;
     bool is_done() override;
 };
 
@@ -157,6 +206,7 @@ struct TurnPoint : MotionPrimitive {
   
     void start() override;
     void update() override;
+    void stop() override;
     bool is_done() override;
 };
 
@@ -171,6 +221,7 @@ struct SwingHeading : MotionPrimitive {
     SwingHeading(compass_degrees target, float timeout, SwingParams params = SwingParams());
     void start() override;
     void update() override;
+    void stop() override;
     bool is_done() override;
 
 };
@@ -187,6 +238,7 @@ struct SwingPoint : MotionPrimitive {
 
     void start() override;
     void update() override;
+    void stop() override;
     bool is_done() override;
 };
 
@@ -205,6 +257,7 @@ struct MovePoint : MotionPrimitive {
 
     void start() override;
     void update() override;
+    void stop() override;
     bool is_done() override;
 };
 
@@ -221,6 +274,7 @@ struct MovePose : MotionPrimitive {
 
     void start() override;
     void update() override;
+    void stop() override;
     bool is_done() override;
 };
 
@@ -234,9 +288,8 @@ struct MoveTime : MotionPrimitive {
     MoveTime(float left_speed, float right_speed, float duration);
 
     void start() override;
-
     void update() override;
-
+    void stop() override;
     bool is_done() override;
 
 };
@@ -269,5 +322,124 @@ struct Ramsete : MotionPrimitive {
 
     void start() override;
     void update() override;
+    void stop() override;
     bool is_done() override;
 };
+
+void queue_motion(MotionPrimitive* motion);
+void queue_after_current(MotionPrimitive* motion);
+
+struct MotionBuilder {
+protected:
+    MotionPrimitive* motion;
+
+    explicit MotionBuilder(MotionPrimitive* motion) : motion(motion) {}
+
+public:
+    MotionBuilder(const MotionBuilder&) = delete;
+    MotionBuilder& operator=(const MotionBuilder&) = delete;
+    MotionBuilder(MotionBuilder&& other) noexcept : motion(other.motion) { other.motion = nullptr; }
+    MotionBuilder& operator=(MotionBuilder&& other) noexcept {
+        if (this != &other) {
+            motion = other.motion;
+            other.motion = nullptr;
+        }
+        return *this;
+    }
+    virtual ~MotionBuilder() = default;
+
+    MotionBuilder& event(const ConditionalEvent& event) {
+        motion->add_conditional_event(event);
+        return *this;
+    }
+
+    MotionBuilder& events(std::initializer_list<ConditionalEvent> events) {
+        for (const auto& e : events) {
+            motion->add_conditional_event(e);
+        }
+        return *this;
+    }
+
+    MotionBuilder& seq(const ConditionalEvent& event) {
+        motion->add_sequential_event(event);
+        return *this;
+    }
+
+    MotionBuilder& seq(std::initializer_list<ConditionalEvent> events) {
+        for (const auto& e : events) {
+            motion->add_sequential_event(e);
+        }
+        return *this;
+    }
+
+    MotionPrimitive* queue() {
+        queue_motion(motion);
+        return motion;
+    }
+
+    MotionPrimitive* run() {
+        queue_after_current(motion);
+        return motion;
+    }
+
+    MotionPrimitive* ptr() {
+        return motion;
+    }
+};
+
+struct TurnHeadingBuilder : MotionBuilder {
+    TurnHeadingBuilder(compass_degrees target, float timeout, TurnParams params = TurnParams())
+        : MotionBuilder(new TurnHeading(target, timeout, params)) {}
+};
+
+struct TurnPointBuilder : MotionBuilder {
+    TurnPointBuilder(Point target, float timeout, TurnParams params = TurnParams())
+        : MotionBuilder(new TurnPoint(target, timeout, params)) {}
+};
+
+struct SwingHeadingBuilder : MotionBuilder {
+    SwingHeadingBuilder(compass_degrees target, float timeout, SwingParams params = SwingParams())
+        : MotionBuilder(new SwingHeading(target, timeout, params)) {}
+};
+
+struct SwingPointBuilder : MotionBuilder {
+    SwingPointBuilder(Point target, float timeout, SwingParams params = SwingParams())
+        : MotionBuilder(new SwingPoint(target, timeout, params)) {}
+};
+
+struct MovePointBuilder : MotionBuilder {
+    MovePointBuilder(Point target, float timeout, MovePointParams params = MovePointParams())
+        : MotionBuilder(new MovePoint(target, timeout, params)) {}
+};
+
+struct MovePoseBuilder : MotionBuilder {
+    MovePoseBuilder(Point target, compass_degrees heading, float timeout, MovePoseParams params = MovePoseParams())
+        : MotionBuilder(new MovePose(target, heading, timeout, params)) {}
+};
+
+struct MoveTimeBuilder : MotionBuilder {
+    MoveTimeBuilder(float left_speed, float right_speed, float duration)
+        : MotionBuilder(new MoveTime(left_speed, right_speed, duration)) {}
+};
+
+struct RamseteBuilder : MotionBuilder {
+    RamseteBuilder(std::vector<Waypoint> waypoints, float timeout, RamseteParams params = RamseteParams())
+        : MotionBuilder(new Ramsete(std::move(waypoints), timeout, params)) {}
+
+    RamseteBuilder(BezierPath& path, float timeout, RamseteParams params = RamseteParams())
+        : MotionBuilder(new Ramsete(path.get_waypoints(), timeout, params)) {}
+};
+
+struct DelayBuilder : MotionBuilder {
+    explicit DelayBuilder(float duration) : MotionBuilder(new Delay(duration)) {}
+};
+
+using wait = DelayBuilder;
+using turn_heading = TurnHeadingBuilder;
+using turn_point = TurnPointBuilder;
+using swing_heading = SwingHeadingBuilder;
+using swing_point = SwingPointBuilder;
+using move_point = MovePointBuilder;
+using move_pose = MovePoseBuilder;
+using move_time = MoveTimeBuilder;
+using ramsete = RamseteBuilder;

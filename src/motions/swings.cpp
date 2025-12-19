@@ -51,6 +51,13 @@ void SwingHeading::update() {
     }
 }
 
+void SwingHeading::stop() {
+    done = true;
+    if(params.cutoff < 0) {
+        Miku.stop();
+    }
+}
+
 bool SwingHeading::is_done() {
     return done;
 }
@@ -101,6 +108,13 @@ void SwingPoint::update() {
     if(timer.is_done() || turn_patience_exit.get_exit()) {
         done = true;
         return;
+    }
+}
+
+void SwingPoint::stop() {
+    done = true;
+    if(params.cutoff < 0) {
+        Miku.stop();
     }
 }
 

@@ -88,6 +88,13 @@ void MovePoint::update() {
     }
 }
 
+void MovePoint::stop() {
+    done = true;
+    if(params.cutoff < 0) {
+        Miku.stop();
+    }
+}
+
 bool MovePoint::is_done() {
     return done;
 }

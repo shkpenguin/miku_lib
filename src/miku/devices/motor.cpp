@@ -102,6 +102,7 @@ void miku::Motor::move_velocity(float velocity) {
     float total_voltage = ff + pid_output;
     total_voltage = clamp(total_voltage, -max_voltage, max_voltage);
     this->move_voltage(static_cast<int>(total_voltage));
+    last_commanded_velocity = velocity;
 }
 
 miku::MotorGroup::MotorGroup(const std::initializer_list<std::int8_t> ports,
@@ -121,7 +122,8 @@ void miku::MotorGroup::move_velocity(float velocity) {
 
     float total_voltage = ff + pid_output;
     clamp(total_voltage, -max_voltage, max_voltage);
-    this->move_voltage(total_voltage);
+    this->move_voltage(static_cast<int>(total_voltage));
+    last_commanded_velocity = velocity;
 }
 
 void miku::MotorGroup::move(int voltage) {
@@ -134,6 +136,7 @@ void miku::MotorGroup::move_voltage(int32_t voltage) {
     for(auto motor : motors) {
         motor->move_voltage(voltage);
     }
+    last_commanded_voltage = voltage;
 }
 
 float miku::MotorGroup::get_average_velocity() {

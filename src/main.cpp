@@ -6,34 +6,12 @@
 #include <deque>
 #include <vector>
 
-pros::Task* autonomous_system_task = nullptr;
-
-std::deque<MotionPrimitive*> motion_queue;
-pros::Mutex queue_mutex;
-MotionPrimitive* current_motion = nullptr;
-
-void queue_motion(MotionPrimitive* motion) {
-    queue_mutex.take();
-    motion_queue.push_back(motion);
-    queue_mutex.give();
-}
-
-void queue_after_current(MotionPrimitive* motion) {
-    queue_mutex.take();
-    if (current_motion == nullptr) {
-        motion_queue.push_back(motion);
-    } else {
-        motion_queue.insert(motion_queue.begin(), motion);
-    }
-    queue_mutex.give();
-}
-
-int selected_idx = 2;
+int selected_idx = 1;
 std::vector<Route> routes;
 
 void precalculate_paths() {
     routes.push_back(Route("test route", {24, -48, -M_PI_2}, test, test_paths));
-    routes.push_back(Route("skills", {15, -48, M_PI}, skills, skills_paths));
+    routes.push_back(Route("skills", {14, -46, M_PI_2}, skills, skills_paths));
     routes.push_back(Route("sawp", {0, -48, M_PI}, sawp, sawp_paths));
     routes.push_back(Route("right rush", {14, -46, M_PI_2}, right_rush, rush_paths));
     for(auto& path : routes[selected_idx].paths) {
@@ -98,6 +76,18 @@ inline void display_pose() {
     });
 }
 
+inline void display_vel() {
+    master.display(0, []() {
+        return fmt::format("top: {:.1f}rpm", intake_top.get_filtered_velocity());
+    }); 
+    master.display(1, []() {
+        return fmt::format("bottom: {:.1f}rpm", intake_bottom.get_filtered_velocity());
+    });
+    master.display(2, []() {
+        return fmt::format("drive: {:.0f} {:.0f}", left_motors.get_average_velocity(), right_motors.get_average_velocity());
+    });
+}
+
 void autonomous() {
 
     display_pose();
@@ -131,17 +121,23 @@ void autonomous() {
 
         // Update running motion
         if (current_motion) {
-            bool done = current_motion->is_done();
-
-            // Trigger motion events
-            for (auto& e : current_motion->events) {
+            // Trigger motion events first (so events like stop_when() take effect immediately)
+            for (auto& e : current_motion->conditional_events) {
                 if (!e.triggered && e.condition()) {
                     e.action();
                     e.triggered = true;
                 }
             }
 
-            if (done) {
+            if(!current_motion->sequential_events.empty()) {
+                ConditionalEvent& e = current_motion->sequential_events.front();
+                if (e.condition()) {
+                    e.action();
+                    current_motion->sequential_events.pop();
+                }
+            }
+
+            if (current_motion->is_done()) {
                 current_motion = nullptr;
                 master.rumble(".");
             }
@@ -164,11 +160,11 @@ enum class DriveMode {
 
 int curve(int pos) {
     if(fabs(pos) <= 5) return 0;
-    return (pos * pos * pos * 0.00337827447) + (pos * 40);
+    return 10502.7578057 * (std::exp(0.006 * fabs(pos)) - 1.0) * (pos > 0 ? 1 : -1);
 }
 
 void tank(int left, int right) {
-    Miku.move(left, right);
+    Miku.move_voltage(curve(left), curve(right));
 }
 
 void funny_tank(int left_x, int left_y, int right_x, int right_y) {
@@ -198,6 +194,7 @@ List<DriveMode> driveModes = {
 List<std::function<void()>> displayModes = {
     display_pose,
     display_motor_temps,
+    display_vel,
 };
 
 void opcontrol() {
@@ -206,9 +203,6 @@ void opcontrol() {
 
     motion_queue.clear();
     current_motion = nullptr;
-
-    floor_optical.set_led_pwm(0);
-    intake_optical.set_led_pwm(0);
 
     if(autonomous_system_task != nullptr) autonomous_system_task->remove();
 
@@ -226,18 +220,18 @@ void opcontrol() {
 
             if(master.get_digital_new_press(DIGITAL_R1)) loader_piston.toggle();
 
-            if(master.get_digital_new_press(DIGITAL_R2)) {
+            if(master.get_digital(DIGITAL_R2)) {
                 intake_top.move_voltage(-8000);
-                intake_bottom.move_voltage(-6000);
+                intake_bottom.move_velocity(-300);
             } else if(master.get_digital_new_press(DIGITAL_L2)) {
                 intake_top.move_voltage(-12000);
                 intake_bottom.move_voltage(-3000);
-                pros::delay(200);
+                pros::delay(300);
             } else if(master.get_digital(DIGITAL_L2)) {
-                intake_top.move_velocity(300);
-                intake_bottom.move_voltage(12000);
+                intake_top.move_velocity(12000);
+                intake_bottom.move_voltage(8000);
             }
-            
+
             } else {
 
             if(master.get_digital_new_press(DIGITAL_R1)) {
@@ -255,14 +249,23 @@ void opcontrol() {
 
             if(master.get_digital(DIGITAL_R2)) {
                 intake_bottom.move_voltage(12000);
-                if(middle_piston.get_value() == true) intake_top.move_velocity(200);
-                else if(lock_piston.get_value() == false) intake_top.move_voltage(4000);
+                if(lock_piston.get_value() == false) intake_top.move_voltage(4000);
                 else intake_top.move_voltage(12000);
+            } else if(master.get_digital_new_press(DIGITAL_LEFT)) {
+                intake_top.move_voltage(-12000);
+                intake_bottom.move_voltage(-3000);
+                pros::delay(300);
+            } else if(master.get_digital(DIGITAL_LEFT)) {
+                if(intake_optical.get_color(RED)) {
+                    intake_bottom.move_voltage(-6000);
+                }
+                intake_top.move_velocity(150);
+                if(intake_bottom.get_commanded_voltage() != -6000) intake_bottom.move_voltage(8000);
             }
 
-            }
+            } // shift
 
-            if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_L2)) {
+            if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_L2) && !master.get_digital(DIGITAL_LEFT)) {
                 intake_top.move_voltage(0);
                 if(intake_bottom.get_filtered_velocity() < 0) {
                     intake_bottom.move_velocity(0);
@@ -362,17 +365,23 @@ void opcontrol() {
 
         // Update running motion
         if (current_motion) {
-            bool done = current_motion->is_done();
-
-            // Trigger motion events
-            for (auto& e : current_motion->events) {
+            // Trigger motion events first (so events like stop_when() take effect immediately)
+            for (auto& e : current_motion->conditional_events) {
                 if (!e.triggered && e.condition()) {
                     e.action();
                     e.triggered = true;
                 }
             }
 
-            if (done) {
+            if(!current_motion->sequential_events.empty()) {
+                ConditionalEvent& e = current_motion->sequential_events.front();
+                if (e.condition()) {
+                    e.action();
+                    current_motion->sequential_events.pop();
+                }
+            }
+
+            if (current_motion->is_done()) {
                 current_motion = nullptr;
                 master.rumble(".");
             }

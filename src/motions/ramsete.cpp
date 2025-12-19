@@ -111,6 +111,11 @@ void Ramsete::update() {
     }
 }
 
+void Ramsete::stop() {
+    done = true;
+    Miku.stop();
+}
+
 bool Ramsete::is_done() {
     return done;
 }

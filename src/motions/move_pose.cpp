@@ -94,6 +94,13 @@ void MovePose::update() {
     }
 }
 
+void MovePose::stop() {
+    done = true;
+    if(params.cutoff < 0) {
+        Miku.stop();
+    }
+}
+
 bool MovePose::is_done() {
     return done;
 }   

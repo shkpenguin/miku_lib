@@ -3,24 +3,23 @@
 #include <numeric>
 
 float LookupTable::get_value(float key) {
-    // use binary search to find least voltage below desired velocity
-    int low = 0;
-    int high = table.size() - 1;
-    while (low < high) {
-        int mid = (low + high + 1) / 2;
-        if (table[mid].first <= key) {
-            low = mid;
-        } else {
-            high = mid - 1;
+    auto it = std::lower_bound(
+        table.begin(), table.end(), key,
+        [](const auto& pair, float value) {
+            return pair.first < value;
         }
-    }
-    // use linear interpolation
-    if (low == table.size() - 1) {
-        return table[low].second;
-    }
-    float x0 = table[low].first;
-    float y0 = table[low].second;
-    float x1 = table[low + 1].first;
-    float y1 = table[low + 1].second;
-    return y0 + (y1 - y0) * (key - x0) / (x1 - x0);
+    );
+
+    if (it == table.begin())
+        return it->second;
+
+    if (it == table.end())
+        return table.back().second;
+
+    // linearly interpolate between the two surrounding points
+    auto [x1, y1] = *(it - 1);
+    auto [x2, y2] = *it;
+    float slope = (y2 - y1) / (x2 - x1);
+    return y1 + slope * (key - x1);
+
 }

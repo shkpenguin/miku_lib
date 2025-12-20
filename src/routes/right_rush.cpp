@@ -14,7 +14,6 @@ void right_rush() {
     turn_heading(135, 400, {.cutoff = 5.0}).queue();
     move_point({48, -48}, 800, {.cutoff = 3.0}).queue();
     turn_heading(180, 300, {.cutoff = 5.0}).queue();
-    move_point({47, -64}, 1000).queue();
     move_time(3000, 3000, 100).queue();
 
     move_point({48, -20}, 1500, {.reverse = true, .drive_max_volt_pct = 50})

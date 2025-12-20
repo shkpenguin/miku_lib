@@ -10,24 +10,26 @@ ParticleFilter::ParticleFilter(std::vector<std::shared_ptr<miku::Distance>> sens
     }
 }
 
-float max_error = 8.0;
-float min_odom_noise = 0.05;
-float max_sensor_stdev = 100.0;
-void set_max_distance_error(float error) {
+
+void ParticleFilter::set_max_distance_error(float error) {
     max_error = error;
 }
-void set_min_odom_noise(float noise) {
+void ParticleFilter::set_min_odom_noise(float noise) {
     min_odom_noise = noise;
 }
-void set_max_sensor_stdev(float stdev) {
-    max_sensor_stdev = stdev;
-}
 
+// Given a particle position and a distance sensor, compute the expected wall intersection
+// using the project's sensor offset convention: offset_y is forward (+Y), offset_x is right (+X).
+// Sensor world position (with robot heading theta) is:
+//   sensor_x = robot_x + offset_x * sin(theta) + offset_y * cos(theta)
+//   sensor_y = robot_y - offset_x * cos(theta) + offset_y * sin(theta)
+// The ray direction (dx,dy) is chosen based on sensor orientation (front/back/left/right).
+// Return value is the WallEstimate (wall id and distance along the ray t).
 auto get_expected_reading = [](Point particle_position, std::shared_ptr<miku::Distance> sensor, float cos_theta, float sin_theta) {
 
-    float sensor_x = particle_position.x + sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
     float sensor_y = particle_position.y - sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
-
+    float sensor_x = particle_position.x + sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
+    
     float dx, dy;
 
     switch (sensor->orientation) {
@@ -109,11 +111,11 @@ auto get_expected_reading = [](Point particle_position, std::shared_ptr<miku::Di
 
 };
 
-void miku::Chassis::distance_reset(Pose estimate, float particle_spread) {
+void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
 
     std::vector<WallEstimate> expected_readings;
-    float cos_theta = cos(estimate.theta);
-    float sin_theta = sin(estimate.theta);
+    float cos_theta = cos(Miku.get_heading());
+    float sin_theta = sin(Miku.get_heading());
 
     for(const auto& sensor : pf->distance_sensors) {
         expected_readings.push_back(
@@ -140,60 +142,76 @@ void miku::Chassis::distance_reset(Pose estimate, float particle_spread) {
         if(expected.wall_id == BAD_INTERSECT || expected.wall_id == NOT_IN_FIELD) continue;
 
         float reading = sensor->get_reading();
-        float confidence = sensor->get_confidence();
-        if(confidence <= 0.0f) continue;
-
-        if(fabs(reading - expected.distance) > max_error) continue;
+        if(fabs(reading - expected.distance) > pf->max_error) continue;
 
         float corrected_x = estimate.x;
         float corrected_y = estimate.y;
 
+        // Compute sensor offset in world frame using the same convention as get_expected_reading:
+        //   o_x = offset_x * sin(theta) + offset_y * cos(theta)
+        //   o_y = -offset_x * cos(theta) + offset_y * sin(theta)
+        float o_x = sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
+        float o_y = -sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
+
+        float dx, dy;
+        switch (sensor->orientation) {
+            case Orientation::FRONT:
+                dx = cos_theta;
+                dy = sin_theta;
+                break;
+            case Orientation::BACK:
+                dx = -cos_theta;
+                dy = -sin_theta;
+                break;
+            case Orientation::LEFT:
+                dx = -sin_theta;
+                dy = cos_theta;
+                break;
+            case Orientation::RIGHT:
+                dx = sin_theta;
+                dy = -cos_theta;
+                break;
+        }
+
         switch(expected.wall_id) {
             case LEFT_WALL:
-                corrected_x = -HALF_FIELD
-                              - (sensor->offset_x * sin_theta
-                              - sensor->offset_y * cos_theta)
-                              + reading * cos_theta;
+                // sensor_x + reading*dx = -HALF_FIELD  => robot_x = -HALF_FIELD - reading*dx - o_x
+                corrected_x = -HALF_FIELD - reading * dx - o_x;
                 break;
 
             case RIGHT_WALL:
-                corrected_x = HALF_FIELD
-                              - (sensor->offset_x * sin_theta
-                              - sensor->offset_y * cos_theta)
-                              - reading * cos_theta;
+                // sensor_x + reading*dx = HALF_FIELD  => robot_x = HALF_FIELD - reading*dx - o_x
+                corrected_x = HALF_FIELD - reading * dx - o_x;
                 break;
 
             case TOP_WALL:
-                corrected_y = HALF_FIELD
-                              - (sensor->offset_x * cos_theta
-                              + sensor->offset_y * sin_theta)
-                              - reading * sin_theta;
+                // sensor_y + reading*dy = HALF_FIELD  => robot_y = HALF_FIELD - reading*dy - o_y
+                corrected_y = HALF_FIELD - reading * dy - o_y;
                 break;
 
             case BOTTOM_WALL:
-                corrected_y = -HALF_FIELD
-                              - (sensor->offset_x * cos_theta
-                              + sensor->offset_y * sin_theta)
-                              + reading * sin_theta;
+                // sensor_y + reading*dy = -HALF_FIELD => robot_y = -HALF_FIELD - reading*dy - o_y
+                corrected_y = -HALF_FIELD - reading * dy - o_y;
                 break;
 
             default:
                 break;
         }
 
+        // accumulate equally-weighted estimates (no confidence bias)
         if(expected.wall_id == LEFT_WALL || expected.wall_id == RIGHT_WALL) {
-            acc_x += corrected_x * confidence;
-            sum_weight_x += confidence;
+            acc_x += corrected_x;
+            sum_weight_x += 1.0f;
         }
 
         if(expected.wall_id == TOP_WALL || expected.wall_id == BOTTOM_WALL) {
-            acc_y += corrected_y * confidence;
-            sum_weight_y += confidence;
+            acc_y += corrected_y;
+            sum_weight_y += 1.0f;
         }
 
     }
 
-    Pose corrected_pose = estimate;
+    Point corrected_pose = estimate;
 
     if(sum_weight_x > 0.0f) {
         corrected_pose.x = acc_x / sum_weight_x;
@@ -209,9 +227,9 @@ void miku::Chassis::distance_reset(Pose estimate, float particle_spread) {
     ));
 
     if(particle_spread > 0.0) {
-        pf->set_particles_uniform(Point(estimate.x, estimate.y), particle_spread);
+        pf->set_particles_uniform(Point(corrected_pose.x, corrected_pose.y), particle_spread);
     } else {
-        pf->set_particles_point(Point(estimate.x, estimate.y));
+        pf->set_particles_point(Point(corrected_pose.x, corrected_pose.y));
     }
 
 }
@@ -337,7 +355,6 @@ void ParticleFilter::update_particle_weights() {
             float sensor_stdev;
             if(reading < 8) sensor_stdev = 0.1;
             else sensor_stdev = reading * 0.02;
-            if(sensor_stdev > max_sensor_stdev) sensor_stdev = max_sensor_stdev;
             weight *= std::exp(-(dev * dev) / (2 * sensor_stdev * sensor_stdev));
         }
 

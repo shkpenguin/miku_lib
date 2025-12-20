@@ -6,7 +6,7 @@
 #include <deque>
 #include <vector>
 
-int selected_idx = 1;
+int selected_idx = 3;
 std::vector<Route> routes;
 
 void precalculate_paths() {
@@ -88,9 +88,25 @@ inline void display_vel() {
     });
 }
 
+inline void display_floor_color() {
+    master.display(0, []() {
+        if(floor_optical.get_color(RED)) return fmt::format("red");
+        else if(floor_optical.get_color(BLUE)) return fmt::format("blue");
+        else if(floor_optical.get_color(TILE)) return fmt::format("tile");
+        else return fmt::format("none");
+    });
+    master.display(1, []() {
+        return fmt::format("hue: {:.1f}", floor_optical.get_hue());
+    });
+    master.display(2, []() {
+        return fmt::format("prox: {:.1f}", (float)floor_optical.get_proximity());
+    });
+}
+
 void autonomous() {
 
     display_pose();
+    descore_piston.set_value(true);
 
     autonomous_system_task = new pros::Task([]() {
 
@@ -159,8 +175,8 @@ enum class DriveMode {
 };
 
 int curve(int pos) {
-    if(fabs(pos) <= 5) return 0;
-    return 10502.7578057 * (std::exp(0.006 * fabs(pos)) - 1.0) * (pos > 0 ? 1 : -1);
+    if(abs(pos) <= 5) return 0;
+    return 10502.7578057 * (std::exp(0.006 * abs(pos)) - 1.0) * (pos > 0 ? 1 : -1);
 }
 
 void tank(int left, int right) {
@@ -168,11 +184,11 @@ void tank(int left, int right) {
 }
 
 void funny_tank(int left_x, int left_y, int right_x, int right_y) {
-    if(fabs(left_x) > 50 && fabs(right_x) > 50) {
+    if(abs(left_x) > 50 && abs(right_x) > 50) {
         int sign = (left_x > 0 || right_x < 0) ? 1 : -1;
-        left_x = (fabs(left_x) - 50) * 127 / 77;
-        right_x = (fabs(right_x) - 50) * 127 / 77;
-        float speed = (fabs(left_x) + fabs(right_x)) / 2.0 * sign;
+        left_x = (abs(left_x) - 50) * 127 / 77;
+        right_x = (abs(right_x) - 50) * 127 / 77;
+        float speed = (abs(left_x) + abs(right_x)) / 2.0 * sign;
         Miku.move(speed, speed);
     } else {
         Miku.move(left_y, right_y);
@@ -195,6 +211,7 @@ List<std::function<void()>> displayModes = {
     display_pose,
     display_motor_temps,
     display_vel,
+    display_floor_color,
 };
 
 void opcontrol() {
@@ -228,7 +245,7 @@ void opcontrol() {
                 intake_bottom.move_voltage(-3000);
                 pros::delay(300);
             } else if(master.get_digital(DIGITAL_L2)) {
-                intake_top.move_velocity(12000);
+                intake_top.move_voltage(12000);
                 intake_bottom.move_voltage(8000);
             }
 
@@ -292,10 +309,10 @@ void opcontrol() {
         Miku.update_position();
 
         bool joysticks_active = 
-            (fabs(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)) > 10) ||
-            (fabs(master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)) > 10) ||
-            (fabs(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X)) > 10) ||
-            (fabs(master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X)) > 10);
+            (abs(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)) > 10) ||
+            (abs(master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)) > 10) ||
+            (abs(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X)) > 10) ||
+            (abs(master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X)) > 10);
 
         if(!motion_queue.empty() || current_motion != nullptr) {
             if(joysticks_active) {

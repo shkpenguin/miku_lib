@@ -58,7 +58,9 @@ void MovePoint::update() {
     // PID outputs
     float drive_out = std::clamp(drive_pid.update(drive_error), -params.drive_max_volt_pct / 100.0f * 12000, params.drive_max_volt_pct / 100.0f * 12000);
     float turn_out = std::clamp(turn_pid.update(turn_error), -params.turn_max_volt_pct / 100.0f * 12000, params.turn_max_volt_pct / 100.0f * 12000);
-    drive_out *= std::pow(std::cos(angle_error), params.cos_scale);
+    float drive_scale = std::cos(angle_error);
+    if(sign(drive_scale) != sign(std::pow(drive_scale, params.cos_scale))) drive_out *= -1.0 * std::pow(drive_scale, params.cos_scale);
+    else drive_out *= std::pow(drive_scale, params.cos_scale);
 
     if(fabs(drive_error) < 6.0) {
         int side = sign(dx * cos(Miku.get_heading()) + dy * sin(Miku.get_heading()));

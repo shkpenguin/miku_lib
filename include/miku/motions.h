@@ -4,6 +4,7 @@
 #include <queue>
 #include <initializer_list>
 #include <utility>
+#include <memory>
 #include "miku/mp.h"
 #include "config.h"
 #include "miku/time.h"
@@ -49,9 +50,14 @@ inline ConditionalEvent within(float target, float tolerance, std::function<void
 }
 
 inline ConditionalEvent elapsed(int ms, std::function<void()> action) {
-    int start_time = pros::millis();
+    // start_time is initialized lazily so the elapsed timer begins when the condition
+    // is first checked (useful when used as a sequential event)
+    auto start_time = std::make_shared<int>(-1);
     return {
-        [start_time, ms]() { return (pros::millis() - start_time) >= ms; },
+        [start_time, ms]() {
+            if (*start_time == -1) *start_time = pros::millis();
+            return (pros::millis() - *start_time) >= ms;
+        },
         action
     };
 }
@@ -80,12 +86,6 @@ struct MotionPrimitive {
     }
     void add_sequential_event(const ConditionalEvent& event) {
         sequential_events.push(event);
-    }
-    void end(const ConditionalEvent& event) {
-        add_conditional_event({
-            event.condition,
-            [this]() { this->stop(); }
-        });
     }
 
 };
@@ -380,6 +380,24 @@ public:
     MotionPrimitive* run() {
         queue_after_current(motion);
         return motion;
+    }
+
+    MotionBuilder& end(std::function<bool()> condition) {
+        MotionPrimitive* mptr = motion;
+        motion->add_conditional_event({
+            condition,
+            [mptr]() { mptr->stop(); }
+        });
+        return *this;
+    }
+
+    MotionBuilder& end_seq(std::function<bool()> condition) {
+        MotionPrimitive* mptr = motion;
+        motion->add_sequential_event({
+            condition,
+            [mptr]() { mptr->stop(); }
+        });
+        return *this;
     }
 
     MotionPrimitive* ptr() {

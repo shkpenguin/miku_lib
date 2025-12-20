@@ -85,7 +85,7 @@ public:
         pf->set_particles_point(new_position);
     };
     
-    void distance_reset(Pose estimate, float particle_spread = 0.0f);
+    void distance_reset(Point estimate, float particle_spread = 0.0f);
     Pose compute_odometry_delta();
     void update_position();
     void calibrate();

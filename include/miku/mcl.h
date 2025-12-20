@@ -31,12 +31,11 @@ struct Particle {
 };
 
 class ParticleFilter {
-private:
+    public:
     float max_error = 8.0; // inches
     float min_odom_noise = 0.05; // inches
     std::vector<Particle> particles = std::vector<Particle>(NUM_PARTICLES);
 
-public:
     ParticleFilter(std::vector<std::shared_ptr<miku::Distance>> sensors);
     void set_max_distance_error(float error);
     void set_min_odom_noise(float noise);

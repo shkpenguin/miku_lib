@@ -7,9 +7,9 @@ struct Color {
     float max_hue;
 };
 
-#define TILE Color{40.0, 50.0} // Color of VEX field tiles
-#define RED Color{0.0, 20.0} // Bright red VEX field element color
-#define BLUE Color{180.0, 220.0} // Bright blue VEX field element color
+#define TILE Color{40.0, 70.0} // Color of VEX field tiles
+#define RED Color{0.0, 30.0} // Bright red VEX field element color
+#define BLUE Color{170.0, 200.0} // Bright blue VEX field element color
 
 namespace miku {
     class Optical : public pros::Optical {
@@ -17,7 +17,7 @@ namespace miku {
         Optical(const std::uint8_t port) : pros::Optical(port) {}
         bool get_color(const Color& color) {
             float hue = get_hue();
-            return (hue >= color.min_hue && hue <= color.max_hue);
+            return (hue >= color.min_hue && hue <= color.max_hue && get_proximity() > 100.0);
         }
         void initialize() {
             this->set_integration_time(5);

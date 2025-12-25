@@ -10,20 +10,21 @@ void right_rush() {
             {[] { return Miku.get_pose().distance_to({24, -24}) < 12.0; }, [] { loader_piston.set_value(true); }}
         })
         .queue();
-
+    pros::delay(200);
     turn_heading(135, 400, {.cutoff = 5.0}).queue();
-    move_point({48, -48}, 800, {.cutoff = 3.0}).queue();
-    turn_heading(180, 300, {.cutoff = 5.0}).queue();
-    move_time(3000, 3000, 100).queue();
-
-    move_point({48, -20}, 1500, {.reverse = true, .drive_max_volt_pct = 50})
-        .event({
-            [] { return Miku.get_pose().distance_to(Point(48, -24)) < 5.0; },
-            [] { lock_piston.set_value(true); intake.set(12000, 12000); }
-        })
+    move_point({47, -50}, 1200).queue();
+    turn_point({47, -72}, 600)
+        .event(start([]() { loader_piston.set_value(true); }))
         .queue();
+    move_time(6000, 6000, 600).queue();
+    wait(400).queue();
 
-    wait(500).queue();
+    move_pose({48, -24}, 180, 1500, {.reverse = true, .max_vel_pct = 40})
+        .event(within({48, -24}, 8.0, []() { intake.set(12000, 12000); lock_piston.set_value(true); }))
+        .queue();
+    wait(1000)
+        .event(start([]() { intake.set(12000, 12000); lock_piston.set_value(true); }))
+        .queue();
 
     // illegal wing push (now legal)
     move_point({48, -40}, 500)
@@ -33,12 +34,12 @@ void right_rush() {
         })
         .queue();
 
-    turn_heading(-135, 300).queue();
-    move_point({56, -30}, 700, {.reverse = true}).queue();
-    turn_heading(180, 300).queue();
-    move_point({57, -10}, 1500, {.reverse = true, .cutoff = 5.0, .min_volt_pct = 75}).queue();
-
-    move_time(0, 0, 500)
-        .event({[] { return true; }, [] { Miku.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE); }})
+    turn_point({58, -30}, 500, {.reverse = true, .cutoff = 5.0}).queue();
+    move_point({58, -30}, 700, {.reverse = true, .cutoff = 2.0}).queue();
+    turn_point({57, -12}, 300, {.reverse = true})
+        .event(start([]() { descore_piston.set_value(false); }))
         .queue();
+    move_point({57, -12}, 200, {.reverse = true, .cutoff = 5.0, .min_volt_pct = 75}).queue();
+    move_time(-6000, -6000, 300).queue();
+
 }

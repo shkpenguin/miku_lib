@@ -31,25 +31,14 @@ auto get_expected_reading = [](Point particle_position, std::shared_ptr<miku::Di
     float sensor_x = particle_position.x + sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
     
     float dx, dy;
-
-    switch (sensor->orientation) {
-        case Orientation::FRONT:
-            dx = cos_theta;
-            dy = sin_theta;
-            break;
-        case Orientation::BACK:
-            dx = -cos_theta;
-            dy = -sin_theta;
-            break;
-        case Orientation::LEFT:
-            dx = -sin_theta;
-            dy = cos_theta;
-            break;
-        case Orientation::RIGHT:
-            dx = sin_theta;
-            dy = -cos_theta;
-            break;
-    }
+    
+    // Compute ray direction by rotating robot forward vector (cos_theta, sin_theta)
+    // by the sensor's orientation_angle. Using precomputed cos/sin avoids trig here.
+    float ca = sensor->cos_orient;
+    float sa = sensor->sin_orient;
+    // Use (theta - alpha): dx = cos(theta - alpha), dy = sin(theta - alpha)
+    dx = cos_theta * ca + sin_theta * sa;
+    dy = sin_theta * ca - cos_theta * sa;
 
     WallID intersect;
     float tMin = std::numeric_limits<float>::infinity();
@@ -154,24 +143,10 @@ void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
         float o_y = -sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
 
         float dx, dy;
-        switch (sensor->orientation) {
-            case Orientation::FRONT:
-                dx = cos_theta;
-                dy = sin_theta;
-                break;
-            case Orientation::BACK:
-                dx = -cos_theta;
-                dy = -sin_theta;
-                break;
-            case Orientation::LEFT:
-                dx = -sin_theta;
-                dy = cos_theta;
-                break;
-            case Orientation::RIGHT:
-                dx = sin_theta;
-                dy = -cos_theta;
-                break;
-        }
+        float ca = sensor->cos_orient;
+        float sa = sensor->sin_orient;
+        dx = cos_theta * ca - sin_theta * sa;
+        dy = sin_theta * ca + cos_theta * sa;
 
         switch(expected.wall_id) {
             case LEFT_WALL:

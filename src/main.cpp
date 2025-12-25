@@ -6,7 +6,7 @@
 #include <deque>
 #include <vector>
 
-int selected_idx = 3;
+int selected_idx = 2;
 std::vector<Route> routes;
 
 void precalculate_paths() {
@@ -50,6 +50,64 @@ void initialize() {
 
 uint32_t curr_dt = 0;
 uint32_t prev_ms = pros::millis();
+
+enum class DriveMode {
+    TANK = 0,
+    ARCADE = 1,
+    FUNNY_TANK = 2
+};
+
+int curve(int pos) {
+    if(abs(pos) <= 5) return 0;
+    // return 10502.7578057 * (std::exp(0.006 * abs(pos)) - 1.0) * (pos > 0 ? 1 : -1);
+    return pos * (12000 / 127);
+}
+
+void tank(int left, int right) {
+    Miku.move_voltage(curve(left), curve(right));
+}
+
+void funny_tank(int left_x, int left_y, int right_x, int right_y) {
+    if(abs(left_x) > 50 && abs(right_x) > 50) {
+        int sign = (left_x > 0 || right_x < 0) ? 1 : -1;
+        left_x = (abs(left_x) - 50) * 127 / 77;
+        right_x = (abs(right_x) - 50) * 127 / 77;
+        float speed = (abs(left_x) + abs(right_x)) / 2.0 * sign;
+        Miku.move(speed, speed);
+    } else {
+        Miku.move(left_y, right_y);
+    }
+}
+
+void arcade(int throttle, int turn) {
+    int left = curve(throttle + turn);
+    int right = curve(throttle - turn);
+
+    Miku.move_voltage(left, right);
+}
+
+List<DriveMode> driveModes = {
+    DriveMode::TANK,
+    DriveMode::ARCADE,
+};
+
+inline void display_drive_voltage() {
+    if(driveModes.get_value() == DriveMode::TANK) {
+        master.display(0, []() -> std::string {
+            return fmt::format("left: {}mV", curve(master.get_analog(ANALOG_LEFT_Y)));
+        });
+        master.display(1, []() -> std::string {
+            return fmt::format("right: {}mV", curve(master.get_analog(ANALOG_RIGHT_Y)));
+        });
+    } else if(driveModes.get_value() == DriveMode::ARCADE) {
+        master.display(0, []() -> std::string {
+            return fmt::format("fwd: {}mV", curve(master.get_analog(ANALOG_LEFT_Y)));
+        });
+        master.display(1, []() -> std::string {
+            return fmt::format("turn: {}mV", curve(master.get_analog(ANALOG_RIGHT_X)));
+        });
+    }
+}
 
 inline void display_motor_temps() {
     master.display(0, []() {
@@ -168,50 +226,12 @@ void autonomous() {
 
 }
 
-enum class DriveMode {
-    TANK = 0,
-    ARCADE = 1,
-    FUNNY_TANK = 2
-};
-
-int curve(int pos) {
-    if(abs(pos) <= 5) return 0;
-    return 10502.7578057 * (std::exp(0.006 * abs(pos)) - 1.0) * (pos > 0 ? 1 : -1);
-}
-
-void tank(int left, int right) {
-    Miku.move_voltage(curve(left), curve(right));
-}
-
-void funny_tank(int left_x, int left_y, int right_x, int right_y) {
-    if(abs(left_x) > 50 && abs(right_x) > 50) {
-        int sign = (left_x > 0 || right_x < 0) ? 1 : -1;
-        left_x = (abs(left_x) - 50) * 127 / 77;
-        right_x = (abs(right_x) - 50) * 127 / 77;
-        float speed = (abs(left_x) + abs(right_x)) / 2.0 * sign;
-        Miku.move(speed, speed);
-    } else {
-        Miku.move(left_y, right_y);
-    }
-}
-
-void arcade(int throttle, int turn) {
-    int left = curve(throttle + turn);
-    int right = curve(throttle - turn);
-
-    Miku.move_voltage(left, right);
-}
-
-List<DriveMode> driveModes = {
-    DriveMode::TANK,
-    DriveMode::ARCADE,
-};
-
 List<std::function<void()>> displayModes = {
     display_pose,
     display_motor_temps,
     display_vel,
     display_floor_color,
+    display_drive_voltage,
 };
 
 void opcontrol() {

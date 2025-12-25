@@ -58,20 +58,24 @@ miku::MotorGroup right_motors({15, 2, 3},
 
 pros::Imu imu(4);
 
-miku::Distance back_distance(21, -4.5, -3.5, Orientation::BACK);
-miku::Distance left_distance(20, -5.0, -3.25, Orientation::LEFT);
-miku::Distance right_distance(5, 5.0, -3.25, Orientation::RIGHT);
-miku::Distance front_distance(13, 5.25, -0.75, Orientation::FRONT);
+miku::Distance north_distance(13, 5.25, -0.75, 0.0f);                // front (0)
+miku::Distance south_distance(21, -4.5, -3.5, M_PI);                  // back 
+miku::Distance west_distance(20, -5.0, -3.25, -M_PI_2);                 // left (-90deg)
+miku::Distance east_distance(5, 5.0, -3.25, M_PI_2);                 // right (90deg)
+miku::Distance nw_distance(9, -5.625, -2.625, -M_PI_4);                  // front
+miku::Distance ne_distance(11, 5.625, -2.75, M_PI_4);                    // front
 
 ParticleFilter mcl({
-    std::make_shared<miku::Distance>(front_distance),
-    std::make_shared<miku::Distance>(back_distance),
-    std::make_shared<miku::Distance>(left_distance),
-    std::make_shared<miku::Distance>(right_distance)
+    std::make_shared<miku::Distance>(north_distance),
+    std::make_shared<miku::Distance>(south_distance),
+    std::make_shared<miku::Distance>(west_distance),
+    std::make_shared<miku::Distance>(east_distance),
+    // std::make_shared<miku::Distance>(nw_distance),
+    // std::make_shared<miku::Distance>(ne_distance)
 });
 
 miku::Chassis Miku(
-    std::make_shared<miku::MotorGroup>(left_motors), 
+    std::make_shared<miku::MotorGroup>(left_motors),
     std::make_shared<miku::MotorGroup>(right_motors),
     std::make_shared<pros::Imu>(imu),
     std::make_shared<ParticleFilter>(mcl)

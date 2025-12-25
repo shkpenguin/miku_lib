@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "miku/lut.h"
+#include "miku/lut.hpp"
 
 struct PIDGains {
     float kP;

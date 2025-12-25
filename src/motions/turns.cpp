@@ -1,7 +1,7 @@
-#include "miku/motions.h"
-#include "miku/devices/chassis.h"
-#include "config.h"
-#include "miku/util.h"
+#include "miku/motions.hpp"
+#include "miku/devices/chassis.hpp"
+#include "config.hpp"
+#include "miku/util.hpp"
 
 TurnHeading::TurnHeading(compass_degrees target, float timeout, TurnParams params)
     : target(target), timeout(timeout), params(params) {

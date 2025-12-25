@@ -1,6 +1,6 @@
 #pragma once
 
-#include "api.h"
+#include "pros/optical.hpp"
 
 struct Color {
     float min_hue;

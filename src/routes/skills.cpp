@@ -1,5 +1,5 @@
-#include "miku/miku-api.h"
-#include "miku/motions.h"
+#include "miku/miku-api.hpp"
+#include "miku/motions.hpp"
 
 std::vector<std::reference_wrapper<BezierPath>> skills_paths = {};
 
@@ -114,7 +114,7 @@ void skills() {
     move_pose({-8, 8}, 135, 1000, {.max_vel_pct = 30})
         .queue();
     turn_point({0, 0}, 300)
-        .event(start([]() { intake.set_top({-4000, VOLTAGE}), intake.set_bottom({-300, VELOCITY}); }))
+        .event(start([]() { intake.set_top(-4000), intake.set_bottom_velocity(-300); }))
         .queue();
     move_time(-3000, -3000, 100).queue();
     wait(200).queue();
@@ -146,7 +146,7 @@ void skills() {
     move_pose({-5, -8}, -135, 2000, {.reverse = true, .max_vel_pct = 30})
         .event(start([]() { middle_piston.set_value(true); }))
         .event(elapsed(500, []() { intake.set(-12000, -6000); }))
-        .event(elapsed(700, []() { intake.set_top({200, VELOCITY}); intake.set_bottom({12000, VOLTAGE}); }))
+        .event(elapsed(700, []() { intake.set_top_velocity(200); intake.set_bottom(12000); }))
         .queue();
     turn_point({0, 0}, 300, {.reverse = true}).queue();
     wait(1000)
@@ -169,4 +169,22 @@ void skills() {
 
         // */
 
+}
+
+// skills with middle goal control
+
+void skills() {
+    move_time(8000, 7000, 2000)
+        .start([]() { intake.set(4000, 12000); })
+        .seq({
+            ConditionalEvent(
+                []() { return floor_optical.get_color(BLUE); },
+                []() { loader_piston.set_value(false); }),
+            ConditionalEvent(
+                []() { return floor_optical.get_color(TILE); },
+                []() { Miku.move_voltage(6000, 6000); }),
+            await([]() { return floor_optical.get_color(BLUE); })
+        })
+        .end_seq([]() { return floor_optical.get_color(TILE); })
+        .queue();
 }

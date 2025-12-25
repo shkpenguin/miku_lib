@@ -1,8 +1,8 @@
-#include "miku/motions.h"
-#include "miku/util.h"
-#include "miku/devices/chassis.h"
-#include "system.h"
-#include "config.h"
+#include "miku/motions.hpp"
+#include "miku/util.hpp"
+#include "miku/devices/chassis.hpp"
+#include "system.hpp"
+#include "config.hpp"
 
 MovePose::MovePose(Point target, compass_degrees heading, float timeout, MovePoseParams params)
     : target(target), target_heading(standard_radians(heading)), timeout(timeout), params(params) {

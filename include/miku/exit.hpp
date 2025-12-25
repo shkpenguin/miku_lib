@@ -1,6 +1,6 @@
 #pragma once
 #include "pros/rtos.hpp"
-#include "geometry.h"
+#include "geometry.hpp"
 
 /**
  * @param range The acceptable range of error

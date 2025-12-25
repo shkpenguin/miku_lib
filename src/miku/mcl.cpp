@@ -1,5 +1,5 @@
 #include "api.h"
-#include "miku/miku-api.h"
+#include "miku/miku-api.hpp"
 
 std::mt19937_64 rng(std::random_device{}());
 

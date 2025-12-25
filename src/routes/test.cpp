@@ -1,5 +1,5 @@
-#include "miku/miku-api.h"
-#include "miku/motions.h"
+#include "miku/miku-api.hpp"
+#include "miku/motions.hpp"
 
 BezierPath test_path({
 });

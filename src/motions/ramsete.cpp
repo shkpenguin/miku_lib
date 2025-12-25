@@ -1,7 +1,7 @@
-#include "system.h"
-#include "miku/motions.h"
-#include "miku/devices/chassis.h"
-#include "config.h"
+#include "system.hpp"
+#include "miku/motions.hpp"
+#include "miku/devices/chassis.hpp"
+#include "config.hpp"
 
 Ramsete::Ramsete(std::vector<Waypoint> wps, float timeout, RamseteParams p)
 : waypoints(wps), timeout(timeout), params(p) {

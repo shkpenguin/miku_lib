@@ -1,4 +1,4 @@
-#include "miku/time.h"
+#include "miku/time.hpp"
 
 Timer::Timer(int time)
     : m_period(time) {

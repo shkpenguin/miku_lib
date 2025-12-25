@@ -2,8 +2,8 @@
 
 #define NUM_PARTICLES 500
 
-#include "miku/devices/distance.h"
-#include "miku/geometry.h"
+#include "miku/devices/distance.hpp"
+#include "miku/geometry.hpp"
 #include <fstream>
 
 extern std::ofstream file;

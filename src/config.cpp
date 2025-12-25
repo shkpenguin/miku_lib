@@ -1,4 +1,4 @@
-#include "config.h"
+#include "config.hpp"
 
 miku::Controller master(pros::E_CONTROLLER_MASTER);
 
@@ -70,8 +70,8 @@ ParticleFilter mcl({
     std::make_shared<miku::Distance>(south_distance),
     std::make_shared<miku::Distance>(west_distance),
     std::make_shared<miku::Distance>(east_distance),
-    // std::make_shared<miku::Distance>(nw_distance),
-    // std::make_shared<miku::Distance>(ne_distance)
+    std::make_shared<miku::Distance>(nw_distance),
+    std::make_shared<miku::Distance>(ne_distance)
 });
 
 miku::Chassis Miku(

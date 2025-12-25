@@ -1,6 +1,6 @@
-#include "mp.h"
-#include "config.h"
-#include "miku/util.h"
+#include "mp.hpp"
+#include "config.hpp"
+#include "miku/util.hpp"
 #include <cmath>
 #include <algorithm>
 

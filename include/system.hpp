@@ -1,7 +1,7 @@
 #pragma once
 
 #include <deque>
-#include "miku/motions.h"
+#include "miku/motions.hpp"
 #include "api.h"
 
 extern pros::Task* autonomous_system_task;

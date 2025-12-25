@@ -1,5 +1,5 @@
-#include "controller.h"
-#include "miku/util.h"
+#include "miku/devices/controller.hpp"
+#include "miku/util.hpp"
 #include <stdexcept>
 
 void miku::Controller::display(std::uint8_t line, std::function<std::string()> func) {

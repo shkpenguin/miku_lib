@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cmath>
-#include "miku/geometry.h"
+#include "miku/geometry.hpp"
 
 #define HALF_FIELD 71.0
 
@@ -23,12 +23,6 @@ namespace miku {
     inline standard_radians atan2(float y, float x) {
         return standard_radians(std::atan2(y, x));
     }
-}
-
-inline float project(float px, float py, float ox, float oy, float heading) {
-    float dx = px - ox;
-    float dy = py - oy;
-    return dx * cos(heading) + dy * sin(heading);
 }
 
 inline float dist(float x1, float y1, float x2, float y2) {

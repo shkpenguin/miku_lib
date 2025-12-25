@@ -1,7 +1,7 @@
 #pragma once
 
-#include "miku/pid.h"
-#include "miku/lut.h"
+#include "miku/pid.hpp"
+#include "miku/lut.hpp"
 #include <memory>
 
 namespace miku {

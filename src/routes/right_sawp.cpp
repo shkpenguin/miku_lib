@@ -1,5 +1,5 @@
-#include "miku/miku-api.h"
-#include "miku/motions.h"
+#include "miku/miku-api.hpp"
+#include "miku/motions.hpp"
 
 std::vector<std::reference_wrapper<BezierPath>> sawp_paths = {};
 
@@ -59,7 +59,7 @@ void sawp() {
     move_pose({-8, -8}, -135, 2000, {.reverse = true, .max_vel_pct = 30})
         .event(start([]() { intake.set(-12000, -6000); }))
         .event(elapsed(200, []() { intake.set(0, 0); middle_piston.set_value(true); }))
-        .event(elapsed(800, []() { intake.set_top({200, VELOCITY}); intake.set_bottom({12000, VOLTAGE}); }))
+        .event(elapsed(800, []() { intake.set_top_velocity(200); intake.set_bottom(12000); }))
         .queue();
 
     turn_point({0, 0}, 300);

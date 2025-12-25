@@ -1,5 +1,5 @@
-#include "lut.h"
-#include "config.h"
+#include "lut.hpp"
+#include "config.hpp"
 #include <numeric>
 
 float LookupTable::get_value(float key) {

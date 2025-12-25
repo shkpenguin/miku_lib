@@ -1,6 +1,6 @@
 #include "main.h"
-#include "miku/devices/motor.h"
-#include "miku/util.h"
+#include "miku/devices/motor.hpp"
+#include "miku/util.hpp"
 #include <numeric>
 
 miku::AbstractMotor::AbstractMotor(std::int8_t port, pros::v5::MotorGears gearset, pros::v5::MotorUnits encoder_units) 

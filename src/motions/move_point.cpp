@@ -1,6 +1,6 @@
-#include "miku/motions.h"
-#include "miku/util.h"
-#include "config.h"
+#include "miku/motions.hpp"
+#include "miku/util.hpp"
+#include "config.hpp"
 
 MovePoint::MovePoint(Point target, float timeout, MovePointParams params)
     : target(target), timeout(timeout), params(params) {

@@ -1,9 +1,10 @@
 #pragma once
 
+#include "pros/imu.hpp"
 #include "pros/motors.hpp"
-#include "miku/devices/motor.h"
-#include "miku/geometry.h"
-#include "miku/mcl.h"
+#include "miku/devices/motor.hpp"
+#include "miku/geometry.hpp"
+#include "miku/mcl.hpp"
 #include <memory>
 
 inline pros::Mutex pose_mutex;

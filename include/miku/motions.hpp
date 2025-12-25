@@ -5,12 +5,12 @@
 #include <initializer_list>
 #include <utility>
 #include <memory>
-#include "miku/mp.h"
-#include "config.h"
-#include "miku/time.h"
-#include "miku/geometry.h"
-#include "miku/pid.h"
-#include "miku/devices/chassis.h"
+#include "miku/mp.hpp"
+#include "config.hpp"
+#include "miku/time.hpp"
+#include "miku/geometry.hpp"
+#include "miku/pid.hpp"
+#include "miku/devices/chassis.hpp"
 
 enum class Side {
     LEFT,
@@ -398,6 +398,27 @@ public:
             [mptr]() { mptr->stop(); }
         });
         return *this;
+    }
+
+    // Convenient aliases for common event types
+    MotionBuilder& start(std::function<void()> action) {
+        return event(::start(action));
+    }
+
+    MotionBuilder& within(const Point& target, float distance, std::function<void()> action) {
+        return event(::within(target, distance, action));
+    }
+
+    MotionBuilder& within(float target, float tolerance, std::function<void()> action) {
+        return event(::within(target, tolerance, action));
+    }
+
+    MotionBuilder& elapsed(int ms, std::function<void()> action) {
+        return event(::elapsed(ms, action));
+    }
+
+    MotionBuilder& await(std::function<bool()> condition) {
+        return event(::await(condition));
     }
 
     MotionPrimitive* ptr() {

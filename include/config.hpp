@@ -1,16 +1,16 @@
 #pragma once
 
 #include "api.h"
-#include "miku/devices/chassis.h"
-#include "miku/devices/motor.h"
-#include "miku/devices/controller.h"
-#include "miku/devices/pneumatic.h"
-#include "miku/devices/distance.h"
-#include "miku/devices/optical.h"
-#include "miku/devices/intake.h"
-#include "miku/mcl.h"
+#include "miku/devices/chassis.hpp"
+#include "miku/devices/motor.hpp"
+#include "miku/devices/controller.hpp"
+#include "miku/devices/pneumatic.hpp"
+#include "miku/devices/distance.hpp"
+#include "miku/devices/optical.hpp"
+#include "miku/devices/intake.hpp"
+#include "miku/mcl.hpp"
 
-#include "miku/exit.h"
+#include "miku/exit.hpp"
 
 #define WHEEL_DIAMETER 3.25f
 #define WHEEL_CIRC (WHEEL_DIAMETER * M_PI)

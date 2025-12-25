@@ -1,4 +1,4 @@
-#include "miku/miku-api.h"
+#include "miku/miku-api.hpp"
 
 #define IMU_CW_DRIFT 1.0f
 #define IMU_CCW_DRIFT 1.0f

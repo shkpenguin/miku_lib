@@ -1,4 +1,4 @@
-#include "miku/motions.h"
+#include "miku/motions.hpp"
 
 MoveTime::MoveTime(float left_speed, float right_speed, float duration)
         : left_speed(left_speed), right_speed(right_speed), duration(duration) {}

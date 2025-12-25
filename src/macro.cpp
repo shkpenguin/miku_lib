@@ -1,5 +1,5 @@
-#include "macro.h"
-#include "miku/miku-api.h"
+#include "macro.hpp"
+#include "miku/miku-api.hpp"
 
 void descore_align() {
     // Miku.set_position({0, 0});

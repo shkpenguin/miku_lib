@@ -1,5 +1,5 @@
-#include "miku/miku-api.h"
-#include "miku/motions.h"
+#include "miku/miku-api.hpp"
+#include "miku/motions.hpp"
 
 std::vector<std::reference_wrapper<BezierPath>> rush_paths = {};
 

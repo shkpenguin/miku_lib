@@ -1,5 +1,5 @@
-#include "util.h"
-#include "pid.h"
+#include "util.hpp"
+#include "pid.hpp"
 #include "api.h"
 
 PID::PID(PIDGains pid_gains, float windup_range, bool sign_flip_reset, bool trapezoidal)

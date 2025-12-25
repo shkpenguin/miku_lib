@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include <functional>
-#include "miku/mp.h"
-#include "miku/geometry.h"
+#include "miku/mp.hpp"
+#include "miku/geometry.hpp"
 
 struct Route {
     std::string name;

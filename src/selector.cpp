@@ -1,4 +1,4 @@
-#include "miku/miku-api.h"
+#include "miku/miku-api.hpp"
 #include "liblvgl/lvgl.h"
 #include "gif-pros/gifclass.hpp"
 

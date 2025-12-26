@@ -1,8 +1,6 @@
 #include "miku/miku-api.hpp"
 #include "miku/motions.hpp"
 
-std::vector<std::reference_wrapper<BezierPath>> rush_paths = {};
-
 void right_rush() {
     move_point({24, -24}, 1500)
         .events({

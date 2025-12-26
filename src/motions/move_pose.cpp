@@ -56,6 +56,7 @@ void MovePose::update() {
 
     if(timer.is_done()) {
         done = true;
+        Miku.stop();
         return;
     }
 

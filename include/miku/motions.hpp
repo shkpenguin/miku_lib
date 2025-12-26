@@ -231,6 +231,7 @@ struct SwingPoint : MotionPrimitive {
     float timeout;
     SwingParams params;
 
+    float prev_deg;
     PID turn_pid;
     Timer timer;
 

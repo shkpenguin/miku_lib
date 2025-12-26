@@ -6,17 +6,15 @@
 #include <deque>
 #include <vector>
 
-int selected_idx = 2;
+int selected_idx = 4;
 std::vector<Route> routes;
 
 void precalculate_paths() {
-    routes.push_back(Route("test route", {24, -48, -M_PI_2}, test, test_paths));
-    routes.push_back(Route("skills", {14, -46, M_PI_2}, skills, skills_paths));
-    routes.push_back(Route("sawp", {0, -48, M_PI}, sawp, sawp_paths));
-    routes.push_back(Route("right rush", {14, -46, M_PI_2}, right_rush, rush_paths));
-    for(auto& path : routes[selected_idx].paths) {
-        path.get().calculate_waypoints();
-    }
+    routes.push_back(Route("test route", {24, -48, -M_PI_2}, test));
+    routes.push_back(Route("skills", {14, -46, M_PI_2}, skills));
+    routes.push_back(Route("sawp", {0, -48, M_PI}, sawp));
+    routes.push_back(Route("right rush", {14, -46, M_PI_2}, right_rush));
+    routes.push_back(Route("skills mid control", {0, 0, M_PI}, skills_mid_control));
 }
 
 void initialize() {
@@ -217,7 +215,7 @@ void autonomous() {
             }
             else {
                 current_motion->update();
-        f so t    }
+            }
         }
 
         pros::Task::delay_until(&curr_ms, DELTA_TIME);

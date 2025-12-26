@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pros/motors.hpp"
 #include "miku/pid.hpp"
 #include "miku/lut.hpp"
 #include <memory>

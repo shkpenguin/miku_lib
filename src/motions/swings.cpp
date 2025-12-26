@@ -90,7 +90,8 @@ void SwingPoint::update() {
         return;
     }
 
-    float output = turn_pid.update(error);
+    float output = turn_pid.update(error, -(current_deg - prev_deg).wrap());
+    prev_deg = current_deg;
     output = std::clamp(output, -params.max_volt_pct / 100.0f * 12000, params.max_volt_pct / 100.0f * 12000);
     if(params.min_volt_pct > 0) {
         if(output > 0 && output < fabs(params.min_volt_pct / 100.0f * 12000)) output = params.min_volt_pct / 100.0f * 12000;

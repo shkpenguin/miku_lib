@@ -1,11 +1,6 @@
 #include "miku/miku-api.hpp"
 #include "miku/motions.hpp"
 
-BezierPath test_path({
-});
-
-std::vector<std::reference_wrapper<BezierPath>> test_paths = {std::ref(test_path)};
-
 void test() {
     wait(100)
         .event(start([]() { intake.set(4000, 12000); loader_piston.set_value(true); }))

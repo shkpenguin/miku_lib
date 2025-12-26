@@ -36,142 +36,76 @@ private:
     uint32_t jam_detect_time = 0;
     uint32_t unjam_start_time = 0;
 
-    static constexpr int JAM_THRESHOLD_MS = 500;
-    static constexpr int UNJAM_DURATION_MS = 100;
-    static constexpr float LOW_VELOCITY_THRESHOLD = 5.0f;
-    static constexpr int UNJAM_VOLTAGE = -12000;
+    // Anti-jam tuning constants:
+    // - LOW_VELOCITY_THRESHOLD: bottom motor filtered velocity below this
+    //   value (unit: RPM) while commanding intake forward is considered a
+    //   possible jam. If you get false positives, try raising this value.
+    // - JAM_THRESHOLD_MS: duration (ms) the low-velocity condition must persist
+    //   before starting the unjam routine (helps avoid transients).
+    // - UNJAM_DURATION_MS: how long (ms) to run the reverse "unjam" action.
+    // - UNJAM_VOLTAGE: the voltage applied during the unjam routine (negative
+    //   reverses the rollers).
+    // Tuning tips: if unjam triggers too often, increase JAM_THRESHOLD_MS,
+    // increase LOW_VELOCITY_THRESHOLD, or require a larger commanded-forward
+    // magnitude (add a minimum-command threshold in is_jammed()).
+    static constexpr float LOW_VELOCITY_THRESHOLD = 5.0f; // rpm
+    static constexpr int JAM_THRESHOLD_MS = 500;         // ms
+    static constexpr int UNJAM_DURATION_MS = 100;        // ms
+    static constexpr int UNJAM_VOLTAGE = -12000;         // mV
 
-    void execute_command(std::shared_ptr<Motor>& motor, const MotorCommand& cmd) {
-        if (cmd.type == IntakeCommandType::VOLTAGE) {
-            motor->move_voltage(cmd.value);
-        } else {
-            motor->move_velocity(cmd.value);
-        }
-    }
+    void execute_command(std::shared_ptr<Motor>& motor, const MotorCommand& cmd);
 
-    void move_normal() {
-        execute_command(top_motor, top_command);
-        execute_command(bottom_motor, bottom_command);
-    }
+    void move_normal();
 
-    bool is_jammed() const {
-        bool low_velocity = bottom_motor->get_filtered_velocity() < LOW_VELOCITY_THRESHOLD;
-        bool commanded_forward = (top_command.value > 0) || (bottom_command.value > 0);
-        return low_velocity && commanded_forward;
-    }
+    // Returns true if the intake is considered jammed.
+    // Criteria: bottom motor filtered velocity < LOW_VELOCITY_THRESHOLD AND
+    // either top or bottom command is positive (we're trying to intake).
+    // Notes: this simple check can false-trigger when commanded outputs are
+    // intentionally small or when the mechanism is loaded but functioning. If
+    // you see frequent false positives consider adding a minimum commanded
+    // voltage/velocity requirement here or increasing the threshold/timer.
+    bool is_jammed() const;
 
-    void handle_unjam(uint32_t now) {
-        if (now - unjam_start_time < UNJAM_DURATION_MS) {
-            top_motor->move_voltage(UNJAM_VOLTAGE);
-            bottom_motor->move_voltage(UNJAM_VOLTAGE);
-        } else {
-            is_unjamming = false;
-            jam_detect_time = 0;
-            move_normal();
-        }
-    }
+    // While unjamming we apply UNJAM_VOLTAGE to both motors for
+    // UNJAM_DURATION_MS, then resume normal commands. Make UNJAM_VOLTAGE less
+    // aggressive to reduce stress on mechanism if necessary.
+    void handle_unjam(uint32_t now);
 
-    void handle_jam_detection(uint32_t now) {
-        if (is_jammed()) {
-            if (jam_detect_time == 0) {
-                jam_detect_time = now;
-            }
-            
-            if (now - jam_detect_time > JAM_THRESHOLD_MS) {
-                is_unjamming = true;
-                unjam_start_time = now;
-            } else {
-                move_normal();
-            }
-        } else {
-            jam_detect_time = 0;
-            move_normal();
-        }
-    }
+    // Monitor the jam condition and only start an unjam sequence if the
+    // condition persists for JAM_THRESHOLD_MS to avoid reacting to short
+    // transients or sensor noise.
+    void handle_jam_detection(uint32_t now);
 
 public:
-    Intake(std::shared_ptr<Motor> top, std::shared_ptr<Motor> bottom)
-        : top_motor(top), bottom_motor(bottom) {}
+    Intake(std::shared_ptr<Motor> top, std::shared_ptr<Motor> bottom);
 
-    void set(const MotorCommand& top_cmd, const MotorCommand& bottom_cmd) {
-        top_command = top_cmd;
-        bottom_command = bottom_cmd;
-    }
+    void set(const MotorCommand& top_cmd, const MotorCommand& bottom_cmd);
 
-    void set(float top_voltage, float bottom_voltage) {
-        top_command = MotorCommand(top_voltage, IntakeCommandType::VOLTAGE);
-        bottom_command = MotorCommand(bottom_voltage, IntakeCommandType::VOLTAGE);
-    }
+    void set(float top_voltage, float bottom_voltage);
 
-    void set_velocity(float top_vel, float bottom_vel) {
-        top_command = MotorCommand(top_vel, IntakeCommandType::VELOCITY);
-        bottom_command = MotorCommand(bottom_vel, IntakeCommandType::VELOCITY);
-    }
+    void set_velocity(float top_vel, float bottom_vel);
 
-    void set_top(const MotorCommand& cmd) { 
-        top_command = cmd; 
-    }
+    void set_top(const MotorCommand& cmd);
+
+    void set_top(float voltage);
+
+    void set_top_velocity(float velocity);
     
-    void set_top(float voltage) {
-        top_command = MotorCommand(voltage, mV);
-    }
+    void set_bottom(const MotorCommand& cmd);
 
-    void set_top_velocity(float velocity) {
-        top_command = MotorCommand(velocity, rpm);
-    }
-    
-    void set_bottom(const MotorCommand& cmd) { 
-        bottom_command = cmd; 
-    }
+    void set_bottom(float voltage);
 
-    void set_bottom(float voltage) {
-        bottom_command = MotorCommand(voltage, mV);
-    }
+    void set_bottom_velocity(float velocity);
 
-    void set_bottom_velocity(float velocity) {
-        bottom_command = MotorCommand(velocity, rpm);
-    }
+    void load();
 
-    void load() {
-        lock_piston.set_value(false);
-        anti_jam_enabled = false;
-        set(4000.0f, 12000.0f);
-    }
+    void score();
 
-    void score() {
-        lock_piston.set_value(true);
-        anti_jam_enabled = true;
-        set(12000.0f, 12000.0f);
-    }
+    void stop();
 
-    void stop() {
-        lock_piston.set_value(false);
-        anti_jam_enabled = false;
-        set(0.0f, 0.0f);
-    }
+    void set_anti_jam(bool enabled);
 
-    void set_anti_jam(bool enabled) {
-        anti_jam_enabled = enabled;
-        if (!enabled) {
-            is_unjamming = false;
-            jam_detect_time = 0;
-        }
-    }
-
-    void update() {
-        if (!anti_jam_enabled) {
-            move_normal();
-            return;
-        }
-
-        uint32_t now = pros::millis();
-
-        if (is_unjamming) {
-            handle_unjam(now);
-        } else {
-            handle_jam_detection(now);
-        }
-    }
+    void update();
 };
 
 } // namespace miku

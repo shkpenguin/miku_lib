@@ -126,6 +126,8 @@ void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
 
         if(!sensor->get_enabled()) continue;
         if(!sensor->get_valid()) continue;
+        if(!sensor->orientation_angle == 0.0f && !sensor->orientation_angle == M_PI_2 &&
+           !sensor->orientation_angle == M_PI && !sensor->orientation_angle == -M_PI_2) continue;
 
         WallEstimate expected = expected_readings[i];
         if(expected.wall_id == BAD_INTERSECT || expected.wall_id == NOT_IN_FIELD) continue;

@@ -58,7 +58,7 @@ miku::MotorGroup right_motors({15, 2, 3},
 
 pros::Imu imu(4);
 
-miku::Distance north_distance(13, 5.25, -0.75, 0.0f);                // front (0)
+miku::Distance north_distance(13, 5.25, -1.25, 0.0f);                // front (0)
 miku::Distance south_distance(21, -4.5, -3.5, M_PI);                  // back 
 miku::Distance west_distance(20, -5.0, -3.25, -M_PI_2);                 // left (-90deg)
 miku::Distance east_distance(5, 5.0, -3.25, M_PI_2);                 // right (90deg)
@@ -93,4 +93,4 @@ PIDGains turn_gains(320.0, 0.0, 3000.0);
 PIDGains drive_gains(500.0, 0.0, 3000.0);
 
 PatienceExit drive_patience_exit(5, 1, false, 5.0);
-PatienceExit turn_patience_exit(5, 1, false, 5.0);
+PatienceExit turn_patience_exit(3, 1, false, 5.0);

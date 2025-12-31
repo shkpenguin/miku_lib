@@ -21,7 +21,7 @@ void Intake::move_normal() {
 
 bool Intake::is_jammed() const {
     bool low_velocity = bottom_motor->get_filtered_velocity() < LOW_VELOCITY_THRESHOLD;
-    bool commanded_forward = (top_command.value > 0) || (bottom_command.value > 0);
+    bool commanded_forward = bottom_command.value > 0;
     return low_velocity && commanded_forward;
 }
 
@@ -39,6 +39,8 @@ void Intake::handle_unjam(uint32_t now) {
     } else {
         is_unjamming = false;
         jam_detect_time = 0;
+        // start cooldown so we don't immediately re-enter unjam
+        last_unjam_end_time = now;
         move_normal();
     }
 }
@@ -55,8 +57,12 @@ void Intake::handle_jam_detection(uint32_t now) {
         }
 
         if (now - jam_detect_time > JAM_THRESHOLD_MS) {
-            is_unjamming = true;
-            unjam_start_time = now;
+            if(now - last_unjam_end_time > UNJAM_COOLDOWN_MS) {
+                is_unjamming = true;
+                unjam_start_time = now;
+            } else {
+                move_normal();
+            }
         } else {
             move_normal();
         }

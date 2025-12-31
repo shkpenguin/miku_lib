@@ -90,8 +90,8 @@ auto get_expected_reading = [](Point particle_position, std::shared_ptr<miku::Di
 
     // Deadzone check (example for top/bottom walls)
     if (fabs(y_intersect - HALF_FIELD) < 1.0 || fabs(y_intersect + HALF_FIELD) < 1.0) {
-        if ((x_intersect >= -54.0 && x_intersect <= -42.0) ||
-            (x_intersect >=  42.0 && x_intersect <=  54.0)) {
+        if ((x_intersect >= -53.0 && x_intersect <= -41.0) ||
+            (x_intersect >=  41.0 && x_intersect <=  53.0)) {
             return WallEstimate{BAD_INTERSECT, 0}; // in deadzone
         }
     }

@@ -20,7 +20,6 @@
 #include "gif-pros/gifclass.hpp"
 #include "util.hpp"
 #include "config.hpp"
-#include "system.hpp"
 
 #include "routes.hpp"
 #include "geometry.hpp"

@@ -139,6 +139,12 @@ void miku::MotorGroup::move_voltage(int32_t voltage) {
     last_commanded_voltage = voltage;
 }
 
+void miku::MotorGroup::brake() {
+    for(auto motor : motors) {
+        motor->brake();
+    }
+}
+
 float miku::MotorGroup::get_average_velocity() {
     float sum = 0;
     for(auto motor : motors) {

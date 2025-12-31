@@ -84,6 +84,7 @@ float get_average_position();
 
 void move(int voltage);
 void move_voltage(int32_t voltage);
+void brake();
 void tare_position(void) const;
 void set_brake_mode(pros::motor_brake_mode_e mode);
 int get_highest_temperature() const;

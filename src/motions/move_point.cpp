@@ -46,6 +46,7 @@ void MovePoint::update() {
     float turn_error = (angle_to_point - current_deg).wrap();
     // Distance error
     float drive_error = current.distance_to(target);
+    bool close = fabs(drive_error) < 6.0;
     if (params.cutoff > 0 && drive_error < params.cutoff) {
         done = true;
         return;
@@ -62,7 +63,10 @@ void MovePoint::update() {
     if(sign(drive_scale) != sign(std::pow(drive_scale, params.cos_scale))) drive_out *= -1.0 * std::pow(drive_scale, params.cos_scale);
     else drive_out *= std::pow(drive_scale, params.cos_scale);
 
-    if(fabs(drive_error) < 6.0) {
+    if(!close) drive_out = slew(drive_out, prev_drive_out, 500);
+    prev_drive_out = drive_out;
+
+    if(close) {
         int side = sign(dx * cos(Miku.get_heading()) + dy * sin(Miku.get_heading()));
         if(side != start_side) {
             done = true;

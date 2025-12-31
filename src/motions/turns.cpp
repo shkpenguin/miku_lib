@@ -68,7 +68,7 @@ TurnPoint::TurnPoint(Point target, float timeout, TurnParams params)
 
 void TurnPoint::start() {
     done = false;
-    prev_deg = compass_degrees(Miku.get_heading());
+    prev_deg = compass_degrees(Miku.get_heading()).wrap();
     start_time = pros::millis();
     turn_pid.reset();
     timer.set(timeout);

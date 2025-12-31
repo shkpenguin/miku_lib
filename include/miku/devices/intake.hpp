@@ -35,6 +35,7 @@ private:
     
     uint32_t jam_detect_time = 0;
     uint32_t unjam_start_time = 0;
+    uint32_t last_unjam_end_time = 0;
 
     // Anti-jam tuning constants:
     // - LOW_VELOCITY_THRESHOLD: bottom motor filtered velocity below this
@@ -48,10 +49,11 @@ private:
     // Tuning tips: if unjam triggers too often, increase JAM_THRESHOLD_MS,
     // increase LOW_VELOCITY_THRESHOLD, or require a larger commanded-forward
     // magnitude (add a minimum-command threshold in is_jammed()).
-    static constexpr float LOW_VELOCITY_THRESHOLD = 5.0f; // rpm
+    static constexpr float LOW_VELOCITY_THRESHOLD = 2.0f; // rpm
     static constexpr int JAM_THRESHOLD_MS = 500;         // ms
     static constexpr int UNJAM_DURATION_MS = 100;        // ms
     static constexpr int UNJAM_VOLTAGE = -12000;         // mV
+    static constexpr uint32_t UNJAM_COOLDOWN_MS = 1000;
 
     void execute_command(std::shared_ptr<Motor>& motor, const MotorCommand& cmd);
 

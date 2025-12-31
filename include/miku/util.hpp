@@ -69,3 +69,11 @@ class List {
         return values[index];
     }
 };
+
+inline float slew(float current, float previous, float max_change) {
+    float change = current - previous;
+    if (max_change == 0) return current;
+    if (change > max_change) change = max_change;
+    else if (change < -max_change) change = -max_change;
+    return previous + change;
+}

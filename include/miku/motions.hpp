@@ -250,6 +250,9 @@ struct MovePoint : MotionPrimitive {
 
     int start_side;
 
+    int prev_drive_out = 0;
+    int prev_turn_out = 0;
+
     PID drive_pid;
     PID turn_pid;
     Timer timer;

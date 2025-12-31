@@ -78,11 +78,12 @@ void SwingPoint::start() {
     timer.set(timeout);
     timer.reset();
     turn_patience_exit.reset();
+    prev_deg = compass_degrees(Miku.get_heading()).wrap();
 }
 
 void SwingPoint::update() {
     compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
-    compass_degrees target_deg = compass_degrees(miku::atan2(target.x - Miku.get_pose().x, target.y - Miku.get_pose().y));
+    compass_degrees target_deg = compass_degrees(miku::atan2(target.y - Miku.get_y(), target.x - Miku.get_x()));
     float error = (target_deg - current_deg).wrap();      // error in degrees
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
@@ -99,8 +100,10 @@ void SwingPoint::update() {
     }
 
     if(params.locked_side == Side::LEFT) {
-        right_motors.move_voltage(output);
+        left_motors.brake();
+        right_motors.move_voltage(-output);
     } else {
+        right_motors.brake();
         left_motors.move_voltage(output);
     }
 

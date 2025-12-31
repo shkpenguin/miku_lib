@@ -14,16 +14,13 @@ struct Route {
 };
 
 void test();
-extern std::vector<std::reference_wrapper<BezierPath>> test_paths;
 
 void skills();
-extern std::vector<std::reference_wrapper<BezierPath>> skills_paths;
 
 void sawp();
-extern std::vector<std::reference_wrapper<BezierPath>> sawp_paths;
 
 void right_rush();
-extern std::vector<std::reference_wrapper<BezierPath>> rush_paths;
+
+void left_rush();
 
 void skills_mid_control();
-extern std::vector<std::reference_wrapper<BezierPath>> skills_mid_control_paths;

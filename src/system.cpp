@@ -56,7 +56,7 @@ void teleop_intake_control() {
 
             if(master.get_digital(DIGITAL_R2)) {
                 // spit (shift + R2)
-                intake.set_top(-8000);
+                intake.set_top(-6000);
                 intake.set_bottom_velocity(-300);
             } else if(master.get_digital_new_press(DIGITAL_L2)) {
                 // quick out (shift + L2 press)
@@ -66,7 +66,7 @@ void teleop_intake_control() {
                 continue;
             } else if(master.get_digital(DIGITAL_L2)) {
                 // fast intake (shift + L2 hold)
-                intake.set_top_velocity(200);
+                intake.set_top_velocity(300);
                 intake.set_bottom(12000);
             } else {
                 // no intake buttons while shifted -> stop

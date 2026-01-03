@@ -22,9 +22,8 @@ void skills() {
         })
         .queue();
     turn_point({48, -40}, 400, {.cutoff = 5.0}).queue();
-    move_point({48, -40}, 800, {.cutoff = 2.0, .min_volt_pct = 20}).queue();
-    turn_point({48, -24}, 500, {.reverse = true, .cutoff = 5.0})
-        .queue();
+    move_point({48, -40}, 800, {.cutoff = 2.0}).queue();
+    turn_point({48, -24}, 500, {.reverse = true}).queue();
     move_pose({48, -24}, 180, 1200, {.reverse = true})
         .event(within({48, -24}, 6.0, [] { intake.score(); }))
         .queue();
@@ -63,7 +62,7 @@ void skills() {
     move_pose({48, 24}, 0, 1500, {.reverse = true, .max_vel_pct = 40})
         .event(within({48, 24}, 6.0, [] { intake.score(); }))
         .queue();
-    wait(1300)
+    wait(1200)
         .event(start([]() { loader_piston.set_value(false); intake.score(); }))
         .queue();
     move_pose({18, 63}, -90, 2000, {.max_vel_pct = 35})
@@ -105,6 +104,8 @@ void skills() {
         .queue();
     turn_heading(0, 300).queue();
     move_time(4000, 4000, 500).queue();
+    move_time(-4000, -4000, 200).queue();
+    move_time(4000, 4000, 500).queue();
     shimmy();
     move_pose({-48, 24}, 0, 1200, {.reverse = true, .max_vel_pct = 40})
         .event(within({-48, 24}, 8.0, [] { intake.score(); }))
@@ -140,7 +141,7 @@ void skills() {
     turn_point({-24, -24}, 500, {.cutoff = 5.0}).queue();
     move_point({-24, -24}, 1500, {.drive_max_volt_pct = 60})
         .event(start([] { intake.set(4000, 12000); }))
-        .event(within({-24, -24}, 10.0, [] { loader_piston.set_value(true);; }))
+        .event(within({-24, -24}, 14.0, [] { loader_piston.set_value(true);; }))
         .queue();
     move_point({-48, -40}, 1500, {.drive_max_volt_pct = 40}).queue();
     turn_point({-48, -24}, 500, {.reverse = true, .cutoff = 5.0}).queue();
@@ -157,8 +158,6 @@ void skills() {
         .event(start([]() { intake.load(); }))
         .queue();
     turn_heading(180, 300).queue();
-    move_time(4000, 4000, 500).queue();
-    move_time(-4000, -4000, 200).queue();
     move_time(4000, 4000, 500).queue();
     shimmy();
     move_time(-4000, -4000, 300).queue();

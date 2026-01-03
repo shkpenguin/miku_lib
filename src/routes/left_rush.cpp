@@ -42,12 +42,12 @@ void left_rush() {
     
     wait(200).queue();
 
-    move_point({-24, -24}, 1000, {.reverse = true}).queue();
-    turn_point({0, 0}, 500, {.reverse = true}).queue();
+    move_point({-24, -24}, 1000, {.reverse = true, .drive_max_volt_pct = 60}).queue();
+    turn_point({-7, -7}, 500, {.reverse = true}).queue();
     move_pose({-7, -7}, -135, 1500, {.reverse = true, .max_vel_pct = 30})
         .event(start([]() { intake.set(-6000, -2000); }))
         .event(elapsed(200, []() { intake.stop(); middle_piston.set_value(true); }))
-        .within({-8, -8}, 3.0, []() { intake.set_top_velocity(150); intake.set_bottom(8000); })
+        .within({-7, -7}, 3.0, []() { intake.set_top_velocity(150); intake.set_bottom(8000); })
         .queue();
     turn_point({0, 0}, 300, {.reverse = true})
         .start([]() { intake.set_top_velocity(150); intake.set_bottom(8000); })

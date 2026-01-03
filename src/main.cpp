@@ -7,7 +7,7 @@
 #include <deque>
 #include <vector>
 
-int selected_idx = 5;
+int selected_idx = 3;
 std::vector<Route> routes;
 
 int curve(int pos) {
@@ -100,7 +100,7 @@ void opcontrol() {
 
     Miku.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
-    skills_mid_control();
+    // skills_mid_control();
 
     // static Gif gif("/usd/jiachenma.gif", lv_scr_act());
 

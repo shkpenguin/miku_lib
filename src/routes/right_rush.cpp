@@ -9,16 +9,14 @@ void right_rush() {
         })
         .queue();
     pros::delay(200);
-    turn_heading(135, 400, {.cutoff = 5.0}).queue();
-    move_point({47, -48}, 1200).queue();
-    turn_point({47, -72}, 500)
-        .start([]() { loader_piston.set_value(true); intake.load(); })
+    turn_point({47, -48}, 400, {.cutoff = 5.0}).queue();
+    move_point({47, -48}, 1200, {.cutoff = 10.0, .min_volt_pct = 20}).queue();
+    move_pose({47, -54}, 180, 1500, {.max_vel_pct = 30})
         .queue();
-    move_pose({47, -54}, 180, 1000, {.max_vel_pct = 30})
-        .queue();
-    turn_heading(180, 300).queue();
-    move_time(4000, 4000, 500).queue();
-    wait(500).queue();
+    turn_point({47, -72}, 300).queue();
+    move_time(6000, 6000, 500).queue();
+    move_time(-4000, -4000, 50).queue();
+    move_time(2000, 2000, 500).queue();
 
     move_pose({48, -24}, 180, 1500, {.reverse = true})
         .event(within({48, -24}, 8.0, []() { intake.set(12000, 12000); lock_piston.set_value(true); }))
@@ -41,8 +39,9 @@ void right_rush() {
         .event(start([]() { descore_piston.set_value(false); }))
         .queue();
     move_point({57, -12}, 200, {.reverse = true, .cutoff = 5.0, .min_volt_pct = 75}).queue();
-    move_time(-6000, -6000, 500)
-        .end([]() { return Miku.get_pose().y > -10.0; })
+    move_time(-6000, -6000, 400)
+        .end([]() { return Miku.get_pose().y > -12.0; })
         .queue();
+    move_time(6000, 6000, 50);
 
 }

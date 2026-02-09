@@ -38,9 +38,11 @@ void SwingHeading::update() {
     }
 
     if(params.locked_side == Side::LEFT) {
+        left_motors.brake();
         right_motors.move_voltage(-output);
     } else {
         left_motors.move_voltage(output);
+        right_motors.brake();
     }
 
     turn_patience_exit.update(error);

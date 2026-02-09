@@ -138,9 +138,6 @@ void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
         float corrected_x = estimate.x;
         float corrected_y = estimate.y;
 
-        // Compute sensor offset in world frame using the same convention as get_expected_reading:
-        //   o_x = offset_x * sin(theta) + offset_y * cos(theta)
-        //   o_y = -offset_x * cos(theta) + offset_y * sin(theta)
         float o_x = sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
         float o_y = -sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
 

@@ -7,7 +7,7 @@
 #include <deque>
 #include <vector>
 
-int selected_idx = 3;
+int selected_idx = 5;
 std::vector<Route> routes;
 
 int curve(int pos) {

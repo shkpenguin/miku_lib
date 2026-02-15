@@ -2,6 +2,9 @@
 #include "miku/motions.hpp"
 
 void skills() {
+
+    /*
+
     auto shimmy = []() {
         wait(500).queue();
         move_time(-4000, -4000, 50).queue();
@@ -192,7 +195,7 @@ void skills() {
         .end_seq([]() { return floor_optical.get_color(RED); })
         .queue();
 
-        // */
+        */
 
 }
 

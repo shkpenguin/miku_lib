@@ -12,9 +12,18 @@ MovePose::MovePose(Point target, compass_degrees heading, float timeout, MovePos
     if(params.reverse) target_heading = (target_heading + M_PI).wrap();
 }
 
+MovePose::MovePose(Point target, float timeout, MovePoseParams params)
+    : target(target), target_heading(0), timeout(timeout), params(params) {
+    if(params.k1 < 0) k1 = 4.0;
+    if(params.k2 < 0) k2 = 6.0;
+    k3 = 0;
+    if(params.reverse) target_heading = (target_heading + M_PI).wrap();
+}
+
 void MovePose::start() {
     done = false;
     start_time = pros::millis();
+    start_point = Miku.get_position(); // record start location for `away()`/events
     timer.set(timeout);
     timer.reset();
 }
@@ -73,6 +82,7 @@ void MovePose::update() {
             timer.get_time_left(),
             MovePointParams(
                 params.reverse, // reverse
+                params.quick_exit, // quick_exit
                 -1.0, // cutoff
                 100.0, // drive_max_volt_pct
                 50.0, // turn_max_volt_pct

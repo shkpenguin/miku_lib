@@ -50,3 +50,5 @@ class ParticleFilter {
     std::vector<std::shared_ptr<miku::Distance>> distance_sensors;
 
 };
+
+WallEstimate get_expected_reading(Point particle_position, std::shared_ptr<miku::Distance> sensor, float cos_theta, float sin_theta);

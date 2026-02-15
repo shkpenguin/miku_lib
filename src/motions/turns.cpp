@@ -25,6 +25,13 @@ void TurnHeading::update() {
     compass_degrees current_deg = compass_degrees(Miku.get_heading());  // convert to degrees
     float error = (target - current_deg).wrap();      // error in degrees
 
+    turn_patience_exit.update(error);
+    if(timer.is_done() || turn_patience_exit.get_exit()) {
+        done = true;
+        Miku.stop();
+        return;
+    }
+
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
         done = true;
         return;
@@ -38,12 +45,6 @@ void TurnHeading::update() {
     }
 
     Miku.move_voltage(output, -output);
-
-    if(timer.is_done() || turn_patience_exit.get_exit()) {
-        done = true;
-        Miku.stop();
-        return;
-    }
 }
 
 void TurnHeading::stop() {
@@ -70,6 +71,7 @@ void TurnPoint::start() {
     done = false;
     prev_deg = compass_degrees(Miku.get_heading()).wrap();
     start_time = pros::millis();
+    start_point = Miku.get_position(); // record start location for `away()`
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
@@ -81,6 +83,13 @@ void TurnPoint::update() {
     compass_degrees target_deg = compass_degrees(miku::atan2(target.y - Miku.get_y(), target.x - Miku.get_x()));
     if(params.reverse) target_deg = (target_deg + 180.0f).wrap();
     compass_degrees error = (target_deg - current_deg).wrap();      // error in degrees
+
+    turn_patience_exit.update(error);
+    if(timer.is_done() || turn_patience_exit.get_exit()) {
+        done = true;
+        Miku.stop();
+        return;
+    }
 
     if (params.cutoff > 0 && fabs(error) < params.cutoff) {
         done = true;
@@ -96,13 +105,6 @@ void TurnPoint::update() {
     }
 
     Miku.move_voltage(output, -output);
-
-    turn_patience_exit.update(error);
-    if(timer.is_done() || turn_patience_exit.get_exit()) {
-        done = true;
-        Miku.stop();
-        return;
-    }
 }
 
 void TurnPoint::stop() {

@@ -2,6 +2,8 @@
 #include "miku/motions.hpp"
 
 void right_rush() {
+
+    /*
     move_point({24, -24}, 1500)
         .events({
             {[] { return true; }, [] { intake.set(4000, 12000); }},
@@ -55,5 +57,6 @@ void right_rush() {
         .end([]() { return Miku.get_pose().y > -12.0; })
         .queue();
     move_time(6000, 6000, 50).queue();
+    */
 
 }

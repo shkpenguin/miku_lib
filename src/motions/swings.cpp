@@ -46,7 +46,6 @@ void SwingHeading::update() {
     }
 
     turn_patience_exit.update(error);
-
     if(timer.is_done() || turn_patience_exit.get_exit()) {
         done = true;
         return;
@@ -76,6 +75,7 @@ SwingPoint::SwingPoint(Point target, float timeout, SwingParams params)
 void SwingPoint::start() {
     done = false;
     start_time = pros::millis();
+    start_point = Miku.get_position(); // record start location for `away()`
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
@@ -110,7 +110,6 @@ void SwingPoint::update() {
     }
 
     turn_patience_exit.update(error);
-
     if(timer.is_done() || turn_patience_exit.get_exit()) {
         done = true;
         return;

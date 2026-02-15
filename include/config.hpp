@@ -15,7 +15,7 @@
 #define WHEEL_DIAMETER 3.25f
 #define WHEEL_CIRC (WHEEL_DIAMETER * M_PI)
 #define GEAR_RATIO 0.75f
-#define TRACK_WIDTH 10.0f
+#define TRACK_WIDTH 10.75f
 #define MAX_RPM 660.0f
 #define MAX_VEL 84.233953f // in/s (WHEEL_CIRC * MAX_RPM * GEAR_RATIO / 60)
 #define MAX_ANG_VEL 16.8467906f // rad/s (2 * MAX_VEL / TRACK_WIDTH)
@@ -29,16 +29,17 @@ extern miku::MotorGroup right_motors;
 
 extern pros::Imu imu;
 
-extern miku::Distance front_distance;
-extern miku::Distance back_distance;
-extern miku::Distance left_distance;
-extern miku::Distance right_distance;
+extern miku::Distance &front_distance;
+extern miku::Distance &back_distance;
+extern miku::Distance &left_distance;
+extern miku::Distance &right_distance;
 
 extern ParticleFilter mcl;
 
 extern miku::Chassis Miku;
 
 extern miku::Motor intake_bottom;
+extern miku::Motor intake_middle;
 extern miku::Motor intake_top;
 
 extern miku::Intake intake;
@@ -60,4 +61,5 @@ extern RangeExit turn_small_exit;
 extern RangeExit turn_large_exit;
 
 extern PatienceExit turn_patience_exit;
-extern PatienceExit drive_patience_exit;
+extern PatienceExit drive_quick_exit;
+extern PatienceExit drive_slow_exit;

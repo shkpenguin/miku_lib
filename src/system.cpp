@@ -1,9 +1,12 @@
 #include "system.hpp"
+#include "config.hpp"
 #include "miku/miku-api.hpp"
 #include "fmt/core.h"
 #include "macro.hpp"
 #include <deque>
 #include <vector>
+
+#define LUT_TESTING 1
 
 pros::Task* autonomous_system_task = nullptr; // if needed by other translation units
 std::deque<MotionPrimitive*> motion_queue;
@@ -22,8 +25,11 @@ List<DriveMode> drive_modes = {
 
 List<std::function<void()>> displayModes = {
     display_pose,
+    display_dist_sensors,
+    display_odom_raw,
     display_motor_temps,
-    display_vel,
+    display_drive_vel,
+    display_intake_vel,
     display_floor_color,
     display_drive_voltage,
 };
@@ -44,9 +50,19 @@ void queue_after_current(MotionPrimitive* motion) {
     queue_mutex.give();
 }
 
+int lut_test_voltage = 0;
+
 void teleop_intake_control() {
     
     while(true) {
+
+        #if LUT_TESTING 
+        if(master.get_digital(DIGITAL_B)) {
+            intake.set(lut_test_voltage, lut_test_voltage);
+        }
+
+        else {
+        #endif
 
         bool shift = master.get_digital(DIGITAL_L1);
 
@@ -55,21 +71,10 @@ void teleop_intake_control() {
             if(master.get_digital_new_press(DIGITAL_R1)) loader_piston.toggle();
 
             if(master.get_digital(DIGITAL_R2)) {
-                // spit (shift + R2)
-                intake.set_top(-6000);
-                intake.set_bottom_velocity(-300);
-            } else if(master.get_digital_new_press(DIGITAL_L2)) {
-                // quick out (shift + L2 press)
-                intake.set(-12000, -6000);
-                intake.update();
-                pros::delay(200);
-                continue;
+                intake.set(-12000, -12000);
             } else if(master.get_digital(DIGITAL_L2)) {
-                // fast intake (shift + L2 hold)
-                intake.set_top_velocity(300);
-                intake.set_bottom(12000);
+                intake.set(-12000, 12000);
             } else {
-                // no intake buttons while shifted -> stop
                 intake.stop();
             }
 
@@ -77,34 +82,24 @@ void teleop_intake_control() {
 
             if(master.get_digital_new_press(DIGITAL_R1)) {
                 lock_piston.toggle();
-                master.set_rumble(lock_piston.get_value());
+                master.set_rumble(!lock_piston.get_value());
             }
             
             if(master.get_digital_new_press(DIGITAL_L2)) descore_piston.toggle();
-            
-            if(master.get_digital_new_press(DIGITAL_A)) middle_piston.toggle();
 
             if(master.get_digital(DIGITAL_R2)) {
-                // Main intake in
-                if(lock_piston.get_value() == false) intake.set(4000, 12000);
-                else intake.set(12000, 12000);
-            } else if(master.get_digital_new_press(DIGITAL_LEFT)) {
-                // Quick out
-                intake.set(-12000, -6000);
-                intake.update();
-                pros::delay(200);
-                continue;
-            } else if(master.get_digital(DIGITAL_LEFT)) {
-                // Hold left: top velocity 150, bottom depends on optical
-                intake.set_top_velocity(150);
-                if(intake_optical.get_color(RED)) intake.set_bottom(-12000);
-                else intake.set_bottom(8000);
+                // if(lock_piston.get_value() == true) intake.set(12000, 12000);
+                // else intake.set(12000, 12000);
+                intake.set(12000, 12000);
             } else {
-                // no intake buttons -> stop
                 intake.stop();
             }
 
         } // shift
+
+        #if LUT_TESTING 
+        }
+        #endif
 
         intake.update();
         pros::delay(10);
@@ -162,7 +157,7 @@ void autonomous_system_control() {
 
             if (current_motion->is_done()) {
                 current_motion = nullptr;
-                master.rumble(".");
+                // master.rumble(".");
             }
             else {
                 current_motion->update();
@@ -174,21 +169,25 @@ void autonomous_system_control() {
 
 }
 
-int lut_test_voltage = 0;
-bool lut_testing = false;
-
 pros::Task* teleop_intake_task = nullptr;
 
 void teleop_system_control() {
 
-    if(lut_testing) {
+    #if LUT_TESTING
         master.display(0, []() {
             return fmt::format("Voltage: {}mV", lut_test_voltage);
         });
         master.display(1, []() { // drive left/right velocity
-            return fmt::format("RPM: {} {}", (int) left_motors.get_average_velocity(), (int) right_motors.get_average_velocity());
+            return fmt::format("drive: {} {}", (int) left_motors.get_average_velocity(), (int) right_motors.get_average_velocity());
         });
-    }
+        master.display(2, []() { // intake top/middle/bottom velocity
+            return fmt::format("{} {} {}", (int) intake_top.get_filtered_velocity(), (int) intake_middle.get_filtered_velocity(), (int) intake_bottom.get_filtered_velocity());
+        });
+    #endif
+
+    teleop_intake_task = new pros::Task([]() {
+        teleop_intake_control();
+    });
 
     while (true) {
 
@@ -198,22 +197,28 @@ void teleop_system_control() {
         intake.update();
         Miku.update_position();
 
-        if(master.get_digital_new_press(DIGITAL_Y)) skills_mid_control();
+        // if(master.get_digital_new_press(DIGITAL_Y)) {
+        //     teleop_intake_task->remove();
+        //     teleop_intake_task = nullptr;
+        //     skills_mid_control();
+        // }
 
-        if(lut_testing) {
-            if(master.get_digital_new_press(DIGITAL_LEFT)) {
-                lut_test_voltage -= 500;
-            }
-            if(master.get_digital_new_press(DIGITAL_RIGHT)) {
-                lut_test_voltage += 500;
-            }
-            if(master.get_digital_new_press(DIGITAL_UP)) {
-                lut_test_voltage += 1000;
-            }
-            if(master.get_digital_new_press(DIGITAL_DOWN)) {
-                lut_test_voltage *= -1;
-            }
+        if(master.get_digital_new_press(DIGITAL_Y)) Miku.distance_reset(Miku.get_position());
+
+        #if LUT_TESTING
+        if(master.get_digital_new_press(DIGITAL_LEFT)) {
+            lut_test_voltage -= 500;
         }
+        if(master.get_digital_new_press(DIGITAL_RIGHT)) {
+            lut_test_voltage += 500;
+        }
+        if(master.get_digital_new_press(DIGITAL_UP)) {
+            lut_test_voltage += 1000;
+        }
+        if(master.get_digital_new_press(DIGITAL_DOWN)) {
+            lut_test_voltage *= -1;
+        }
+        #endif
 
         bool joysticks_active = 
             (abs(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)) > 10) ||
@@ -240,21 +245,22 @@ void teleop_system_control() {
 
         if(motion_queue.empty() && current_motion == nullptr) {
 
-            if(lut_testing && !master.get_digital_new_press(DIGITAL_B) && master.get_digital(DIGITAL_B)) {
-                Miku.move_voltage(lut_test_voltage, lut_test_voltage);
-            }
-
-            else if(master.get_digital_new_press(DIGITAL_B)) {
-                drive_modes.cycle_forward();
-                master.rumble("-");
-            }
-
             if(master.get_digital_new_press(DIGITAL_X)) {
                 displayModes.cycle_forward()();
             }
 
-            
+            #if LUT_TESTING
+            if(master.get_digital(DIGITAL_B)) {
+                Miku.move_voltage(lut_test_voltage, lut_test_voltage);
+            }
+
             else { // not running LUT test
+            #else 
+            if(master.get_digital_new_press(DIGITAL_B)) {
+                drive_modes.cycle_forward();
+                master.rumble("-");
+            }
+            #endif
 
             if(master.get_digital(DIGITAL_UP)) {
                 int turn = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
@@ -284,7 +290,9 @@ void teleop_system_control() {
                 }
             }
 
+            #if LUT_TESTING
             }
+            #endif
         }
 
         else {

@@ -2,6 +2,8 @@
 #include "miku/motions.hpp"
 
 void test() {
+
+    /*
     wait(100)
         .event(start([]() { intake.set(4000, 12000); loader_piston.set_value(true); }))
         .queue();
@@ -15,4 +17,12 @@ void test() {
         })
         .end_seq([]() { return floor_optical.get_color(TILE); })
         .queue();
+    */
+
+    // turn_heading(90, 10000).queue();
+    move_point({24, -24}, 10000).queue();
+    wait(1000)
+        .start([]() { master.rumble("---"); })
+        .queue();
+    
 }

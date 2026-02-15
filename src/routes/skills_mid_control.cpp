@@ -4,6 +4,9 @@
 // /*
 
 void skills_mid_control() {
+
+    /*
+
     auto shimmy = []() {
         wait(500).queue();
         move_time(-4000, -4000, 50).queue();
@@ -44,7 +47,7 @@ void skills_mid_control() {
         .queue();
     move_pose({-8, -8}, -135, 2000, {.reverse = true, .max_vel_pct = 50})
         .start([]() { loader_piston.set_value(true); })
-        .event(elapsed(500, []() { intake.stop(); middle_piston.set_value(true); }))
+        .event(elapsed(500, []() { intake.stop(); }))
         // .event(within({-8, -8}, 3.0, []() {   }))
         .queue();
     wait(100)
@@ -63,7 +66,7 @@ void skills_mid_control() {
         .start([]() { intake.stop(); })
         .queue();
     turn_point({-47, -72}, 500)
-        .start([]() { middle_piston.set_value(false); intake.load(); })
+        .start([]() { intake.load(); })
         .queue();
     move_pose({-47, -54}, 180, 1000, {.max_vel_pct = 40})
         .queue();
@@ -155,7 +158,7 @@ void skills_mid_control() {
     turn_point({8, 8}, 500, {.reverse = true}).queue();
     move_pose({8, 8}, 45, 2000, {.reverse = true, .max_vel_pct = 30})
         .event(start([]() { intake.set(-12000, -6000); }))
-        .event(elapsed(200, []() { intake.stop(); middle_piston.set_value(true); }))
+        .event(elapsed(200, []() { intake.stop(); }))
         .event(within({8, 8}, 3.0, []() { intake.set_top_velocity(150); intake.set_bottom(8000);  }))
         .event(ConditionalEvent(
             []() { return intake_optical.get_color(RED); },
@@ -179,7 +182,7 @@ void skills_mid_control() {
     //     .start([]() { intake.stop(); })
     //     .queue();
     // turn_point({48, 24}, 500, {.reverse = true})
-    //     .start([]() { middle_piston.set_value(false); intake.load(); })
+    //     .start([]() { intake.load(); })
     //     .queue();
     // move_pose({48, 24}, 0, 1000, {.reverse = true, .max_vel_pct = 30})
     //     .within({48, 24}, 6.0, [] { intake.score(); })
@@ -196,7 +199,7 @@ void skills_mid_control() {
         .start([]() { intake.set(-12000, -12000); })
         .queue();
     turn_point({24, -24}, 500, {.cutoff = 5.0})
-        .start([]() { middle_piston.set_value(false); loader_piston.set_value(false); intake.load(); })
+        .start([]() { loader_piston.set_value(false); intake.load(); })
         .queue();
     move_point({24, -24}, 1500, {.drive_max_volt_pct = 60}).queue();
     turn_point({0, 0}, 500).queue();
@@ -243,6 +246,8 @@ void skills_mid_control() {
         })
         .end_seq([]() { return floor_optical.get_color(TILE); })
         .queue();
+
+    */
 
 }
 

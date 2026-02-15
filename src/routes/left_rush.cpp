@@ -5,6 +5,8 @@
 
 void left_rush() {
 
+    /*
+
     move_point({-47, -48}, 1500, {.cutoff = 1.0, .drive_max_volt_pct = 50})
         .start([]() { intake.load(); })
         .queue();
@@ -61,6 +63,6 @@ void left_rush() {
         .start([]() { middle_piston.set_value(false); })
         .queue();
 
-    // */
+    */
 
 }   

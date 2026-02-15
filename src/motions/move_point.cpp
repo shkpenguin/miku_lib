@@ -24,9 +24,12 @@ void MovePoint::start() {
     turn_pid.reset();
     timer.set(timeout);
     timer.reset();
-    drive_patience_exit.reset();
+    drive_quick_exit.reset();
+    drive_slow_exit.reset();
 
     Point current = Miku.get_position();
+    start_point = current; // record where the motion started
+
     float dx = target.x - current.x;
     float dy = target.y - current.y;
     start_side = sign(dx * cos(Miku.get_heading()) + dy * sin(Miku.get_heading()));
@@ -54,7 +57,11 @@ void MovePoint::update() {
 
     standard_radians angle_error = (miku::atan2(dy, dx) - Miku.get_heading()).wrap();
 
-    drive_patience_exit.update(drive_error);
+    if(params.quick_exit) {
+        drive_quick_exit.update(drive_error);
+    } else {
+        drive_slow_exit.update(drive_error);
+    }
 
     // PID outputs
     float drive_out = std::clamp(drive_pid.update(drive_error), -params.drive_max_volt_pct / 100.0f * 12000, params.drive_max_volt_pct / 100.0f * 12000);
@@ -87,9 +94,9 @@ void MovePoint::update() {
     // Final motor outputs
     Miku.move_voltage(left_out, right_out);
 
-    if(drive_patience_exit.get_exit() || timer.is_done()) {
+    if((params.quick_exit && drive_quick_exit.get_exit()) || (!params.quick_exit && drive_slow_exit.get_exit()) || timer.is_done()) {
         done = true;
-        Miku.stop();
+        Miku.stop(); 
         return;
     }
 }

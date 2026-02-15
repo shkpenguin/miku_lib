@@ -78,31 +78,66 @@ inline void display_pose() {
     });
 }
 
-inline void display_vel() {
+inline void display_odom_raw() {
     master.display(0, []() {
-        return fmt::format("top: {:.1f}rpm", intake_top.get_filtered_velocity());
-    }); 
+        return fmt::format("left: {:.1f}", left_motors.get_average_position());
+    });
     master.display(1, []() {
-        return fmt::format("bottom: {:.1f}rpm", intake_bottom.get_filtered_velocity());
+        return fmt::format("right: {:.1f}", right_motors.get_average_position());
     });
     master.display(2, []() {
-        return fmt::format("drive: {:.0f} {:.0f}", left_motors.get_average_velocity(), right_motors.get_average_velocity());
+        return fmt::format("imu: {:.1f}", imu.get_heading());
+    });
+}
+
+inline void display_drive_vel() {
+    master.display(0, []() {
+        return fmt::format("left: {:.1f}rpm", left_motors.get_average_velocity());
+    }); 
+    master.display(1, []() {
+        return fmt::format("right: {:.1f}rpm", right_motors.get_average_velocity());
+    });
+}
+
+inline void display_intake_vel() {
+    master.display(0, []() {
+        return fmt::format("top: {:.1f}rpm", intake_top.get_filtered_velocity());
+    });
+    master.display(1, []() {
+        return fmt::format("mid: {:.1f}rpm", intake_middle.get_filtered_velocity());
+    });
+    master.display(2, []() {
+        return fmt::format("bottom: {:.1f}rpm", intake_bottom.get_filtered_velocity());
+    });
+}
+inline void display_dist_sensors() {
+    master.display(0, []() {
+        return fmt::format("{} {} {} {}", (int)(front_distance.get() / 25.4), (int)(back_distance.get() / 25.4), (int)(left_distance.get() / 25.4), (int)(right_distance.get() / 25.4));
+    });
+    master.display(1, []() {
+        return fmt::format("{:.0f} {:.0f} {:.0f} {:.0f}", get_expected_reading(Miku.get_position(), std::make_shared<miku::Distance>(front_distance), cos(Miku.get_heading()), sin(Miku.get_heading())).distance, 
+                                            get_expected_reading(Miku.get_position(), std::make_shared<miku::Distance>(back_distance), cos(Miku.get_heading()), sin(Miku.get_heading())).distance,
+                                            get_expected_reading(Miku.get_position(), std::make_shared<miku::Distance>(left_distance), cos(Miku.get_heading()), sin(Miku.get_heading())).distance,
+                                            get_expected_reading(Miku.get_position(), std::make_shared<miku::Distance>(right_distance), cos(Miku.get_heading()), sin(Miku.get_heading())).distance);
+    });
+    master.display(2, []() {
+        return fmt::format("pos: {:.1f} {:.1f}", Miku.get_x(), Miku.get_y());
     });
 }
 
 inline void display_floor_color() {
-    master.display(0, []() {
-        if(floor_optical.get_color(RED)) return fmt::format("red");
-        else if(floor_optical.get_color(BLUE)) return fmt::format("blue");
-        else if(floor_optical.get_color(TILE)) return fmt::format("tile");
-        else return fmt::format("none");
-    });
-    master.display(1, []() {
-        return fmt::format("hue: {:.1f}", floor_optical.get_hue());
-    });
-    master.display(2, []() {
-        return fmt::format("prox: {:.1f}", (float)floor_optical.get_proximity());
-    });
+    // master.display(0, []() {
+    //     if(floor_optical.get_color(RED)) return fmt::format("red");
+    //     else if(floor_optical.get_color(BLUE)) return fmt::format("blue");
+    //     else if(floor_optical.get_color(TILE)) return fmt::format("tile");
+    //     else return fmt::format("none");
+    // });
+    // master.display(1, []() {
+    //     return fmt::format("hue: {:.1f}", floor_optical.get_hue());
+    // });
+    // master.display(2, []() {
+    //     return fmt::format("prox: {:.1f}", (float)floor_optical.get_proximity());
+    // });
 }
 
 extern List<std::function<void()>> displayModes;

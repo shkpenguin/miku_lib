@@ -25,7 +25,7 @@ void ParticleFilter::set_min_odom_noise(float noise) {
 //   sensor_y = robot_y - offset_x * cos(theta) + offset_y * sin(theta)
 // The ray direction (dx,dy) is chosen based on sensor orientation (front/back/left/right).
 // Return value is the WallEstimate (wall id and distance along the ray t).
-auto get_expected_reading = [](Point particle_position, std::shared_ptr<miku::Distance> sensor, float cos_theta, float sin_theta) {
+WallEstimate get_expected_reading(Point particle_position, std::shared_ptr<miku::Distance> sensor, float cos_theta, float sin_theta) {
 
     float sensor_y = particle_position.y - sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
     float sensor_x = particle_position.x + sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
@@ -261,9 +261,9 @@ void ParticleFilter::update_previous_belief(Pose robot_speed) {
         clamp_field(prev_belief.x + robot_speed.x),
         clamp_field(prev_belief.y + robot_speed.y)
     ));
-
-    float velocity = robot_speed.magnitude();
-    float odom_stdev = std::max(velocity / 4, min_odom_noise);
+    
+    float motion = robot_speed.magnitude() * 0.25;
+    float odom_stdev = std::max(motion, min_odom_noise);
     odom_noise = std::normal_distribution<float>(0, odom_stdev);
 
     for(auto &particle : particles) {

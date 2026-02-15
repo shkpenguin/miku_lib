@@ -92,6 +92,7 @@ void Ramsete::update() {
             timer.get_time_left(),
             MovePointParams{
                 params.reverse,
+                params.quick_exit,
                 -1.0,
                 12000.0,
                 1000.0,

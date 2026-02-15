@@ -3,6 +3,7 @@
 #include "miku/devices/motor.hpp"
 #include "pros/rtos.hpp"
 #include <memory>
+#include <deque>
 
 namespace miku {
 
@@ -25,17 +26,36 @@ struct MotorCommand {
 class Intake {
 private:
     std::shared_ptr<Motor> top_motor;
+    std::shared_ptr<Motor> middle_motor;
     std::shared_ptr<Motor> bottom_motor;
 
     MotorCommand top_command;
+    MotorCommand middle_command;
     MotorCommand bottom_command;
 
     bool anti_jam_enabled = false;
-    bool is_unjamming = false;
-    
+
     uint32_t jam_detect_time = 0;
-    uint32_t unjam_start_time = 0;
     uint32_t last_unjam_end_time = 0;
+
+    // Intake command queue: queued commands have priority over the default
+    // `*_*_command` values. A queued entry may have a duration (ms); duration
+    // == 0 means "run until popped/cleared". The queue is protected by a
+    // mutex because commands may be pushed from other tasks (teleop, events).
+    struct QueueEntry {
+        MotorCommand top;
+        MotorCommand middle;
+        MotorCommand bottom;
+        uint32_t duration_ms = 0;     // 0 => run until removed
+        uint32_t start_time = 0;      // will be set when entry starts executing
+        bool is_unjam = false;       // convenience flag for anti-jam entries
+    };
+
+    std::deque<QueueEntry> command_queue;
+    pros::Mutex queue_mutex; // protects command_queue
+
+    // Internal helper used by anti-jam to push the standard unjam entry
+    void push_unjam_to_queue(bool front = true);
 
     // Anti-jam tuning constants:
     // - LOW_VELOCITY_THRESHOLD: bottom motor filtered velocity below this
@@ -53,7 +73,7 @@ private:
     static constexpr int JAM_THRESHOLD_MS = 500;         // ms
     static constexpr int UNJAM_DURATION_MS = 100;        // ms
     static constexpr int UNJAM_VOLTAGE = -12000;         // mV
-    static constexpr uint32_t UNJAM_COOLDOWN_MS = 1000;
+    static constexpr uint32_t UNJAM_COOLDOWN_MS = 2000;
 
     void execute_command(std::shared_ptr<Motor>& motor, const MotorCommand& cmd);
 
@@ -68,10 +88,7 @@ private:
     // voltage/velocity requirement here or increasing the threshold/timer.
     bool is_jammed() const;
 
-    // While unjamming we apply UNJAM_VOLTAGE to both motors for
-    // UNJAM_DURATION_MS, then resume normal commands. Make UNJAM_VOLTAGE less
-    // aggressive to reduce stress on mechanism if necessary.
-    void handle_unjam(uint32_t now);
+    // (handle_unjam removed — anti-jam now queues an unjam entry.)
 
     // Monitor the jam condition and only start an unjam sequence if the
     // condition persists for JAM_THRESHOLD_MS to avoid reacting to short
@@ -79,12 +96,16 @@ private:
     void handle_jam_detection(uint32_t now);
 
 public:
-    Intake(std::shared_ptr<Motor> top, std::shared_ptr<Motor> bottom);
+    Intake(std::shared_ptr<Motor> top, std::shared_ptr<Motor> middle, std::shared_ptr<Motor> bottom);
 
+    // Three-arg set methods (preferred when using a middle motor)
+    void set(const MotorCommand& top_cmd, const MotorCommand& middle_cmd, const MotorCommand& bottom_cmd);
+    void set(float top_voltage, float middle_voltage, float bottom_voltage);
+    void set_velocity(float top_vel, float middle_vel, float bottom_vel);
+
+    // Backwards-compatible two-arg set methods
     void set(const MotorCommand& top_cmd, const MotorCommand& bottom_cmd);
-
     void set(float top_voltage, float bottom_voltage);
-
     void set_velocity(float top_vel, float bottom_vel);
 
     void set_top(const MotorCommand& cmd);
@@ -93,6 +114,10 @@ public:
 
     void set_top_velocity(float velocity);
     
+    void set_middle(const MotorCommand& cmd);
+    void set_middle(float voltage);
+    void set_middle_velocity(float velocity);
+
     void set_bottom(const MotorCommand& cmd);
 
     void set_bottom(float voltage);
@@ -106,6 +131,28 @@ public:
     void stop();
 
     void set_anti_jam(bool enabled);
+
+    // Queue API — queued entries override the default commands until they
+    // complete or are cleared. `front = true` inserts the entry at the
+    // head of the queue (higher priority).
+    void queue_command(const MotorCommand& top_cmd,
+                       const MotorCommand& middle_cmd,
+                       const MotorCommand& bottom_cmd,
+                       uint32_t duration_ms = 0,
+                       bool front = false);
+
+    // Convenience: spin all rollers at `voltage` for `duration_ms` (ms)
+    void queue_spin(float voltage, uint32_t duration_ms, bool front = false);
+
+    // Clear queued commands (does not change the default commands).
+    void clear_queue();
+
+    // Cancel the active queued command (if any) and start the next queued
+    // command (or resume defaults).
+    void cancel_current_command();
+
+    // Number of queued entries (not including default command)
+    size_t queued_size() const;
 
     void update();
 };

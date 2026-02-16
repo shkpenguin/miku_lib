@@ -8,7 +8,7 @@
 #include <deque>
 #include <vector>
 
-int selected_idx = 2;
+int selected_idx = 1;
 std::vector<Route> routes;
 
 int curve(int pos) {
@@ -42,7 +42,7 @@ void arcade(int throttle, int turn) {
 
 void precalculate_paths() {
     routes.push_back(Route("test route", {24, -48, M_PI_2}, test));
-    routes.push_back(Route("skills", {14, -46, M_PI_2}, skills));
+    routes.push_back(Route("skills", {0, 0, 0}, skills));
     routes.push_back(Route("sawp", {17, -48, M_PI}, sawp));
     routes.push_back(Route("right rush", {14, -46, M_PI_2}, right_rush));
     routes.push_back(Route("skills mid control", {0, 0, M_PI}, skills_mid_control));
@@ -62,8 +62,8 @@ void initialize() {
 
     // intake_optical.set_led_pwm(100);
     // intake_optical.set_integration_time(10);
-    // floor_optical.set_led_pwm(100);
-    // floor_optical.set_integration_time(10);
+    floor_optical.set_led_pwm(100);
+    floor_optical.set_integration_time(10);
 
     precalculate_paths();
 
@@ -102,6 +102,8 @@ void opcontrol() {
     current_motion = nullptr;
 
     Miku.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+
+    display_intake_vel();
 
     // skills_mid_control();
 

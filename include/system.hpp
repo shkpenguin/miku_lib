@@ -126,18 +126,18 @@ inline void display_dist_sensors() {
 }
 
 inline void display_floor_color() {
-    // master.display(0, []() {
-    //     if(floor_optical.get_color(RED)) return fmt::format("red");
-    //     else if(floor_optical.get_color(BLUE)) return fmt::format("blue");
-    //     else if(floor_optical.get_color(TILE)) return fmt::format("tile");
-    //     else return fmt::format("none");
-    // });
-    // master.display(1, []() {
-    //     return fmt::format("hue: {:.1f}", floor_optical.get_hue());
-    // });
-    // master.display(2, []() {
-    //     return fmt::format("prox: {:.1f}", (float)floor_optical.get_proximity());
-    // });
+    master.display(0, []() {
+        if(floor_optical.get_color(RED)) return fmt::format("red");
+        else if(floor_optical.get_color(BLUE)) return fmt::format("blue");
+        else if(floor_optical.get_color(TILE)) return fmt::format("tile");
+        else return fmt::format("none");
+    });
+    master.display(1, []() {
+        return fmt::format("hue: {:.1f}", floor_optical.get_hue());
+    });
+    master.display(2, []() {
+        return fmt::format("prox: {:.1f}", (float)floor_optical.get_proximity());
+    });
 }
 
 extern List<std::function<void()>> displayModes;

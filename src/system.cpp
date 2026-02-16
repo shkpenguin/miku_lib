@@ -6,7 +6,7 @@
 #include <deque>
 #include <vector>
 
-#define LUT_TESTING 1
+#define LUT_TESTING 0
 
 pros::Task* autonomous_system_task = nullptr; // if needed by other translation units
 std::deque<MotionPrimitive*> motion_queue;
@@ -62,7 +62,26 @@ void teleop_intake_control() {
         }
 
         else {
+        #else
+        if(master.get_digital_new_press(DIGITAL_LEFT)) intake.queue_command(-12000, -12000, -12000, 100);
+        else if(master.get_digital(DIGITAL_LEFT)) {
+            
+            intake.set_top_velocity(-100);
+            // intake.set_middle_velocity(200);
+            // intake.set_top(-4000);
+            intake.set_middle_velocity(100);
+            intake.set_bottom(6000);
+        }
+
+        if(master.get_digital(DIGITAL_RIGHT)) {
+            intake.set_top(12000);
+            intake.set_middle(-12000);
+            intake.set_bottom(0);
+        }
+        
         #endif
+
+        if(master.get_digital(DIGITAL_A)) middle_piston.toggle();
 
         bool shift = master.get_digital(DIGITAL_L1);
 
@@ -74,8 +93,6 @@ void teleop_intake_control() {
                 intake.set(-12000, -12000);
             } else if(master.get_digital(DIGITAL_L2)) {
                 intake.set(-12000, 12000);
-            } else {
-                intake.stop();
             }
 
         } else {
@@ -91,11 +108,13 @@ void teleop_intake_control() {
                 // if(lock_piston.get_value() == true) intake.set(12000, 12000);
                 // else intake.set(12000, 12000);
                 intake.set(12000, 12000);
-            } else {
-                intake.stop();
             }
 
         } // shift
+
+        if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_L2) && !master.get_digital(DIGITAL_LEFT) && !master.get_digital(DIGITAL_RIGHT)) {
+            intake.stop();
+        }
 
         #if LUT_TESTING 
         }

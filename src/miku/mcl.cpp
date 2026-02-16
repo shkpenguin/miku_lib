@@ -138,8 +138,8 @@ void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
         float corrected_x = estimate.x;
         float corrected_y = estimate.y;
 
-        float o_x = sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
-        float o_y = -sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
+        float o_x = estimate.x + sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
+        float o_y = estimate.y - sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
 
         float dx, dy;
         float ca = sensor->cos_orient;

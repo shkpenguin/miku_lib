@@ -49,7 +49,7 @@ extern miku::Pneumatic lock_piston;
 extern miku::Pneumatic middle_piston;
 extern miku::Pneumatic descore_piston;
 
-extern miku::Optical intake_optical;
+// extern miku::Optical intake_optical;
 extern miku::Optical floor_optical;
 
 extern PIDGains turn_gains;

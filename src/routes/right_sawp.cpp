@@ -6,21 +6,22 @@ void sawp() {
     wait(100)
         .start([]() { intake.load(); })
         .queue();
-    move_time(12000, 6000, 300).queue();
+    move_time(12000, 4000, 300).queue();
     turn_point({47, -48}, 500, {.reverse = true, .cutoff = 5.0}).queue();
-    move_point({47, -48}, 1000, {.reverse = true, .quick_exit = false, .drive_max_volt_pct = 75}).queue();
-    turn_point({47, -60}, 500, {.cutoff = 10.0})
+    move_point({47, -48}, 1200, {.reverse = true, .quick_exit = false, .drive_max_volt_pct = 65}).queue();
+    turn_point({47, -60}, 750)
         .start([]() { loader_piston.set_value(true); })
         .queue();
     move_pose({47, -60}, 180, 1000, {.max_vel_pct = 20}).queue();
-    move_time(4000, 4000, 500).queue();
+    // turn_point({47, -72}, 300, {.cutoff = 5.0}).queue();
+    move_time(6000, 6000, 500).queue();
     move_pose({48, -24}, 180, 1000, {.reverse = true})
-        .within(6.0, []() { intake.score(); })
+        .within(8.0, []() { intake.score(); })
         .queue();
-    move_time(-2000, -2000, 500)
+    move_time(-2000, -2000, 750)
         .start([]() { intake.score(); })
         .queue();
-    swing_point({24, -24}, 1000, {.locked_side = Side::RIGHT})
+    swing_point({24, -24}, 750, {.locked_side = Side::RIGHT, .cutoff = 5.0, .min_volt_pct = 20})
         .start([]() { loader_piston.set_value(false); intake.load(); })
         .queue();
     move_point({24, -24}, 1000, {.min_volt_pct = 20}).queue();
@@ -34,7 +35,7 @@ void sawp() {
     move_pose({-48, -42}, -90, 1000).queue();
     turn_point({-48, -24}, 500, {.reverse = true}).queue();
     move_pose({-48, -24}, 180, 1000, {.reverse = true})
-        .within(6.0, []() { intake.score(); })
+        .within(8.0, []() { intake.score(); })
         .queue();
     move_time(-2000, -2000, 1000)
         .start([]() { intake.score(); })
@@ -42,9 +43,10 @@ void sawp() {
     move_pose({-47, -60}, 180, 1000)
         .start([]() { intake.load(); })
         .queue();
-    move_time(4000, 4000, 500).queue();
+    // turn_point({-47, -72}, 300, {.cutoff = 5.0}).queue();
+    move_time(6000, 6000, 500).queue();
     move_pose({-10, -10}, -135, 2000, {.reverse = true, .max_vel_pct = 60})
-        .within(3.0, []() { intake.queue_spin(-12000, 100); intake.set(-8000, 12000); loader_piston.set_value(false); })
+        .within(4.0, []() { intake.queue_spin(-12000, 100); intake.set_top_velocity(-100); intake.set_middle_velocity(100); intake.set_bottom(12000); loader_piston.set_value(false); })
         .queue();
     wait(500)
         .start([]() { intake.set(-8000, 12000); })

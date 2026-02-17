@@ -115,19 +115,16 @@ void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
                 sin_theta));
     }
 
-    float sum_weight_x = 0.0f;
-    float sum_weight_y = 0.0f;
-    float acc_x = 0.0f;
-    float acc_y = 0.0f;
+    float acc_x = 0.0f, acc_y = 0.0f;
+    float sum_weight_x = 0.0f, sum_weight_y = 0.0f;
 
     for(size_t i = 0; i < pf->distance_sensors.size(); ++i) {
 
         std::shared_ptr<miku::Distance> sensor = pf->distance_sensors[i];
+        sensor->update_reading();
 
         if(!sensor->get_enabled()) continue;
         if(!sensor->get_valid()) continue;
-        if(!sensor->orientation_angle == 0.0f && !sensor->orientation_angle == M_PI_2 &&
-           !sensor->orientation_angle == M_PI && !sensor->orientation_angle == -M_PI_2) continue;
 
         WallEstimate expected = expected_readings[i];
         if(expected.wall_id == BAD_INTERSECT || expected.wall_id == NOT_IN_FIELD) continue;
@@ -138,8 +135,8 @@ void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
         float corrected_x = estimate.x;
         float corrected_y = estimate.y;
 
-        float o_x = estimate.x + sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
-        float o_y = estimate.y - sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
+        float o_x = sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
+        float o_y = sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
 
         float dx, dy;
         float ca = sensor->cos_orient;

@@ -12,6 +12,7 @@ class Distance : public pros::Distance {
     float data = -1;
     bool valid = false;
     bool enabled = true;
+    pros::Mutex mutex;
 public:
     float offset_x, offset_y;
 

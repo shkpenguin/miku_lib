@@ -36,13 +36,18 @@ void skills() {
     move_point({12, -36}, 1000).queue();
     turn_point({20, -24}, 500).queue();
     move_pose({20, -24}, 45, 1000, {.max_vel_pct = 30}).queue();
-    turn_point({10, -10}, 500).queue();
+    wait(300).queue();
+    turn_point({10, -10}, 500, {.cutoff = 10.0})
+        .start([]() { intake.stop(); })
+        .queue();
     move_pose({10, -10}, -45, 1000, {.max_vel_pct = 30}).queue();
     wait(1000)
         .start([]() { intake.set_bottom_velocity(-150); intake.set_middle_velocity(-150); intake.set_top(-12000); })
         .queue();
     move_point({18, -24}, 1000, {.reverse = true}).queue();
-    turn_point({-24, -24}, 500).queue();
+    turn_point({-24, -24}, 500)
+        .start([]() { intake.load(); })
+        .queue();
     move_point({-24, -24}, 1000, {.min_volt_pct = 20}).queue();
     turn_point({-47, -60}, 500, {.cutoff = 10.0}).queue();
     move_pose({-47, -60}, 180, 1500).queue();
@@ -51,35 +56,50 @@ void skills() {
     move_pose({-60, -24}, 180, 1500, {.reverse = true}).queue();
     move_pose({-54, 18}, -150, 1500, {.reverse = true}).queue();
     swing_heading(0, 1000, {.locked_side = Side::LEFT}).queue();
-    move_time(-6000, -6000, 300).queue();
-    wait(1000)
-        .start([]() { Miku.distance_reset({-48, 28}); })
+    move_time(-6000, -6000, 300)
+        .start([]() { intake.score(); })
         .queue();
-    move_pose({-47, 60}, 0, 1000).queue();
+    wait(1000)
+        .start([]() { Miku.distance_reset({-48, 28}); }) // fix
+        .queue();
+    move_pose({-47, 60}, 0, 1000)
+        .start([]() { intake.load(); })
+        .queue();
     move_time(6000, 6000, 500).queue();
     shimmy();
     move_pose({-48, 24}, 0, 1000, {.reverse = true}).queue();
-    wait(1000).queue();
-    move_pose({-18, 66}, 90, 1500).queue();
-    move_time(5000, 6000, 2500)
+    wait(1000)
+        .start([]() { intake.score(); })
+        .queue();
+    swing_point({-30, 18}, 1000, {.locked_side = Side::RIGHT, .cutoff = 10.0})
         .start([]() { intake.load(); })
-        .seq({
-            await([]() { return floor_optical.get_color(BLUE); }),
-            ConditionalEvent(
-                []() { return floor_optical.get_color(TILE); },
-                []() { Miku.move_voltage(5000, 5000); }),
-            await([]() { return floor_optical.get_color(BLUE); })
-        })
-        .end_seq([]() { return floor_optical.get_color(TILE); })
         .queue();
-    move_time(5000, 5000, 300).queue();
-    move_point({30, 66}, 1000)
-        .start([]() { Miku.distance_reset({18, 66}); })    
-        .queue();
-    turn_point({12, 36}, 500).queue();
-    move_point({12, 36}, 1000).queue();
-    turn_point({20, 24}, 500).queue();
-    move_pose({20, 24}, -45, 1000, {.max_vel_pct = 30}).queue();
+    move_pose({-30, 18}, 135, 1500).queue();
+    wait(300).queue();
+    move_pose({0, 45}, 0, 1500).queue();
+
+    // move_pose({-18, 66}, 90, 1500).queue();
+    // move_time(5000, 6000, 2500)
+    //     .start([]() { intake.load(); })
+    //     .seq({
+    //         await([]() { return floor_optical.get_color(BLUE); }),
+    //         ConditionalEvent(
+    //             []() { return floor_optical.get_color(TILE); },
+    //             []() { Miku.move_voltage(5000, 5000); }),
+    //         await([]() { return floor_optical.get_color(BLUE); })
+    //     })
+    //     .end_seq([]() { return floor_optical.get_color(TILE); })
+    //     .queue();
+    // move_time(5000, 5000, 300).queue();
+    // move_point({30, 66}, 1000)
+    //     .start([]() { Miku.distance_reset({18, 66}); })    
+    //     .queue();
+
+    // turn_point({12, 36}, 500).queue();
+    // move_point({12, 36}, 1000).queue();
+    // turn_point({20, 24}, 500).queue();
+    // move_pose({20, 24}, -45, 1000, {.max_vel_pct = 30}).queue();
+    
     turn_point({10, 10}, 500, {.reverse = true}).queue();
     move_pose({10, 10}, 45, 1000, {.reverse = true, .max_vel_pct = 30}).queue();
     wait(1000)

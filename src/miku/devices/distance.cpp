@@ -2,6 +2,8 @@
 
 void miku::Distance::update_reading() {
 
+    mutex.take();
+
     if(!enabled) valid = false;
 
     bool visible = this->get_object_size() > 20 || this->get_distance() < 100;
@@ -15,5 +17,7 @@ void miku::Distance::update_reading() {
         data = -1;
         valid = false;
     }
+    
+    mutex.give();
     
 }

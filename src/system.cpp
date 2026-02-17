@@ -65,7 +65,6 @@ void teleop_intake_control() {
         #else
         if(master.get_digital_new_press(DIGITAL_LEFT)) intake.queue_command(-12000, -12000, -12000, 100);
         else if(master.get_digital(DIGITAL_LEFT)) {
-            
             intake.set_top_velocity(-100);
             // intake.set_middle_velocity(200);
             // intake.set_top(-4000);
@@ -73,10 +72,10 @@ void teleop_intake_control() {
             intake.set_bottom(6000);
         }
 
-        if(master.get_digital(DIGITAL_RIGHT)) {
-            intake.set_top(12000);
-            intake.set_middle(-12000);
-            intake.set_bottom(0);
+        if(master.get_digital(DIGITAL_DOWN)) {
+            intake.set_top(-12000);
+            intake.set_middle_velocity(-150);
+            intake.set_bottom_velocity(-150);
         }
         
         #endif
@@ -112,7 +111,7 @@ void teleop_intake_control() {
 
         } // shift
 
-        if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_L2) && !master.get_digital(DIGITAL_LEFT) && !master.get_digital(DIGITAL_RIGHT)) {
+        if(!master.get_digital(DIGITAL_R2) && !master.get_digital(DIGITAL_L2) && !master.get_digital(DIGITAL_LEFT) && !master.get_digital(DIGITAL_DOWN)) {
             intake.stop();
         }
 

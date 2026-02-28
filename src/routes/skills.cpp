@@ -126,15 +126,15 @@ void skills() {
 
     */
 
-    auto shimmy = []() {
-        wait(500).queue();
-        move_time(-4000, -4000, 50).queue();
-        move_time(4000, 4000, 200).queue();
-        wait(100).queue();
-        move_time(-4000, -4000, 50).queue();
-        move_time(4000, 4000, 200).queue();
-        wait(300).queue();
-    };
+    // auto shimmy = []() {
+    //     wait(500).queue();
+    //     move_time(-4000, -4000, 50).queue();
+    //     move_time(4000, 4000, 200).queue();
+    //     wait(100).queue();
+    //     move_time(-4000, -4000, 50).queue();
+    //     move_time(4000, 4000, 200).queue();
+    //     wait(300).queue();
+    // };
     
     move_point({24, -24}, 1500, {.drive_max_volt_pct = 50})
         .events({

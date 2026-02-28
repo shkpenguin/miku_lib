@@ -5,8 +5,6 @@
 #include <memory>
 #include <deque>
 
-namespace miku {
-
 enum class IntakeCommandType {
     VOLTAGE,
     VELOCITY
@@ -22,6 +20,8 @@ struct MotorCommand {
     MotorCommand(float val = 0.0f, IntakeCommandType t = IntakeCommandType::VOLTAGE)
         : value(val), type(t) {}
 };
+
+namespace miku {
 
 class Intake {
 private:

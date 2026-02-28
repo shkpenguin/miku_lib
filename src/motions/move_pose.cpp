@@ -1,3 +1,8 @@
+/*
+ * Polar motion controller designed in Control of Wheeled Mobile Robots: An Experimental Overview
+ * by Alessandro De Luca, Giuseppe Oriolo, Marilena Vendittelli, section 6.3
+*/
+
 #include "miku/motions.hpp"
 #include "miku/util.hpp"
 #include "miku/devices/chassis.hpp"

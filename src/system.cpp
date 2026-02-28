@@ -1,5 +1,6 @@
 #include "system.hpp"
 #include "config.hpp"
+#include "miku/devices/intake.hpp"
 #include "miku/miku-api.hpp"
 #include "fmt/core.h"
 #include "macro.hpp"
@@ -66,21 +67,19 @@ void teleop_intake_control() {
         if(master.get_digital_new_press(DIGITAL_LEFT)) intake.queue_command(-12000, -12000, -12000, 100);
         else if(master.get_digital(DIGITAL_LEFT)) {
             intake.set_top_velocity(-100);
-            // intake.set_middle_velocity(200);
-            // intake.set_top(-4000);
-            intake.set_middle_velocity(100);
-            intake.set_bottom(6000);
+            intake.set_middle_velocity(150);
+            intake.set_bottom(8000);
         }
 
-        if(master.get_digital(DIGITAL_DOWN)) {
-            intake.set_top(-12000);
-            intake.set_middle_velocity(-150);
-            intake.set_bottom_velocity(-150);
-        }
+        // if(master.get_digital(DIGITAL_DOWN)) {
+            // intake.set_top(-12000);
+            // intake.set_middle_velocity(-150);
+            // intake.set_bottom_velocity(-150);
+        // }
         
         #endif
 
-        if(master.get_digital(DIGITAL_A)) middle_piston.toggle();
+        if(master.get_digital_new_press(DIGITAL_A)) middle_piston.toggle();
 
         bool shift = master.get_digital(DIGITAL_L1);
 
@@ -89,8 +88,15 @@ void teleop_intake_control() {
             if(master.get_digital_new_press(DIGITAL_R1)) loader_piston.toggle();
 
             if(master.get_digital(DIGITAL_R2)) {
-                intake.set(-12000, -12000);
-            } else if(master.get_digital(DIGITAL_L2)) {
+                if(middle_piston.get_value() == true) {
+                    intake.set_top(-12000);
+                    intake.set_middle_velocity(-150);
+                    intake.set_bottom_velocity(-200);
+                }
+                else intake.set(-12000, -12000);
+            }
+
+            else if(master.get_digital(DIGITAL_L2)) {
                 intake.set(-12000, 12000);
             }
 
@@ -220,6 +226,14 @@ void teleop_system_control() {
         //     teleop_intake_task = nullptr;
         //     skills_mid_control();
         // }
+
+        if(master.get_digital_new_press(DIGITAL_DOWN)) {
+            if(teleop_intake_task != nullptr) {
+                teleop_intake_task->remove();
+                teleop_intake_task = nullptr;
+            }
+            park_clear();
+        }
 
         if(master.get_digital_new_press(DIGITAL_Y)) Miku.distance_reset(Miku.get_position());
 

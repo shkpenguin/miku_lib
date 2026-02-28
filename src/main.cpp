@@ -8,7 +8,7 @@
 #include <deque>
 #include <vector>
 
-int selected_idx = 1;
+int selected_idx = 5;
 std::vector<Route> routes;
 
 int curve(int pos) {
@@ -41,15 +41,21 @@ void arcade(int throttle, int turn) {
 }
 
 void precalculate_paths() {
-    routes.push_back(Route("test route", {24, -48, M_PI_2}, test));
-    routes.push_back(Route("skills", {0, 0, 0}, skills));
+    routes.push_back(Route("test route", {24, -48, -M_PI_2}, test));
+    // routes.push_back(Route("skills", {0, 0, -M_PI_2}, skills));
+    routes.push_back(Route("skills", {14, -46, M_PI_2}, skills));
     routes.push_back(Route("sawp", {17, -48, M_PI}, sawp));
     routes.push_back(Route("right rush", {14, -46, M_PI_2}, right_rush));
     routes.push_back(Route("skills mid control", {0, 0, M_PI}, skills_mid_control));
-    routes.push_back(Route("left rush", {-18, -51, M_PI}, left_rush));
+    routes.push_back(Route("left rush", {-14, -46, M_PI_2}, left_rush));
 }
 
 void initialize() {
+
+    // file.open("/usd/log.txt", std::ios::out | std::ios::app);
+    // if (!file.is_open()) {
+    //     master.rumble("------");
+    // }
 
     lock_piston.set_value(true);
 
@@ -90,6 +96,13 @@ void autonomous() {
         autonomous_system_control();
     });
 
+    // pros::Task flush_task([]() {
+    //     while(true) {
+    //         pros::delay(1000);
+    //         flush_logs();
+    //     }
+    // });
+
 }
 
 void opcontrol() {
@@ -103,7 +116,7 @@ void opcontrol() {
 
     Miku.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
-    display_intake_vel();
+    // display_intake_vel();
 
     // skills_mid_control();
 

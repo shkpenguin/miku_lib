@@ -3,26 +3,18 @@
 
 void test() {
 
-    /*
-    wait(100)
-        .event(start([]() { intake.set(4000, 12000); loader_piston.set_value(true); }))
-        .queue();
-    move_time(8000, 8000, 1500)
-        .seq({
-            ConditionalEvent(
-                []() { return floor_optical.get_color(BLUE); },
-                []() { loader_piston.set_value(false); }),
-            await([]() { return floor_optical.get_color(TILE); }),
-            await([]() { return floor_optical.get_color(BLUE); })
-        })
-        .end_seq([]() { return floor_optical.get_color(TILE); })
-        .queue();
-    */
-
-    // turn_heading(90, 10000).queue();
-    move_point({24, -24}, 10000).queue();
-    wait(1000)
-        .start([]() { master.rumble("---"); })
-        .queue();
+    // move_time(4000, 4000, 1000)
+    //     .start([]() { intake.load(); })
+    //     .end([]() { return floor_optical.get_color(RED); })
+    //     .queue();
+    // move_time(2000, 2000, 500).queue();
+    // wait(500).queue();
+    // move_time(4000, 4000, 1000).queue();
+    // move_time(-4000, -4000, 200).queue();
+    // move_time(4000, 4000, 500).queue();
+    // move_time(-4000, -4000, 1500).queue();
+    // move_time(2000, 2000, 500)
+    //     .start([]() { Miku.distance_reset({0, -46}); })
+    //     .queue();
     
 }

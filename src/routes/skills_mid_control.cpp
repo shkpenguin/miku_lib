@@ -11,34 +11,28 @@ void skills_mid_control() {
         wait(500).queue();
         move_time(-4000, -4000, 50).queue();
         move_time(4000, 4000, 200).queue();
-        wait(100).queue();
-        move_time(-4000, -4000, 50).queue();
-        move_time(4000, 4000, 200).queue();
-        wait(100).queue();
-        move_time(-4000, -4000, 50).queue();
-        move_time(4000, 4000, 200).queue();
         wait(300).queue();
     };
 
-    wait(300)
-        // .event(start([]() { loader_piston.set_value(true); }))
-        .queue();
-    move_time(5000, 6000, 2000)
+    move_time(4000, 4000, 1000)
         .start([]() { intake.load(); })
-        .seq({
-            // elapsed(200, []() { loader_piston.set_value(false); }),
-            await([]() { return floor_optical.get_color(RED); }),
-            ConditionalEvent(
-                []() { return floor_optical.get_color(TILE); },
-                []() { Miku.move_voltage(5000, 5000); }),
-            await([]() { return floor_optical.get_color(RED); })
-        })
-        .end_seq([]() { return floor_optical.get_color(TILE); })
+        .end([]() { return floor_optical.get_color(RED); })
         .queue();
-    move_point({-40, -65}, 2000, {.cutoff = 6.0, .drive_max_volt_pct = 40})
-        .event(start([]() { Miku.distance_reset({-18, -65}); }))
+    move_time(2000, 2000, 500).queue();
+    wait(500).queue();
+    move_time(4000, 4000, 1000).queue();
+    move_time(-4000, -4000, 200).queue();
+    move_time(4000, 4000, 500).queue();
+    move_time(-4000, -4000, 1500).queue();
+
+    turn_heading(180, 500)
+        .start([]() { Miku.distance_reset({0, -46}); })
         .queue();
-    move_point({-42, -48}, 1500, {.cutoff = 6.0, .drive_max_volt_pct = 60, .cos_scale = 2.0}).queue();
+
+    move_pose({-12, -12}, 135, 1000, {.reverse = true});
+    turn_heading(-135, 500).queue();
+    move_distance(10, 1000).queue();
+
     turn_point({-30, -30}, 300, {.cutoff = 5.0}).queue();
     move_pose({-30, -30}, 45, 1500, {.max_vel_pct = 40}).queue();
     wait(200).queue();

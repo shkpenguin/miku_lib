@@ -126,7 +126,7 @@ PIDGains intake_bottom_gains(20.0, 5.0, 0.0);
 
 miku::Motor intake_top(-8, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees, intake_top_lut, intake_top_gains);
 miku::Motor intake_middle(-18, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees, intake_middle_lut, intake_middle_gains);
-miku::Motor intake_bottom(19, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees, intake_bottom_lut, intake_bottom_gains);
+miku::Motor intake_bottom(20, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees, intake_bottom_lut, intake_bottom_gains);
 
 miku::Intake intake(std::make_shared<miku::Motor>(intake_top), std::make_shared<miku::Motor>(intake_middle), std::make_shared<miku::Motor>(intake_bottom));
 
@@ -225,7 +225,7 @@ LookupTable right_drive_lut({
 PIDGains left_drive_gains(20.0, 5.0, 40.0);
 PIDGains right_drive_gains(20.0, 5.0, 40.0);
 
-miku::MotorGroup left_motors({-11, -12, -13},
+miku::MotorGroup left_motors({-11, -12, -1},
                              pros::v5::MotorGears::blue,
                              pros::v5::MotorUnits::degrees,
                              left_drive_lut,
@@ -239,6 +239,7 @@ miku::MotorGroup right_motors({15, 16, 17},
 pros::Imu imu(4);
 
 miku::Distance north_distance(5, -3.4, 6, 0);
+miku::Distance north_distance_2(2, 3.4, 6, 0);
 miku::Distance south_distance(7, 2.5, -2.5, 180);
 miku::Distance west_distance(9, -4, 3.75, -90);
 miku::Distance east_distance(10, 4, 3.75, 90);
@@ -247,6 +248,7 @@ miku::Distance east_distance(10, 4, 3.75, 90);
 // reference the concrete sensor objects above so we don't create
 // duplicate pros::Distance instances for the same ports.
 miku::Distance &front_distance = north_distance;
+miku::Distance &front_distance_2 = north_distance_2;
 miku::Distance &back_distance  = south_distance;
 miku::Distance &left_distance  = west_distance;
 miku::Distance &right_distance = east_distance;
@@ -254,12 +256,11 @@ miku::Distance &right_distance = east_distance;
 // miku::Distance ne_distance(11, 5.625, -2.75, 45);
 
 ParticleFilter mcl({
-    std::make_shared<miku::Distance>(north_distance),
-    std::make_shared<miku::Distance>(south_distance),
-    std::make_shared<miku::Distance>(west_distance),
-    std::make_shared<miku::Distance>(east_distance),
-    // std::make_shared<miku::Distance>(nw_distance),
-    // std::make_shared<miku::Distance>(ne_distance)
+    &north_distance,
+    &north_distance_2,  
+    &south_distance,
+    &west_distance,
+    &east_distance
 });
 
 miku::Chassis Miku(
@@ -269,8 +270,8 @@ miku::Chassis Miku(
     std::make_shared<ParticleFilter>(mcl)
 );
 
-miku::Pneumatic middle_piston('E');
-miku::Pneumatic loader_piston('F');
+miku::Pneumatic middle_piston('F');
+miku::Pneumatic loader_piston('E');
 miku::Pneumatic lock_piston('G');
 miku::Pneumatic descore_piston('H');
 

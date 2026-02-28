@@ -3,7 +3,48 @@
 
 std::mt19937_64 rng(std::random_device{}());
 
-ParticleFilter::ParticleFilter(std::vector<std::shared_ptr<miku::Distance>> sensors)
+std::ofstream file;
+std::ostringstream log_buffer;
+
+pros::Mutex log_mutex;
+
+void log_mcl() {
+    log_mutex.take();
+    Pose robot_pose = Miku.get_pose();
+
+    log_buffer << NUM_PARTICLES << "," << robot_pose.x << "," << robot_pose.y << "," << robot_pose.theta << ",";
+    log_buffer << left_distance.get_distance() / 25.4 << "," 
+               << right_distance.get_distance() / 25.4 << "," 
+               << front_distance.get_distance() / 25.4 << ","
+               << front_distance_2.get_distance() / 25.4 << ","
+               << back_distance.get_distance() / 25.4 << ",";
+
+    log_buffer << left_distance.get_object_size() << "," 
+               << right_distance.get_object_size() << "," 
+               << front_distance.get_object_size() << ","
+               << front_distance_2.get_object_size() << "," 
+               << back_distance.get_object_size() << ",";
+
+    for(size_t i = 0; i < Miku.pf->particles.size(); ++i) {
+        log_buffer << Miku.pf->particles[i].position.x << "," 
+                   << Miku.pf->particles[i].position.y << "," 
+                   << Miku.pf->particles[i].weight;
+        if(i != Miku.pf->particles.size()-1) log_buffer << ",";
+    }
+    log_buffer << "\n";
+    log_mutex.give();
+}
+
+void flush_logs() {
+    log_mutex.take();
+    file << log_buffer.str();
+    file.flush();
+    log_buffer.str("");
+    log_buffer.clear();
+    log_mutex.give();
+}
+
+ParticleFilter::ParticleFilter(std::vector<miku::Distance*> sensors)
     : distance_sensors(sensors) {
     for(auto& particle : particles) {
         particle.sensor_readings.resize(distance_sensors.size(), WallEstimate{NOT_IN_FIELD, 0.0f});
@@ -25,7 +66,7 @@ void ParticleFilter::set_min_odom_noise(float noise) {
 //   sensor_y = robot_y - offset_x * cos(theta) + offset_y * sin(theta)
 // The ray direction (dx,dy) is chosen based on sensor orientation (front/back/left/right).
 // Return value is the WallEstimate (wall id and distance along the ray t).
-WallEstimate get_expected_reading(Point particle_position, std::shared_ptr<miku::Distance> sensor, float cos_theta, float sin_theta) {
+WallEstimate get_expected_reading(Point particle_position, miku::Distance* sensor, float cos_theta, float sin_theta) {
 
     float sensor_y = particle_position.y - sensor->offset_x * cos_theta + sensor->offset_y * sin_theta;
     float sensor_x = particle_position.x + sensor->offset_x * sin_theta + sensor->offset_y * cos_theta;
@@ -115,12 +156,18 @@ void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
                 sin_theta));
     }
 
-    float acc_x = 0.0f, acc_y = 0.0f;
-    float sum_weight_x = 0.0f, sum_weight_y = 0.0f;
+    // Rather than averaging all valid readings, choose the sensor whose
+    // measurement deviated least from the expected value.  Do this separately
+    // for the x and y axes so that a good left/right sensor doesn’t override a
+    // better front/back reading, and vice‑versa.
+    float best_dev_x = std::numeric_limits<float>::infinity();
+    float best_dev_y = std::numeric_limits<float>::infinity();
+    float best_x = estimate.x;
+    float best_y = estimate.y;
 
     for(size_t i = 0; i < pf->distance_sensors.size(); ++i) {
 
-        std::shared_ptr<miku::Distance> sensor = pf->distance_sensors[i];
+        miku::Distance* sensor = pf->distance_sensors[i];
         sensor->update_reading();
 
         if(!sensor->get_enabled()) continue;
@@ -130,7 +177,8 @@ void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
         if(expected.wall_id == BAD_INTERSECT || expected.wall_id == NOT_IN_FIELD) continue;
 
         float reading = sensor->get_reading();
-        if(fabs(reading - expected.distance) > pf->max_error) continue;
+        float deviation = fabs(reading - expected.distance);
+        if(deviation > pf->max_error) continue;
 
         float corrected_x = estimate.x;
         float corrected_y = estimate.y;
@@ -146,50 +194,51 @@ void miku::Chassis::distance_reset(Point estimate, float particle_spread) {
 
         switch(expected.wall_id) {
             case LEFT_WALL:
-                // sensor_x + reading*dx = -HALF_FIELD  => robot_x = -HALF_FIELD - reading*dx - o_x
                 corrected_x = -HALF_FIELD - reading * dx - o_x;
+                if(deviation < best_dev_x) {
+                    best_dev_x = deviation;
+                    best_x = corrected_x;
+                }
                 break;
 
             case RIGHT_WALL:
-                // sensor_x + reading*dx = HALF_FIELD  => robot_x = HALF_FIELD - reading*dx - o_x
                 corrected_x = HALF_FIELD - reading * dx - o_x;
+                if(deviation < best_dev_x) {
+                    best_dev_x = deviation;
+                    best_x = corrected_x;
+                }
                 break;
 
             case TOP_WALL:
-                // sensor_y + reading*dy = HALF_FIELD  => robot_y = HALF_FIELD - reading*dy - o_y
                 corrected_y = HALF_FIELD - reading * dy - o_y;
+                if(deviation < best_dev_y) {
+                    best_dev_y = deviation;
+                    best_y = corrected_y;
+                }
                 break;
 
             case BOTTOM_WALL:
-                // sensor_y + reading*dy = -HALF_FIELD => robot_y = -HALF_FIELD - reading*dy - o_y
                 corrected_y = -HALF_FIELD - reading * dy - o_y;
+                if(deviation < best_dev_y) {
+                    best_dev_y = deviation;
+                    best_y = corrected_y;
+                }
                 break;
 
             default:
                 break;
         }
 
-        // accumulate equally-weighted estimates (no confidence bias)
-        if(expected.wall_id == LEFT_WALL || expected.wall_id == RIGHT_WALL) {
-            acc_x += corrected_x;
-            sum_weight_x += 1.0f;
-        }
-
-        if(expected.wall_id == TOP_WALL || expected.wall_id == BOTTOM_WALL) {
-            acc_y += corrected_y;
-            sum_weight_y += 1.0f;
-        }
-
     }
 
     Point corrected_pose = estimate;
 
-    if(sum_weight_x > 0.0f) {
-        corrected_pose.x = acc_x / sum_weight_x;
+    if(best_dev_x < std::numeric_limits<float>::infinity()) {
+        corrected_pose.x = best_x;
     }
 
-    if(sum_weight_y > 0.0f) {
-        corrected_pose.y = acc_y / sum_weight_y;
+    if(best_dev_y < std::numeric_limits<float>::infinity()) {
+        corrected_pose.y = best_y;
     }
 
     set_position(Point(

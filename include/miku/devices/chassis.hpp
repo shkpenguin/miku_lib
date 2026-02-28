@@ -96,7 +96,6 @@ public:
     // float get_vel_x();
     // float get_pos_x();
 
-private:
     std::shared_ptr<MotorGroup> left_motors;
     std::shared_ptr<MotorGroup> right_motors;
     std::shared_ptr<pros::Imu> imu;

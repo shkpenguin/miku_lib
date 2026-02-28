@@ -115,10 +115,10 @@ inline void display_dist_sensors() {
         return fmt::format("{} {} {} {}", (int)(front_distance.get() / 25.4), (int)(back_distance.get() / 25.4), (int)(left_distance.get() / 25.4), (int)(right_distance.get() / 25.4));
     });
     master.display(1, []() {
-        return fmt::format("{:.0f} {:.0f} {:.0f} {:.0f}", get_expected_reading(Miku.get_position(), std::make_shared<miku::Distance>(front_distance), cos(Miku.get_heading()), sin(Miku.get_heading())).distance, 
-                                            get_expected_reading(Miku.get_position(), std::make_shared<miku::Distance>(back_distance), cos(Miku.get_heading()), sin(Miku.get_heading())).distance,
-                                            get_expected_reading(Miku.get_position(), std::make_shared<miku::Distance>(left_distance), cos(Miku.get_heading()), sin(Miku.get_heading())).distance,
-                                            get_expected_reading(Miku.get_position(), std::make_shared<miku::Distance>(right_distance), cos(Miku.get_heading()), sin(Miku.get_heading())).distance);
+        return fmt::format("{:.0f} {:.0f} {:.0f} {:.0f}", get_expected_reading(Miku.get_position(), &front_distance, cos(Miku.get_heading()), sin(Miku.get_heading())).distance, 
+                                            get_expected_reading(Miku.get_position(), &back_distance, cos(Miku.get_heading()), sin(Miku.get_heading())).distance,
+                                            get_expected_reading(Miku.get_position(), &left_distance, cos(Miku.get_heading()), sin(Miku.get_heading())).distance,
+                                            get_expected_reading(Miku.get_position(), &right_distance, cos(Miku.get_heading()), sin(Miku.get_heading())).distance);
     });
     master.display(2, []() {
         return fmt::format("pos: {:.1f} {:.1f}", Miku.get_x(), Miku.get_y());

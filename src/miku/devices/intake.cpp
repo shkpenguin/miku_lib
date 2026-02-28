@@ -138,7 +138,7 @@ void Intake::load() {
 
 void Intake::score() {
     lock_piston.set_value(false);
-    anti_jam_enabled = true;
+    // anti_jam_enabled = true;
     set(12000.0f, 12000.0f, 12000.0f);
 }
 

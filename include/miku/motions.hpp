@@ -162,6 +162,17 @@ struct RamseteParams {
     float end_cutoff = 6.0;
 };
 
+struct MoveDistanceParams {
+    bool reverse = false;
+    bool quick_exit = true;
+    float cutoff = -1.0;          // stop when this close to target
+    float max_volt_pct = 100.0;
+    float min_volt_pct = 0.0;
+    float drive_kP = -1.0;
+    float drive_kI = -1.0;
+    float drive_kD = -1.0;
+};
+
 struct Delay : MotionPrimitive {
     float duration;
     Timer timer;
@@ -312,6 +323,23 @@ struct MoveTime : MotionPrimitive {
     void stop() override;
     bool is_done() override;
 
+};
+
+struct MoveDistance : MotionPrimitive {
+    float target;            // inches
+    float timeout;           // milliseconds
+    MoveDistanceParams params;
+
+    float start_left;
+    float start_right;
+    Timer timer;
+    PID drive_pid;
+
+    MoveDistance(float target, float timeout, MoveDistanceParams params = MoveDistanceParams());
+    void start() override;
+    void update() override;
+    void stop() override;
+    bool is_done() override;
 };
 
 struct Ramsete : MotionPrimitive {
@@ -561,6 +589,11 @@ struct SwingPointBuilder : MotionBuilder {
         : MotionBuilder(new SwingPoint(target, timeout, params)) {}
 };
 
+struct MoveDistanceBuilder : MotionBuilder {
+    MoveDistanceBuilder(float target, float timeout, MoveDistanceParams params = MoveDistanceParams())
+        : MotionBuilder(new MoveDistance(target, timeout, params)) {}
+};
+
 struct MovePointBuilder : MotionBuilder {
     MovePointBuilder(Point target, float timeout, MovePointParams params = MovePointParams())
         : MotionBuilder(new MovePoint(target, timeout, params)) {}
@@ -592,6 +625,7 @@ struct DelayBuilder : MotionBuilder {
 };
 
 using wait = DelayBuilder;
+using move_distance = MoveDistanceBuilder;
 using turn_heading = TurnHeadingBuilder;
 using turn_point = TurnPointBuilder;
 using swing_heading = SwingHeadingBuilder;

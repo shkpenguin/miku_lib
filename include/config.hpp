@@ -30,6 +30,7 @@ extern miku::MotorGroup right_motors;
 extern pros::Imu imu;
 
 extern miku::Distance &front_distance;
+extern miku::Distance &front_distance_2;
 extern miku::Distance &back_distance;
 extern miku::Distance &left_distance;
 extern miku::Distance &right_distance;

@@ -36,7 +36,7 @@ class ParticleFilter {
     float min_odom_noise = 0.05; // inches
     std::vector<Particle> particles = std::vector<Particle>(NUM_PARTICLES);
 
-    ParticleFilter(std::vector<std::shared_ptr<miku::Distance>> sensors);
+    ParticleFilter(std::vector<miku::Distance*> sensors);
     void set_max_distance_error(float error);
     void set_min_odom_noise(float noise);
     void set_max_sensor_stdev(float stdev);
@@ -47,8 +47,10 @@ class ParticleFilter {
     Point get_current_belief();
     void resample_particles();
 
-    std::vector<std::shared_ptr<miku::Distance>> distance_sensors;
+    std::vector<miku::Distance*> distance_sensors;
 
 };
 
-WallEstimate get_expected_reading(Point particle_position, std::shared_ptr<miku::Distance> sensor, float cos_theta, float sin_theta);
+void flush_logs();
+
+WallEstimate get_expected_reading(Point particle_position, miku::Distance* sensor, float cos_theta, float sin_theta);
